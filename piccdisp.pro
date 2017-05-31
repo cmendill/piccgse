@@ -3,7 +3,6 @@ pro piccdisp,NOSAVE=NOSAVE, FITS=FITS, SAVE_EVERY=SAVE_EVERY
   shkwid = 0
   
   
-
 ;;Network
 CMD_SENDDATA = '0ABACABB'XUL
 imserver = 'lowfs'
@@ -20,6 +19,12 @@ LYTFULL  = 5UL
 ACQEVENT = 6UL
 ACQFULL  = 7UL
 
+;;Settings
+LOWFS_N_ZERNIKE = 24 ;;from controller.h
+zernikes = fltarr(LOWFS_N_ZERNIKE)
+SHKZERN = 20UL
+LYTZERN = 21UL
+
 ;;Windows
 xsize=300
 ysize=300
@@ -31,6 +36,7 @@ window,ACQFULL,xpos=blx,ypos=bly,xsize=xsize,ysize=ysize,title='Acquisition Came
 window,SCIFULL,xpos=blx+xsize+xbuf,ypos=bly,xsize=xsize,ysize=ysize,title='Science Camera'
 window,SHKFULL,xpos=blx,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Shack-Hartmann Camera'
 window,LYTFULL,xpos=blx+xsize+xbuf,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Lyot LOWFS Camera'
+window,SHKZERN,xpos=0,ypos=0,xsize=500,ysize=500,title='Shack-Hartmann Zernikes'
 
 ;;Image packet structure -- aligned on 8 byte boundary
 pkthed   = {packet_type:0UL, $
@@ -71,6 +77,7 @@ while 1 do begin
       while 1 do begin
          IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=1) GT 0 THEN BEGIN
             gotdata=0
+            gotzern=0
             readu,IMUNIT,pkthed
             if pkthed.packet_type eq SCIFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
@@ -82,9 +89,12 @@ while 1 do begin
             if pkthed.packet_type eq SHKFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
+               readu,IMUNIT,zernikes
                iwin=SHKFULL
+               zwin=SHKZERN
                tag='shkfull'
                gotdata=1
+               gotzern=1
             endif
             if pkthed.packet_type eq LYTFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
@@ -105,13 +115,17 @@ while 1 do begin
                ;;display image
                wset,iwin
                imdisp,image
-               
+               ;;display zernikes
+               if gotzern then begin
+                  wset,zwin
+                  plot,zernikes,/xs
+               endif
                ;;save packet
                if (count mod SAVE_EVERY eq 0) and not keyword_set(NOSAVE) then begin
                   if keyword_set(FITS) then begin
                      writefits,path+tag+'.'+gettimestamp('.')+'.'+n2s(count,format='(I8.8)')+'.fits',image
                   endif else begin
-                     save,pkthed,image,filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(count,format='(I8.8)')+'.idl'
+                     save,pkthed,image,zernikes,filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(count,format='(I8.8)')+'.idl'
                   endelse
                endif
             endif
