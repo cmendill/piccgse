@@ -93,7 +93,8 @@ shkevent = {packet_type:0UL, $
             temp:0.,$
             imxsize:0UL,$
             imysize:0UL,$
-            mode:0UL,$
+            mode:0U,$
+            iwc_calmode:0U,$
             start_sec:long64(0),$
             start_nsec:long64(0),$
             end_sec:long64(0),$
