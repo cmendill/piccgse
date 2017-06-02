@@ -1,4 +1,4 @@
-pro piccdisp,NOSAVE=NOSAVE, FITS=FITS, SAVE_EVERY=SAVE_EVERY
+pro piccdisp,NOSAVE=NOSAVE
   close,/all
   shkwid = 0
   
@@ -7,7 +7,6 @@ pro piccdisp,NOSAVE=NOSAVE, FITS=FITS, SAVE_EVERY=SAVE_EVERY
 CMD_SENDDATA = '0ABACABB'XUL
 imserver = 'lowfs'
 import   = 14000
-count    = 0L
 
 ;;Buffer IDs
 SCIEVENT = 0UL
@@ -19,11 +18,25 @@ LYTFULL  = 5UL
 ACQEVENT = 6UL
 ACQFULL  = 7UL
 
-;;Settings
-LOWFS_N_ZERNIKE = 24 ;;from controller.h
-zernikes = fltarr(LOWFS_N_ZERNIKE)
+;;Counters
+scievent_count = 0UL
+shkevent_count = 0UL
+lytevent_count = 0UL
+acqevent_count = 0UL
+scifull_count = 0UL
+shkfull_count = 0UL
+lytfull_count = 0UL
+acqfull_count = 0UL
+
+;;Other window IDs
 SHKZERN = 20UL
 LYTZERN = 21UL
+DATAWIN = 22UL
+
+;;Settings
+SHK_NCELLS = 324
+IWC_NSPA =76
+LOWFS_N_ZERNIKE = 24 ;;from controller.h
 
 ;;Windows
 xsize=300
@@ -32,11 +45,15 @@ blx = 750
 bly = 20
 xbuf = 5
 ybuf = 60
+ddy=0.05
+dsy=0.95
+dsx=0.05
 window,ACQFULL,xpos=blx,ypos=bly,xsize=xsize,ysize=ysize,title='Acquisition Camera'
 window,SCIFULL,xpos=blx+xsize+xbuf,ypos=bly,xsize=xsize,ysize=ysize,title='Science Camera'
 window,SHKFULL,xpos=blx,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Shack-Hartmann Camera'
 window,LYTFULL,xpos=blx+xsize+xbuf,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Lyot LOWFS Camera'
-window,SHKZERN,xpos=0,ypos=0,xsize=500,ysize=500,title='Shack-Hartmann Zernikes'
+window,SHKZERN,xpos=0,ypos=0,xsize=400,ysize=400,title='Shack-Hartmann Zernikes'
+window,DATAWIN,xpos=0,ypos=600,xsize=400,ysize=400,title='Data'
 
 ;;Image packet structure -- aligned on 8 byte boundary
 pkthed   = {packet_type:0UL, $
@@ -47,8 +64,44 @@ pkthed   = {packet_type:0UL, $
             imxsize:0UL,$
             imysize:0UL,$
             mode:0UL,$
-            time_sec:long64(0),$
-            time_nsec:long64(0)}
+            start_sec:long64(0),$
+            start_nsec:long64(0),$
+            end_sec:long64(0),$
+            end_nsec:long64(0)}
+
+shkcell_struct = {index:0U,$
+                  beam_select:0U,$
+                  spot_found:0U,$
+                  spot_captured:0U,$
+                  maxpix:0UL,$
+                  maxval:0UL,$
+                  blx:0U,$
+                  bly:0U,$
+                  trx:0U,$
+                  try:0U,$
+                  origin:dblarr(2),$
+                  centroid:dblarr(2),$
+                  deviation:dblarr(2)}
+
+iwc_struct = {spa:uintarr(IWC_NSPA),$
+              a:0U,b:0U,c:0U,dummy:0U}
+
+shkevent = {packet_type:0UL, $
+            frame_number:0UL, $
+            exptime:0.,$
+            ontime:0.,$
+            temp:0.,$
+            imxsize:0UL,$
+            imysize:0UL,$
+            mode:0UL,$
+            start_sec:long64(0),$
+            start_nsec:long64(0),$
+            end_sec:long64(0),$
+            end_nsec:long64(0),$
+            cells:replicate(shkcell_struct,SHK_NCELLS),$
+            zernikes:dblarr(LOWFS_N_ZERNIKE),$
+            iwc:iwc_struct}
+
 
 ;;Check header size, these should be the same if there is no padding
 print,'Header Size: '+n2s(n_tags(pkthed,/length))
@@ -60,8 +113,9 @@ if not keyword_set(NOSAVE) then begin
    check_and_mkdir,path
 endif
 
-;;File Saving
-if NOT keyword_set(SAVE_EVERY) then SAVE_EVERY=1 
+;;File saving
+dosave=1
+if keyword_set(NOSAVE) then dosave=0
 
 ;;Open console
 openr,tty,'/dev/tty',/get_lun
@@ -76,60 +130,79 @@ while 1 do begin
       WRITEU,IMUNIT,CMD_SENDDATA
       while 1 do begin
          IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=1) GT 0 THEN BEGIN
-            gotdata=0
-            gotzern=0
+            dc=0
+            toff=0L
             readu,IMUNIT,pkthed
             if pkthed.packet_type eq SCIFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
-               iwin=SCIFULL
                tag='scifull'
-               gotdata=1
+               scifull_count++
             endif
             if pkthed.packet_type eq SHKFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
-               readu,IMUNIT,zernikes
-               iwin=SHKFULL
-               zwin=SHKZERN
+               readu,IMUNIT,shkevent
                tag='shkfull'
-               gotdata=1
-               gotzern=1
+               ;;scale image
+               greyrscale,image,4093
+               ;;draw cells
+               
+               ;;display image
+               wset,SHKFULL
+               greyr
+               imdisp,image,/noscale,/axis
+               loadct,0
+               for i=0,n_elements(shkevent.cells)-1 do begin
+                  ;;bottom
+                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].bly]
+                  ;;top
+                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].try,shkevent.cells[i].try]
+                  ;;left
+                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].blx],[shkevent.cells[i].bly,shkevent.cells[i].try]
+                  ;;right
+                  oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try]
+               endfor
+               
+                              
+               ;;display zernikes
+               wset,SHKZERN
+               plot,shkevent.zernikes,/xs
+               
+               ;;write data to data window
+               if toff eq 0 then toff = pkthed.start_sec
+               wset,datawin
+               ERASE
+               
+               xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/normal
+               xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/normal
+               st = double(shkevent.start_sec-toff) + double(shkevent.start_nsec)/1e9
+               et = double(shkevent.end_sec-toff) + double(shkevent.end_nsec)/1e9
+               dt = fix((et-st)*1e6)
+               xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/normal
+               st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
+               et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
+               dt = fix((et-st)*1e6)
+               xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal
+
+               ;;save packet
+               if dosave then save,pkthed,image,shkevent,$
+                                   filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(shkfull_count,format='(I8.8)')+'.idl'
+               
+               shkfull_count++
             endif
             if pkthed.packet_type eq LYTFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
-               iwin=LYTFULL
                tag='lytfull'
-               gotdata=1
+               lytfull_count++
             endif
             if pkthed.packet_type eq ACQFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
-               iwin=ACQFULL
                tag='acqfull'
-               gotdata=1
+               acqfull_count++
             endif
-
-            if gotdata then begin 
-               ;;display image
-               wset,iwin
-               imdisp,image
-               ;;display zernikes
-               if gotzern then begin
-                  wset,zwin
-                  plot,zernikes,/xs
-               endif
-               ;;save packet
-               if (count mod SAVE_EVERY eq 0) and not keyword_set(NOSAVE) then begin
-                  if keyword_set(FITS) then begin
-                     writefits,path+tag+'.'+gettimestamp('.')+'.'+n2s(count,format='(I8.8)')+'.fits',image
-                  endif else begin
-                     save,pkthed,image,zernikes,filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(count,format='(I8.8)')+'.idl'
-                  endelse
-               endif
-            endif
-            count++
          endif else begin
             if n_elements(IMUNIT) gt 0 then begin
                if IMUNIT gt 0 then free_lun,IMUNIT
@@ -144,13 +217,7 @@ while 1 do begin
             readf,tty,cmdline
             if cmdline eq 'exit' or cmdline eq 'quit' then begin
                ;;clean up
-               if n_elements(IMUNIT) gt 0 then begin
-                  if IMUNIT gt 0 then free_lun,IMUNIT
-               endif
-               if tty gt 0 then free_lun,tty
-               while !D.WINDOW ne -1 do wdelete
-               ;;exit
-               stop
+               goto, cleanup
             endif
          endif
          
@@ -166,12 +233,19 @@ while 1 do begin
    if(FILE_POLL_INPUT(tty,TIMEOUT=0.000001D)) then begin
       readf,tty,cmdline
       if cmdline eq 'exit' or cmdline eq 'quit' then begin
+         cleanup:
          ;;clean up
          if n_elements(IMUNIT) gt 0 then begin
             if IMUNIT gt 0 then free_lun,IMUNIT
          endif
          if tty gt 0 then free_lun,tty
          while !D.WINDOW ne -1 do wdelete
+         ;;print status
+         print,'**********Packets received**********'
+         print,'SCIFULL: '+n2s(scifull_count)
+         print,'SHKFULL: '+n2s(shkfull_count)
+         print,'LYTFULL: '+n2s(lytfull_count)
+         print,'ACQFULL: '+n2s(acqfull_count)
          ;;exit
          stop
       endif
