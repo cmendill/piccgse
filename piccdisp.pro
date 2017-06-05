@@ -32,6 +32,7 @@ acqfull_count = 0UL
 SHKZERN = 20UL
 LYTZERN = 21UL
 DATAWIN = 22UL
+WPIXMAP = 23UL
 
 ;;Settings
 SHK_NCELLS = 324
@@ -147,25 +148,34 @@ while 1 do begin
                tag='shkfull'
                ;;scale image
                greyrscale,image,4093
-               ;;draw cells
                
-               ;;display image
+               ;;****** DISPLAY IMAGE ******
                wset,SHKFULL
-               greyr
-               imdisp,image,/noscale,/axis
-               loadct,0
+               ;;create pixmap window
+               window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+               wset,wpixmap
+               imdisp,image,/noscale,/axis,/erase
                for i=0,n_elements(shkevent.cells)-1 do begin
                   ;;bottom
-                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].bly]
+                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].bly],color=253
                   ;;top
-                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].try,shkevent.cells[i].try]
+                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].try,shkevent.cells[i].try],color=253
                   ;;left
-                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].blx],[shkevent.cells[i].bly,shkevent.cells[i].try]
+                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].blx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
                   ;;right
-                  oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try]
+                  oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
                endfor
-               
-                              
+               ;;take snapshot
+               snap = TVRD()
+               ;;delete pixmap window
+               wdelete,wpixmap
+               ;;switch back to real window
+               wset,SHKFULL
+               ;;set color table
+               greyr
+               ;;display image
+               tv,snap
+               loadct,0
                ;;display zernikes
                wset,SHKZERN
                plot,shkevent.zernikes,/xs
