@@ -38,6 +38,7 @@ WPIXMAP = 23UL
 SHK_NCELLS = 324
 IWC_NSPA =76
 LOWFS_N_ZERNIKE = 24 ;;from controller.h
+charsize = 1.5
 
 ;;Windows
 xsize=300
@@ -185,16 +186,17 @@ while 1 do begin
                wset,datawin
                ERASE
                
-               xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/normal
-               xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/normal
+               xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/normal,charsize=charsize
                st = double(shkevent.start_sec-toff) + double(shkevent.start_nsec)/1e9
                et = double(shkevent.end_sec-toff) + double(shkevent.end_nsec)/1e9
-               dt = fix((et-st)*1e6)
-               xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/normal
+               dt = long((et-st)*1e6)
+               xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/normal,charsize=charsize
                st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
                et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
-               dt = fix((et-st)*1e6)
-               xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal
+               dt = long((et-st)*1e6)
+               xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(shkevent.ontime*1e6))+' us',/normal,charsize=charsize
 
                ;;save packet
                if dosave then save,pkthed,image,shkevent,$
