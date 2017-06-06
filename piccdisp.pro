@@ -35,7 +35,7 @@ DATAWIN = 22UL
 WPIXMAP = 23UL
 
 ;;Settings
-SHK_NCELLS = 324
+SHK_NCELLS = 256
 IWC_NSPA =76
 LOWFS_N_ZERNIKE = 24 ;;from controller.h
 charsize = 1.5
