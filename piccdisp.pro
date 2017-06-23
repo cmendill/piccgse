@@ -104,6 +104,8 @@ shkevent = {packet_type:0UL, $
             start_nsec:long64(0),$
             end_sec:long64(0),$
             end_nsec:long64(0),$
+            xtilt:0d,$
+            ytilt:0d,$
             cells:replicate(shkcell_struct,SHK_NCELLS),$
             zernikes:dblarr(LOWFS_N_ZERNIKE),$
             iwc_spa_matrix:dblarr(IWC_NSPA),$
