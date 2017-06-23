@@ -37,13 +37,14 @@ WPIXMAP = 23UL
 ;;Settings
 SHK_NCELLS = 256
 IWC_NSPA =76
+IWC_NTTP =3
 LOWFS_N_ZERNIKE = 24 ;;from controller.h
 charsize = 1.5
 
 ;;Windows
-xsize=300
-ysize=300
-blx = 750
+xsize=450
+ysize=450
+blx = 500
 bly = 20
 xbuf = 5
 ybuf = 60
@@ -83,16 +84,18 @@ shkcell_struct = {index:0U,$
                   try:0U,$
                   origin:dblarr(2),$
                   centroid:dblarr(2),$
-                  deviation:dblarr(2)}
+                  deviation:dblarr(2),$
+                  command:dblarr(2)}
 
 iwc_struct = {spa:uintarr(IWC_NSPA),$
-              a:0U,b:0U,c:0U,dummy:0U}
+              ttp:uintarr(IWC_NTTP),$
+              calmode:0U}
 
 shkevent = {packet_type:0UL, $
             frame_number:0UL, $
             exptime:0.,$
             ontime:0.,$
-            temp:0.,$
+            beam_ncells:0UL,$
             imxsize:0UL,$
             imysize:0UL,$
             mode:0U,$
@@ -103,6 +106,7 @@ shkevent = {packet_type:0UL, $
             end_nsec:long64(0),$
             cells:replicate(shkcell_struct,SHK_NCELLS),$
             zernikes:dblarr(LOWFS_N_ZERNIKE),$
+            iwc_spa_matrix:dblarr(IWC_NSPA),$
             iwc:iwc_struct}
 
 
@@ -123,7 +127,10 @@ if keyword_set(NOSAVE) then dosave=0
 ;;Open console
 openr,tty,'/dev/tty',/get_lun
 
+IMUNIT=0
 while 1 do begin
+   RESET_CONNECTION: PRINT, !ERR_STRING ;;Jump here if an IO error occured
+   if IMUNIT gt 0 then free_lun,IMUNIT
    ;;Create Socket connection
    PRINT, 'Attempting to create Socket connection Image Server to >'+imserver+'< on port '+n2s(import)
    SOCKET, IMUNIT, imserver, import, /GET_LUN, CONNECT_TIMEOUT=3, ERROR=con_status,READ_TIMEOUT=3
@@ -132,7 +139,9 @@ while 1 do begin
       ;;Ask for images
       WRITEU,IMUNIT,CMD_SENDDATA
       while 1 do begin
-         IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=1) GT 0 THEN BEGIN
+         ;;install error handler
+         ON_IOERROR, RESET_CONNECTION
+          IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=1) GT 0 THEN BEGIN
             dc=0
             toff=0L
             readu,IMUNIT,pkthed
@@ -148,23 +157,26 @@ while 1 do begin
                readu,IMUNIT,shkevent
                tag='shkfull'
                ;;scale image
-               greyrscale,image,4093
+               simage = image
+               greyrscale,simage,4093
                
                ;;****** DISPLAY IMAGE ******
                wset,SHKFULL
                ;;create pixmap window
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,wpixmap
-               imdisp,image,/noscale,/axis,/erase
+               imdisp,simage,/noscale,/axis,/erase
                for i=0,n_elements(shkevent.cells)-1 do begin
-                  ;;bottom
-                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].bly],color=253
-                  ;;top
-                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].try,shkevent.cells[i].try],color=253
-                  ;;left
-                  oplot,[shkevent.cells[i].blx,shkevent.cells[i].blx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
-                  ;;right
-                  oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
+                  if(shkevent.cells[i].beam_select) then begin
+                     ;;bottom
+                     oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].bly],color=253
+                     ;;top
+                     oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].try,shkevent.cells[i].try],color=253
+                     ;;left
+                     oplot,[shkevent.cells[i].blx,shkevent.cells[i].blx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
+                     ;;right
+                     oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
+                  endif
                endfor
                ;;take snapshot
                snap = TVRD()
@@ -179,7 +191,7 @@ while 1 do begin
                loadct,0
                ;;display zernikes
                wset,SHKZERN
-               plot,shkevent.zernikes,/xs
+               plot,shkevent.zernikes,/xs,psym=10
                
                ;;write data to data window
                if toff eq 0 then toff = pkthed.start_sec
