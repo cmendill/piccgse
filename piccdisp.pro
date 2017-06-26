@@ -199,9 +199,11 @@ while 1 do begin
                
                ;;write data to data window
                if toff eq 0 then toff = pkthed.start_sec
-               wset,datawin
-               ERASE
-               
+               wset,DATAWIN
+               ;;create pixmap window
+               window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+               wset,WPIXMAP
+                              
                xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/normal,charsize=charsize
                st = double(shkevent.start_sec-toff) + double(shkevent.start_nsec)/1e9
@@ -214,11 +216,19 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(shkevent.ontime*1e6))+' us',/normal,charsize=charsize
                sel = where(shkevent.cells.beam_select)
+               xyouts,dsx,dsy-ddy*dc++,'MAX Max Pixel: '+n2s(long(max(shkevent.cells[sel].maxval)))+' counts',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'AVG Max Pixel: '+n2s(long(mean(shkevent.cells[sel].maxval)))+' counts',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'AVG Intensity: '+n2s(long(mean(shkevent.cells[sel].intensity)))+' counts/cell',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'MAX Intensity: '+n2s(long(max(shkevent.cells[sel].intensity)))+' counts/cell',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'BKG Intensity: '+n2s(long(mean(shkevent.cells[sel].background)))+' counts/px',/normal,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'TOT Intensity: '+n2s(long(total(shkevent.cells[sel].intensity)))+' counts',/normal,charsize=charsize
-
+               xyouts,dsx,dsy-ddy*dc++,'TOT Intensity: '+n2s(long(total(shkevent.cells[sel].intensity)),format='(E10.3)')+' counts',/normal,charsize=charsize
+               ;;take snapshot
+               snap = TVRD()
+               ;;delete pixmap window
+               wdelete,WPIXMAP
+               ;;switch back to real window
+               wset,DATAWIN
+               tv,snap
                ;;save packet
                if dosave then save,pkthed,image,shkevent,$
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(shkfull_count,format='(I8.8)')+'.idl'
