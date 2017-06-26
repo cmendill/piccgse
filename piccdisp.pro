@@ -82,6 +82,8 @@ shkcell_struct = {index:0U,$
                   bly:0U,$
                   trx:0U,$
                   try:0U,$
+                  intensity:0d,$
+                  background:0d,$
                   origin:dblarr(2),$
                   centroid:dblarr(2),$
                   deviation:dblarr(2),$
@@ -211,6 +213,11 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(shkevent.ontime*1e6))+' us',/normal,charsize=charsize
+               sel = where(shkevent.cells.beam_select)
+               xyouts,dsx,dsy-ddy*dc++,'AVG Max Pixel: '+n2s(long(mean(shkevent.cells[sel].maxval)))+' counts',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'AVG Intensity: '+n2s(long(mean(shkevent.cells[sel].intensity)))+' counts/cell',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'BKG Intensity: '+n2s(long(mean(shkevent.cells[sel].background)))+' counts/px',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'TOT Intensity: '+n2s(long(total(shkevent.cells[sel].intensity)))+' counts',/normal,charsize=charsize
 
                ;;save packet
                if dosave then save,pkthed,image,shkevent,$
