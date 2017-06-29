@@ -101,13 +101,16 @@ shkevent = {packet_type:0UL, $
             imxsize:0UL,$
             imysize:0UL,$
             mode:0U,$
-            iwc_calmode:0U,$
+            boxsize:0U,$
             start_sec:long64(0),$
             start_nsec:long64(0),$
             end_sec:long64(0),$
             end_nsec:long64(0),$
             xtilt:0d,$
             ytilt:0d,$
+            kP:0d,$
+            kI:0d,$
+            kD:0d,$
             cells:replicate(shkcell_struct,SHK_NCELLS),$
             zernikes:dblarr(LOWFS_N_ZERNIKE),$
             iwc_spa_matrix:dblarr(IWC_NSPA),$
@@ -215,6 +218,10 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(shkevent.ontime*1e6))+' us',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'IWC Cal Mode: '+n2s(shkevent.iwc.calmode),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'SHK Boxsize: '+n2s(shkevent.boxsize),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'PID Gains: '+string(shkevent.kP,shkevent.kI,shkevent.kD,format='(3F10.3)'),/normal,charsize=charsize
+
                sel = where(shkevent.cells.beam_select)
                xyouts,dsx,dsy-ddy*dc++,'MAX Max Pixel: '+n2s(long(max(shkevent.cells[sel].maxval)))+' counts',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'AVG Max Pixel: '+n2s(long(mean(shkevent.cells[sel].maxval)))+' counts',/normal,charsize=charsize
