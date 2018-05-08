@@ -36,8 +36,10 @@ WPIXMAP = 23UL
 
 ;;Settings
 SHK_NCELLS = 256
-IWC_NSPA =76
-IWC_NTTP =3
+IWC_NSPA = 76
+IWC_NTTP = 3
+HEX_NAXES = 6
+ALP_NACT = 97
 LOWFS_N_ZERNIKE = 24 ;;from controller.h
 charsize = 1.5
 
@@ -85,6 +87,7 @@ shkcell_struct = {index:0U,$
                   intensity:0d,$
                   background:0d,$
                   origin:dblarr(2),$
+                  cenbox_origin:dblarr(2),$
                   centroid:dblarr(2),$
                   deviation:dblarr(2),$
                   command:dblarr(2)}
@@ -92,6 +95,16 @@ shkcell_struct = {index:0U,$
 iwc_struct = {spa:uintarr(IWC_NSPA),$
               ttp:uintarr(IWC_NTTP),$
               calmode:0U}
+              
+hex_struct = {axs:dblarr(HEX_NAXES),$
+              calmode:0ULL}
+              
+alp_struct = {act_cmd:dblarr(ALP_NACT),$
+              act_now:dblarr(ALP_NACT),$
+              zern_now:dblarr(LOWFS_N_ZERNIKE),$
+              zern_cmd:dblarr(LOWFS_N_ZERNIKE),$
+              zern_trg:dblarr(LOWFS_N_ZERNIKE),$
+              calmode:0ULL}   
 
 shkevent = {packet_type:0UL, $
             frame_number:0UL, $
@@ -111,10 +124,16 @@ shkevent = {packet_type:0UL, $
             kP:0d,$
             kI:0d,$
             kD:0d,$
+            kH:0d,$
             cells:replicate(shkcell_struct,SHK_NCELLS),$
             zernikes:dblarr(LOWFS_N_ZERNIKE),$
             iwc_spa_matrix:dblarr(IWC_NSPA),$
-            iwc:iwc_struct}
+            alp_act_matrix:dblarr(ALP_NACT),$
+            hex_axs_matrix:dblarr(HEX_NAXES),$
+            iwc:iwc_struct,$
+            alp:alp_struct,$
+            hex:hex_struct}
+
 
 
 ;;Check header size, these should be the same if there is no padding
@@ -123,6 +142,7 @@ print,'Header Data Size: '+n2s(n_tags(pkthed,/data_length))
 
 ;;Create path
 if not keyword_set(NOSAVE) then begin
+
    path = 'data/picc_fullimages/piccdisp.'+gettimestamp('.')+'/'
    check_and_mkdir,path
 endif
@@ -198,7 +218,7 @@ while 1 do begin
                loadct,0
                ;;display zernikes
                wset,SHKZERN
-               plot,shkevent.zernikes,/xs,psym=10
+               plot,shkevent.zernikes,/xs,psym=10, yrange=[-5.0,5.0]
                
                ;;write data to data window
                if toff eq 0 then toff = pkthed.start_sec
@@ -301,7 +321,7 @@ while 1 do begin
          stop
       endif
    endif
-   wait,1
+   wait,0.2
 endwhile
 
 
