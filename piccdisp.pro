@@ -273,6 +273,9 @@ while 1 do begin
                readu,IMUNIT,image
                tag='acqfull'
                acqfull_count++
+               ;;****** DISPLAY IMAGE ******
+               wset,ACQFULL
+               imdisp,image,/axis,/erase
             endif
          endif else begin
             if n_elements(IMUNIT) gt 0 then begin
