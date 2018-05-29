@@ -106,19 +106,9 @@ alp_struct = {act_cmd:dblarr(ALP_NACT),$
               zern_trg:dblarr(LOWFS_N_ZERNIKE),$
               calmode:0ULL}   
 
-shkevent = {packet_type:0UL, $
-            frame_number:0UL, $
-            exptime:0.,$
-            ontime:0.,$
+shkevent = {hed:pkthed, $
             beam_ncells:0UL,$
-            imxsize:0UL,$
-            imysize:0UL,$
-            mode:0U,$
-            boxsize:0U,$
-            start_sec:long64(0),$
-            start_nsec:long64(0),$
-            end_sec:long64(0),$
-            end_nsec:long64(0),$
+            boxsize:0UL,$
             xtilt:0d,$
             ytilt:0d,$
             kP:0d,$
@@ -226,18 +216,18 @@ while 1 do begin
                ;;create pixmap window
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
-                              
+                             
                xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/normal,charsize=charsize
-               st = double(shkevent.start_sec-toff) + double(shkevent.start_nsec)/1e9
-               et = double(shkevent.end_sec-toff) + double(shkevent.end_nsec)/1e9
+               st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
+               et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/normal,charsize=charsize
                st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
                et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(shkevent.ontime*1e6))+' us',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'IWC Cal Mode: '+n2s(shkevent.iwc.calmode),/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'SHK Boxsize: '+n2s(shkevent.boxsize),/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'PID Gains: '+string(shkevent.kP,shkevent.kI,shkevent.kD,format='(3F10.3)'),/normal,charsize=charsize
