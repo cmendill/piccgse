@@ -41,7 +41,10 @@ IWC_NTTP = 3
 HEX_NAXES = 6
 ALP_NACT = 97
 LOWFS_N_ZERNIKE = 24 ;;from controller.h
+
+;;Display
 charsize = 1.5
+
 
 ;;Windows
 xsize=450
