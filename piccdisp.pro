@@ -36,8 +36,6 @@ WPIXMAP = 23UL
 
 ;;Settings
 SHK_NCELLS = 256
-IWC_NSPA = 76
-IWC_NTTP = 3
 HEX_NAXES = 6
 ALP_NACT = 97
 LOWFS_N_ZERNIKE = 24 ;;from controller.h
@@ -72,6 +70,8 @@ pkthed   = {packet_type:0UL, $
             imxsize:0UL,$
             imysize:0UL,$
             mode:0UL,$
+            state:0UL,$
+            dummy:0UL,$
             start_sec:long64(0),$
             start_nsec:long64(0),$
             end_sec:long64(0),$
@@ -81,12 +81,15 @@ shkcell_struct = {index:0U,$
                   beam_select:0U,$
                   spot_found:0U,$
                   spot_captured:0U,$
+                  ;;--------------
                   maxpix:0UL,$
                   maxval:0UL,$
+                  ;;--------------
                   blx:0U,$
                   bly:0U,$
                   trx:0U,$
                   try:0U,$
+                  ;;--------------
                   intensity:0d,$
                   background:0d,$
                   origin:dblarr(2),$
@@ -95,37 +98,36 @@ shkcell_struct = {index:0U,$
                   deviation:dblarr(2),$
                   command:dblarr(2)}
 
-iwc_struct = {spa:uintarr(IWC_NSPA),$
-              ttp:uintarr(IWC_NTTP),$
-              calmode:0U}
-              
-hex_struct = {axs:dblarr(HEX_NAXES),$
-              calmode:0ULL}
-              
+hex_struct = {axis_cmd:dblarr(HEX_NAXES),$
+              zernike_cmd:dblarr(LOWFS_N_ZERNIKE)}
+
 alp_struct = {act_cmd:dblarr(ALP_NACT),$
-              act_now:dblarr(ALP_NACT),$
-              zern_now:dblarr(LOWFS_N_ZERNIKE),$
-              zern_cmd:dblarr(LOWFS_N_ZERNIKE),$
-              zern_trg:dblarr(LOWFS_N_ZERNIKE),$
-              calmode:0ULL}   
+              zernike_cmd:dblarr(LOWFS_N_ZERNIKE)}
+
+wasp_struct = {pitch_cmd:0d,$
+               yaw_cmd:0d}
 
 shkevent = {hed:pkthed, $
             beam_ncells:0UL,$
             boxsize:0UL,$
+            hex_calmode:0UL,$
+            alp_calmode:0UL,$
             xtilt:0d,$
             ytilt:0d,$
-            kP:0d,$
-            kI:0d,$
-            kD:0d,$
-            kH:0d,$
+            kP_cell:0d,$
+            kI_cell:0d,$
+            kD_cell:0d,$
+            kP_zern:0d,$
+            kI_zern:0d,$
+            kD_zern:0d,$
             cells:replicate(shkcell_struct,SHK_NCELLS),$
-            zernikes:dblarr(LOWFS_N_ZERNIKE),$
-            iwc_spa_matrix:dblarr(IWC_NSPA),$
-            alp_act_matrix:dblarr(ALP_NACT),$
-            hex_axs_matrix:dblarr(HEX_NAXES),$
-            iwc:iwc_struct,$
+            zernike_command:dblarr(LOWFS_N_ZERNIKE),$
+            zernike_measured:dblarr(LOWFS_N_ZERNIKE),$
+            zernike_target:dblarr(LOWFS_N_ZERNIKE),$
+            zernike_control:ulon64arr(LOWFS_N_ZERNIKE),$
+            hex:hex_struct,$
             alp:alp_struct,$
-            hex:hex_struct}
+            wasp:wasp_struct}
 
 
 
@@ -170,6 +172,9 @@ while 1 do begin
                readu,IMUNIT,image
                tag='scifull'
                scifull_count++
+               ;;****** DISPLAY IMAGE ******
+               wset,SCIFULL
+               imdisp,image,/axis
             endif
             if pkthed.packet_type eq SHKFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
@@ -211,7 +216,7 @@ while 1 do begin
                loadct,0
                ;;display zernikes
                wset,SHKZERN
-               plot,shkevent.zernikes,/xs,psym=10, yrange=[-5.0,5.0]
+               plot,shkevent.zernike_measured,/xs,psym=10, yrange=[-5.0,5.0]
                
                ;;write data to data window
                if toff eq 0 then toff = pkthed.start_sec
@@ -231,9 +236,11 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/normal,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'IWC Cal Mode: '+n2s(shkevent.iwc.calmode),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+n2s(shkevent.alp_calmode),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+n2s(shkevent.hex_calmode),/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'SHK Boxsize: '+n2s(shkevent.boxsize),/normal,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'PID Gains: '+string(shkevent.kP,shkevent.kI,shkevent.kD,format='(3F10.3)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Cell PID: '+string(shkevent.kP_cell,shkevent.kI_cell,shkevent.kD_cell,format='(3F10.3)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Zern PID: '+string(shkevent.kP_zern,shkevent.kI_zern,shkevent.kD_zern,format='(3F10.3)'),/normal,charsize=charsize
 
                sel = where(shkevent.cells.beam_select)
                xyouts,dsx,dsy-ddy*dc++,'MAX Max Pixel: '+n2s(long(max(shkevent.cells[sel].maxval)))+' counts',/normal,charsize=charsize
