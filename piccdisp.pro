@@ -129,7 +129,8 @@ shkevent = {hed:pkthed, $
             alp:alp_struct,$
             wasp:wasp_struct}
 
-
+;;Get states from flight code (states.h)
+states = getstates()
 
 ;;Check header size, these should be the same if there is no padding
 print,'Header Size: '+n2s(n_tags(pkthed,/length))
@@ -225,6 +226,8 @@ while 1 do begin
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
                              
+               xyouts,dsx,dsy-ddy*dc++,'-----------System-----------',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/normal,charsize=charsize
                st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
