@@ -1,12 +1,12 @@
 pro piccdisp,NOSAVE=NOSAVE
   close,/all
-  shkwid = 0
   
-  
-;;Network
-CMD_SENDDATA = '0ABACABB'XUL
-imserver = 'lowfs'
-import   = 14000
+;;**** begin controller.h ****;;
+;;Settings
+SHK_NCELLS = 256
+HEX_NAXES = 6
+ALP_NACT = 97
+LOWFS_N_ZERNIKE = 24
 
 ;;Buffer IDs
 SCIEVENT = 0UL
@@ -18,48 +18,6 @@ LYTFULL  = 5UL
 ACQEVENT = 6UL
 ACQFULL  = 7UL
 
-;;Counters
-scievent_count = 0UL
-shkevent_count = 0UL
-lytevent_count = 0UL
-acqevent_count = 0UL
-scifull_count = 0UL
-shkfull_count = 0UL
-lytfull_count = 0UL
-acqfull_count = 0UL
-
-;;Other window IDs
-SHKZERN = 20UL
-LYTZERN = 21UL
-DATAWIN = 22UL
-WPIXMAP = 23UL
-
-;;Settings
-SHK_NCELLS = 256
-HEX_NAXES = 6
-ALP_NACT = 97
-LOWFS_N_ZERNIKE = 24 ;;from controller.h
-
-;;Display
-charsize = 1.5
-
-
-;;Windows
-xsize=450
-ysize=450
-blx = 500
-bly = 20
-xbuf = 5
-ybuf = 60
-ddy=0.05
-dsy=0.95
-dsx=0.05
-window,ACQFULL,xpos=blx,ypos=bly,xsize=xsize,ysize=ysize,title='Acquisition Camera'
-window,SCIFULL,xpos=blx+xsize+xbuf,ypos=bly,xsize=xsize,ysize=ysize,title='Science Camera'
-window,SHKFULL,xpos=blx,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Shack-Hartmann Camera'
-window,LYTFULL,xpos=blx+xsize+xbuf,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Lyot LOWFS Camera'
-window,SHKZERN,xpos=0,ypos=0,xsize=400,ysize=400,title='Shack-Hartmann Zernikes'
-window,DATAWIN,xpos=0,ypos=600,xsize=400,ysize=400,title='Data'
 
 ;;Image packet structure -- aligned on 8 byte boundary
 pkthed   = {packet_type:0UL, $
@@ -129,6 +87,51 @@ shkevent = {hed:pkthed, $
             alp:alp_struct,$
             wasp:wasp_struct}
 
+;;**** end controller.h ****;;
+
+
+;;Network
+CMD_SENDDATA = '0ABACABB'XUL
+imserver = 'lowfs'
+import   = 14000
+
+
+;;Counters
+scievent_count = 0UL
+shkevent_count = 0UL
+lytevent_count = 0UL
+acqevent_count = 0UL
+scifull_count = 0UL
+shkfull_count = 0UL
+lytfull_count = 0UL
+acqfull_count = 0UL
+
+;;Other window IDs
+SHKZERN = 20UL
+LYTZERN = 21UL
+SHKDATA = 22UL
+WPIXMAP = 23UL
+
+;;Display
+charsize = 1.5
+
+;;Windows
+xsize=450
+ysize=450
+blx = 500
+bly = 20
+xbuf = 5
+ybuf = 60
+ddy=0.05
+dsy=0.95
+dsx=0.05
+window,ACQFULL,xpos=blx,ypos=bly,xsize=xsize,ysize=ysize,title='Acquisition Camera'
+window,SCIFULL,xpos=blx+xsize+xbuf,ypos=bly,xsize=xsize,ysize=ysize,title='Science Camera'
+window,SHKFULL,xpos=blx,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Shack-Hartmann Camera'
+window,LYTFULL,xpos=blx+xsize+xbuf,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Lyot LOWFS Camera'
+window,SHKZERN,xpos=0,ypos=0,xsize=400,ysize=400,title='Shack-Hartmann Zernikes'
+window,SHKDATA,xpos=0,ypos=600,xsize=400,ysize=400,title='Data'
+
 ;;Get states from flight code (states.h)
 states = getstates()
 
@@ -175,8 +178,26 @@ while 1 do begin
                scifull_count++
                ;;****** DISPLAY IMAGE ******
                wset,SCIFULL
-               imdisp,image,/axis
-            endif
+               ;;create pixmap window
+               window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+               wset,wpixmap
+               ;;scale image
+               simage = image
+               greyrscale,simage,65535
+               ;;display
+               imdisp,simage,/axis,title='SCI Temp: '+n2s(pkthed.temp,format='(F10.1)')+' C'
+               ;;take snapshot
+               snap = TVRD()
+               ;;delete pixmap window
+               wdelete,wpixmap
+               ;;switch back to real window
+               wset,SCIFULL
+               ;;set color table
+               greyr
+               ;;display image
+               tv,snap
+               loadct,0
+          endif
             if pkthed.packet_type eq SHKFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
@@ -221,14 +242,13 @@ while 1 do begin
                
                ;;write data to data window
                if toff eq 0 then toff = pkthed.start_sec
-               wset,DATAWIN
+               wset,SHKDATA
                ;;create pixmap window
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
                              
-               xyouts,dsx,dsy-ddy*dc++,'-----------System-----------',/normal,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/normal,charsize=charsize
                st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
                et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
@@ -257,7 +277,7 @@ while 1 do begin
                ;;delete pixmap window
                wdelete,WPIXMAP
                ;;switch back to real window
-               wset,DATAWIN
+               wset,SHKDATA
                tv,snap
                ;;save packet
                if dosave then save,pkthed,image,shkevent,$
@@ -278,7 +298,24 @@ while 1 do begin
                acqfull_count++
                ;;****** DISPLAY IMAGE ******
                wset,ACQFULL
-               imdisp,image,/axis,/erase
+               ;;create pixmap window
+               window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+               wset,wpixmap
+               ;;scale image
+               simage = image
+               greyrscale,simage,2L^14 - 1
+               imdisp,simage,/axis,/erase
+               ;;take snapshot
+               snap = TVRD()
+               ;;delete pixmap window
+               wdelete,wpixmap
+               ;;switch back to real window
+               wset,ACQFULL
+               ;;set color table
+               greyr
+               ;;display image
+               tv,snap
+               loadct,0
             endif
          endif else begin
             if n_elements(IMUNIT) gt 0 then begin
