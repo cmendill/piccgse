@@ -4,7 +4,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 function getstates
 line = ''
-header = '/home/cmendill/code/piccflight/src/states.h'
+header = '/home/cmendill/code/piccflight/src/controller.h'
 
 
 found_states = 0

@@ -1,4 +1,4 @@
-pro piccdisp,NOSAVE=NOSAVE
+pro piccdisp,NOSAVE=NOSAVE,PLOT_CENTROIDS=PLOT_CENTROIDS
   close,/all
   
 ;;**** begin controller.h ****;;
@@ -6,7 +6,7 @@ pro piccdisp,NOSAVE=NOSAVE
 SHK_NCELLS = 256
 HEX_NAXES = 6
 ALP_NACT = 97
-LOWFS_N_ZERNIKE = 24
+LOWFS_N_ZERNIKE = 23
 
 ;;Buffer IDs
 SCIEVENT = 0UL
@@ -62,8 +62,8 @@ hex_struct = {axis_cmd:dblarr(HEX_NAXES),$
 alp_struct = {act_cmd:dblarr(ALP_NACT),$
               zernike_cmd:dblarr(LOWFS_N_ZERNIKE)}
 
-wasp_struct = {pitch_cmd:0d,$
-               yaw_cmd:0d}
+wsp_struct = {pitch_cmd:0d,$
+              yaw_cmd:0d}
 
 shkevent = {hed:pkthed, $
             beam_ncells:0UL,$
@@ -72,20 +72,24 @@ shkevent = {hed:pkthed, $
             alp_calmode:0UL,$
             xtilt:0d,$
             ytilt:0d,$
-            kP_cell:0d,$
-            kI_cell:0d,$
-            kD_cell:0d,$
-            kP_zern:0d,$
-            kI_zern:0d,$
-            kD_zern:0d,$
+            kP_alp_cell:0d,$
+            kI_alp_cell:0d,$
+            kD_alp_cell:0d,$
+            kP_alp_zern:0d,$
+            kI_alp_zern:0d,$
+            kD_alp_zern:0d,$
+            kP_hex_zern:0d,$
+            kI_hex_zern:0d,$
+            kD_hex_zern:0d,$
             cells:replicate(shkcell_struct,SHK_NCELLS),$
-            zernike_command:dblarr(LOWFS_N_ZERNIKE),$
             zernike_measured:dblarr(LOWFS_N_ZERNIKE),$
             zernike_target:dblarr(LOWFS_N_ZERNIKE),$
-            zernike_control:ulon64arr(LOWFS_N_ZERNIKE),$
+            alp_zernike_delta:dblarr(LOWFS_N_ZERNIKE),$
+            hex_zernike_delta:dblarr(LOWFS_N_ZERNIKE),$
+            cal_step:long64(0),$
             hex:hex_struct,$
             alp:alp_struct,$
-            wasp:wasp_struct}
+            wsp:wsp_struct}
 
 ;;**** end controller.h ****;;
 
@@ -205,7 +209,7 @@ while 1 do begin
                tag='shkfull'
                ;;scale image
                simage = image
-               greyrscale,simage,4093
+               greyrscale,simage,4092
                
                ;;****** DISPLAY IMAGE ******
                wset,SHKFULL
@@ -223,6 +227,8 @@ while 1 do begin
                      oplot,[shkevent.cells[i].blx,shkevent.cells[i].blx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
                      ;;right
                      oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
+                     ;;centroid
+                     if keyword_set(plot_centroids) then if(shkevent.cells[i].spot_found) then oplot,[shkevent.cells[i].centroid[0]],[shkevent.cells[i].centroid[1]],color=254,psym=2
                   endif
                endfor
                ;;take snapshot
@@ -238,7 +244,7 @@ while 1 do begin
                loadct,0
                ;;display zernikes
                wset,SHKZERN
-               plot,shkevent.zernike_measured,/xs,psym=10, yrange=[-5.0,5.0]
+               plot,shkevent.zernike_measured,/xs,psym=10,yrange=[-2.0,2.0]
                
                ;;write data to data window
                if toff eq 0 then toff = pkthed.start_sec
@@ -262,8 +268,11 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+n2s(shkevent.alp_calmode),/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+n2s(shkevent.hex_calmode),/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'SHK Boxsize: '+n2s(shkevent.boxsize),/normal,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'Cell PID: '+string(shkevent.kP_cell,shkevent.kI_cell,shkevent.kD_cell,format='(3F10.3)'),/normal,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'Zern PID: '+string(shkevent.kP_zern,shkevent.kI_zern,shkevent.kD_zern,format='(3F10.3)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'X-Tilt: '+n2s(shkevent.xtilt,format='(F10.2)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Y-Tilt: '+n2s(shkevent.ytilt,format='(F10.2)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Cell PID: '+string(shkevent.kP_alp_cell,shkevent.kI_alp_cell,shkevent.kD_alp_cell,format='(3F10.3)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(shkevent.kP_alp_zern,shkevent.kI_alp_zern,shkevent.kD_alp_zern,format='(3F10.3)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'HEX Zern PID: '+string(shkevent.kP_hex_zern,shkevent.kI_hex_zern,shkevent.kD_hex_zern,format='(3F10.3)'),/normal,charsize=charsize
 
                sel = where(shkevent.cells.beam_select)
                xyouts,dsx,dsy-ddy*dc++,'MAX Max Pixel: '+n2s(long(max(shkevent.cells[sel].maxval)))+' counts',/normal,charsize=charsize
