@@ -216,7 +216,7 @@ while 1 do begin
                ;;create pixmap window
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,wpixmap
-               imdisp,simage,/noscale,/axis,/erase
+               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
                for i=0,n_elements(shkevent.cells)-1 do begin
                   if(shkevent.cells[i].beam_select) then begin
                      ;;bottom
@@ -307,7 +307,7 @@ while 1 do begin
                ;;scale image
                simage = image
                greyrscale,simage,2L^14 - 1
-               imdisp,simage,/axis,/erase
+               imdisp,simage,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
@@ -333,7 +333,7 @@ while 1 do begin
                ;;scale image
                simage = image
                greyrscale,simage,2L^14 - 1
-               imdisp,simage,/axis,/erase
+               imdisp,simage,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
