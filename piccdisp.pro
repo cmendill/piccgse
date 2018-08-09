@@ -96,7 +96,7 @@ shkevent = {hed:pkthed, $
 
 ;;Network
 CMD_SENDDATA = '0ABACABB'XUL
-imserver = 'lowfs'
+imserver = 'picture'
 import   = 14000
 
 
@@ -299,7 +299,27 @@ while 1 do begin
                readu,IMUNIT,image
                tag='lytfull'
                lytfull_count++
-            endif
+               ;;****** DISPLAY IMAGE ******
+               wset,LYTFULL
+               ;;create pixmap window
+               window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+               wset,wpixmap
+               ;;scale image
+               simage = image
+               greyrscale,simage,2L^14 - 1
+               imdisp,simage,/axis,/erase
+               ;;take snapshot
+               snap = TVRD()
+               ;;delete pixmap window
+               wdelete,wpixmap
+               ;;switch back to real window
+               wset,LYTFULL
+               ;;set color table
+               greyr
+               ;;display image
+               tv,snap
+               loadct,0
+           endif
             if pkthed.packet_type eq ACQFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
