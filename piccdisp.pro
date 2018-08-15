@@ -70,6 +70,8 @@ shkevent = {hed:pkthed, $
             boxsize:0UL,$
             hex_calmode:0UL,$
             alp_calmode:0UL,$
+            hex_calstep:0UL,$
+            alp_calstep:0UL,$
             xtilt:0d,$
             ytilt:0d,$
             kP_alp_cell:0d,$
@@ -84,9 +86,6 @@ shkevent = {hed:pkthed, $
             cells:replicate(shkcell_struct,SHK_NCELLS),$
             zernike_measured:dblarr(LOWFS_N_ZERNIKE),$
             zernike_target:dblarr(LOWFS_N_ZERNIKE),$
-            alp_zernike_delta:dblarr(LOWFS_N_ZERNIKE),$
-            hex_zernike_delta:dblarr(LOWFS_N_ZERNIKE),$
-            cal_step:long64(0),$
             hex:hex_struct,$
             alp:alp_struct,$
             wsp:wsp_struct}
