@@ -90,6 +90,18 @@ shkevent = {hed:pkthed, $
             alp:alp_struct,$
             wsp:wsp_struct}
 
+lytevent = {hed:pkthed, $
+            alp_calmode:0UL,$
+            alp_calstep:0UL,$
+            xtilt:0d,$
+            ytilt:0d,$
+            kP_alp_zern:0d,$
+            kI_alp_zern:0d,$
+            kD_alp_zern:0d,$
+            zernike_measured:dblarr(LOWFS_N_ZERNIKE),$
+            zernike_target:dblarr(LOWFS_N_ZERNIKE),$
+            alp:alp_struct}
+
 ;;**** end controller.h ****;;
 
 
@@ -113,7 +125,8 @@ acqfull_count = 0UL
 SHKZERN = 20UL
 LYTZERN = 21UL
 SHKDATA = 22UL
-WPIXMAP = 23UL
+LYTDATA = 23UL
+WPIXMAP = 24UL
 
 ;;Display
 charsize = 1.5
@@ -133,7 +146,8 @@ window,SCIFULL,xpos=blx+xsize+xbuf,ypos=bly,xsize=xsize,ysize=ysize,title='Scien
 window,SHKFULL,xpos=blx,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Shack-Hartmann Camera'
 window,LYTFULL,xpos=blx+xsize+xbuf,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Lyot LOWFS Camera'
 window,SHKZERN,xpos=0,ypos=0,xsize=400,ysize=400,title='Shack-Hartmann Zernikes'
-window,SHKDATA,xpos=0,ypos=600,xsize=400,ysize=400,title='Data'
+window,SHKDATA,xpos=0,ypos=600,xsize=400,ysize=400,title='Shack-Hartmann Data'
+window,LYTDATA,xpos=0,ypos=600,xsize=400,ysize=400,title='Lyot LOWFS Data'
 
 ;;Get states from flight code (states.h)
 states = getstates()
@@ -296,6 +310,9 @@ while 1 do begin
             if pkthed.packet_type eq LYTFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
+               readu,IMUNIT,lytevent
+               event_image = uintarr(lytevent.hed.imxsize,lytevent.hed.imysize)
+               readu,IMUNIT,event_image
                tag='lytfull'
                lytfull_count++
                ;;****** DISPLAY IMAGE ******
@@ -318,6 +335,39 @@ while 1 do begin
                ;;display image
                tv,snap
                loadct,0
+
+               
+               ;;****** DISPLAY DATA ******
+               if toff eq 0 then toff = pkthed.start_sec
+               wset,LYTDATA
+               ;;create pixmap window
+               window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+               wset,WPIXMAP
+                             
+               ;;Write data to data window
+               xyouts,dsx,dsy-ddy*dc++,'-------Lyot LOWFS-------',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/normal,charsize=charsize
+               st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
+               et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
+               dt = long((et-st)*1e6)
+               xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/normal,charsize=charsize
+               st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
+               et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
+               dt = long((et-st)*1e6)
+               xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+n2s(lytevent.alp_calmode),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'X-Tilt: '+n2s(lytevent.xtilt,format='(F10.2)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Y-Tilt: '+n2s(lytevent.ytilt,format='(F10.2)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(lytevent.kP_alp_zern,lytevent.kI_alp_zern,lytevent.kD_alp_zern,format='(3F10.3)'),/normal,charsize=charsize
+               ;;take snapshot
+               snap = TVRD()
+               ;;delete pixmap window
+               wdelete,WPIXMAP
+               ;;switch back to real window
+               wset,LYTDATA
+               tv,snap
            endif
             if pkthed.packet_type eq ACQFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
