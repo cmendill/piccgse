@@ -186,7 +186,8 @@ while 1 do begin
          ON_IOERROR, RESET_CONNECTION
           IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=1) GT 0 THEN BEGIN
             dc=0
-            toff=0L
+            shk_toff=0L
+            lyt_toff=0L
             readu,IMUNIT,pkthed
             if pkthed.packet_type eq SCIFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
@@ -260,21 +261,20 @@ while 1 do begin
                plot,shkevent.zernike_measured,/xs,psym=10,yrange=[-2.0,2.0]
                
                ;;write data to data window
-               if toff eq 0 then toff = pkthed.start_sec
+               if shk_toff eq 0 then shk_toff = pkthed.start_sec
                wset,SHKDATA
                ;;create pixmap window
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
-                             
                xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/normal,charsize=charsize
-               st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
-               et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
+               st = double(shkevent.hed.start_sec-shk_toff) + double(shkevent.hed.start_nsec)/1e9
+               et = double(shkevent.hed.end_sec-shk_toff) + double(shkevent.hed.end_nsec)/1e9
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/normal,charsize=charsize
-               st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
-               et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
+               st = double(pkthed.start_sec-shk_toff) + double(pkthed.start_nsec)/1e9
+               et = double(pkthed.end_sec-shk_toff) + double(pkthed.end_nsec)/1e9
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/normal,charsize=charsize
@@ -338,7 +338,7 @@ while 1 do begin
 
                
                ;;****** DISPLAY DATA ******
-               if toff eq 0 then toff = pkthed.start_sec
+               if lyt_toff eq 0 then lyt_toff = pkthed.start_sec
                wset,LYTDATA
                ;;create pixmap window
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
@@ -348,12 +348,12 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'-------Lyot LOWFS-------',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/normal,charsize=charsize
-               st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
-               et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
+               st = double(lytevent.hed.start_sec-lyt_toff) + double(lytevent.hed.start_nsec)/1e9
+               et = double(lytevent.hed.end_sec-lyt_toff)   + double(lytevent.hed.end_nsec)/1e9
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/normal,charsize=charsize
-               st = double(pkthed.start_sec-toff) + double(pkthed.start_nsec)/1e9
-               et = double(pkthed.end_sec-toff) + double(pkthed.end_nsec)/1e9
+               st = double(pkthed.start_sec-lyt_toff) + double(pkthed.start_nsec)/1e9
+               et = double(pkthed.end_sec-lyt_toff) + double(pkthed.end_nsec)/1e9
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/normal,charsize=charsize
