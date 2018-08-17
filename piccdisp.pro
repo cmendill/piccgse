@@ -311,8 +311,6 @@ while 1 do begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
                readu,IMUNIT,lytevent
-               event_image = uintarr(lytevent.hed.imxsize,lytevent.hed.imysize)
-               readu,IMUNIT,event_image
                tag='lytfull'
                lytfull_count++
                ;;****** DISPLAY IMAGE ******
