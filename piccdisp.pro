@@ -3,10 +3,11 @@ pro piccdisp,NOSAVE=NOSAVE,PLOT_CENTROIDS=PLOT_CENTROIDS
   
 ;;**** begin controller.h ****;;
 ;;Settings
-SHK_NCELLS = 256
-HEX_NAXES = 6
-ALP_NACT = 97
-LOWFS_N_ZERNIKE = 23
+header='../piccflight/src/controller.h'
+SHK_NCELLS = read_c_header(header,'SHK_NCELLS')
+HEX_NAXES  = read_c_header(header,'HEX_NAXES')
+ALP_NACT   = read_c_header(header,'ALP_NACT')
+LOWFS_N_ZERNIKE = read_c_header(header,'LOWFS_N_ZERNIKE')
 
 ;;Buffer IDs
 SCIEVENT = 0UL
@@ -311,6 +312,8 @@ while 1 do begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
                readu,IMUNIT,lytevent
+               event_image = uintarr(lytevent.hed.imxsize,lytevent.hed.imysize)
+               readu,IMUNIT,event_image
                tag='lytfull'
                lytfull_count++
                ;;****** DISPLAY IMAGE ******
