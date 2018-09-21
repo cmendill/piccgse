@@ -146,9 +146,10 @@ window,ACQFULL,xpos=blx,ypos=bly,xsize=xsize,ysize=ysize,title='Acquisition Came
 window,SCIFULL,xpos=blx+xsize+xbuf,ypos=bly,xsize=xsize,ysize=ysize,title='Science Camera'
 window,SHKFULL,xpos=blx,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Shack-Hartmann Camera'
 window,LYTFULL,xpos=blx+xsize+xbuf,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Lyot LOWFS Camera'
-window,SHKZERN,xpos=0,ypos=0,xsize=400,ysize=400,title='Shack-Hartmann Zernikes'
+window,SHKZERN,xpos=0,ypos=250,xsize=400,ysize=200,title='Shack-Hartmann Zernikes'
 window,SHKDATA,xpos=0,ypos=600,xsize=400,ysize=400,title='Shack-Hartmann Data'
 window,LYTDATA,xpos=0,ypos=600,xsize=400,ysize=400,title='Lyot LOWFS Data'
+window,LYTZERN,xpos=0,ypos=0,xsize=400,ysize=200,title='LLOWFS Zernikes'
 
 ;;Get states from flight code (states.h)
 states = getstates()
@@ -204,7 +205,7 @@ while 1 do begin
                simage = image
                greyrscale,simage,65535
                ;;display
-               imdisp,simage,/axis,title='SCI Temp: '+n2s(pkthed.temp,format='(F10.1)')+' C'
+               imdisp,simage,/noscale,/axis,title='SCI Temp: '+n2s(pkthed.temp,format='(F10.1)')+' C'
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
@@ -259,7 +260,7 @@ while 1 do begin
                loadct,0
                ;;display zernikes
                wset,SHKZERN
-               plot,shkevent.zernike_measured,/xs,psym=10,yrange=[-2.0,2.0]
+               plot,shkevent.zernike_measured,/xs,psym=10,yrange=[-2.0,2.0],xtitle='Zernike',ytitle='um RMS'
                
                ;;write data to data window
                if shk_toff eq 0 then shk_toff = pkthed.start_sec
@@ -323,8 +324,9 @@ while 1 do begin
                wset,wpixmap
                ;;scale image
                simage = image
-               greyrscale,simage,2L^14 - 1
-               imdisp,simage,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
+               greyrscale,simage,4092
+               ;;display image
+               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
@@ -336,8 +338,11 @@ while 1 do begin
                ;;display image
                tv,snap
                loadct,0
-
                
+               ;;****** DISPLAY DATA ******
+               wset,LYTZERN
+               plot,lytevent.zernike_measured*1000,/xs,psym=10,yrange=[-500,500],xtitle='Zernike',ytitle='nm RMS'
+              
                ;;****** DISPLAY DATA ******
                if lyt_toff eq 0 then lyt_toff = pkthed.start_sec
                wset,LYTDATA
@@ -362,6 +367,7 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'X-Tilt: '+n2s(lytevent.xtilt,format='(F10.2)'),/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Y-Tilt: '+n2s(lytevent.ytilt,format='(F10.2)'),/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(lytevent.kP_alp_zern,lytevent.kI_alp_zern,lytevent.kD_alp_zern,format='(3F10.3)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'LYT MAX Pixel: '+n2s(max(image)),/normal,charsize=charsize
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
@@ -383,7 +389,7 @@ while 1 do begin
                ;;scale image
                simage = image
                greyrscale,simage,2L^14 - 1
-               imdisp,simage,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
+               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
