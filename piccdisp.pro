@@ -8,6 +8,7 @@ SHK_NCELLS = read_c_header(header,'SHK_NCELLS')
 HEX_NAXES  = read_c_header(header,'HEX_NAXES')
 ALP_NACT   = read_c_header(header,'ALP_NACT')
 LOWFS_N_ZERNIKE = read_c_header(header,'LOWFS_N_ZERNIKE')
+LOWFS_N_PID     = read_c_header(header,'LOWFS_N_PID')
 
 ;;Buffer IDs
 SCIEVENT = 0UL
@@ -96,9 +97,7 @@ lytevent = {hed:pkthed, $
             alp_calstep:0UL,$
             xtilt:0d,$
             ytilt:0d,$
-            kP_alp_zern:0d,$
-            kI_alp_zern:0d,$
-            kD_alp_zern:0d,$
+            gain_alp_zern:dblarr(LOWFS_N_PID,LOWFS_N_ZERNIKE),$
             zernike_measured:dblarr(LOWFS_N_ZERNIKE),$
             zernike_target:dblarr(LOWFS_N_ZERNIKE),$
             alp:alp_struct}
@@ -366,7 +365,7 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+n2s(lytevent.alp_calmode),/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'X-Tilt: '+n2s(lytevent.xtilt,format='(F10.2)'),/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Y-Tilt: '+n2s(lytevent.ytilt,format='(F10.2)'),/normal,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(lytevent.kP_alp_zern,lytevent.kI_alp_zern,lytevent.kD_alp_zern,format='(3F10.3)'),/normal,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(lytevent.gain_alp_zern[0,0],lytevent.gain_alp_zern[1,0],lytevent.gain_alp_zern[2,0],format='(3F10.3)'),/normal,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'LYT MAX Pixel: '+n2s(max(image)),/normal,charsize=charsize
                ;;take snapshot
                snap = TVRD()
@@ -375,7 +374,7 @@ while 1 do begin
                ;;switch back to real window
                wset,LYTDATA
                tv,snap
-           endif
+            endif
             if pkthed.packet_type eq ACQFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
