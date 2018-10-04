@@ -360,22 +360,23 @@ while 1 do begin
                ;;****** DISPLAY ALP DM ******
                wset,ALPMAP
                ;;create pixmap window
-               ;window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-               ;wset,wpixmap
+               window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+               wset,wpixmap
                ;;fill out image
                alpimage[alpsel] = lytevent.alp.act_cmd
                ;;display image
-               implot,alpimage,blackout=alpnotsel,range=[-1,1],/erase,cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command'
+               implot,alpimage,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
+                      cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command'
                ;;take snapshot
-               ;snap = TVRD()
+               snap = TVRD()
                ;;delete pixmap window
-               ;wdelete,wpixmap
+               wdelete,wpixmap
                ;;switch back to real window
-               ;wset,ALPMAP
+               wset,ALPMAP
                ;;set color table
-               ;loadct,39
+               loadct,39
                ;;display image
-               ;tv,snap
+               tv,snap
                loadct,0
 
                ;;****** DISPLAY DATA ******
