@@ -9,6 +9,7 @@ HEX_NAXES  = read_c_header(header,'HEX_NAXES')
 ALP_NACT   = read_c_header(header,'ALP_NACT')
 LOWFS_N_ZERNIKE = read_c_header(header,'LOWFS_N_ZERNIKE')
 LOWFS_N_PID     = read_c_header(header,'LOWFS_N_PID')
+MAX_COMMAND     = read_c_header(header,'MAX_COMMAND')
 
 ;;Buffer IDs
 SCIEVENT = 0UL
@@ -31,11 +32,18 @@ pkthed   = {packet_type:0UL, $
             imysize:0UL,$
             mode:0UL,$
             state:0UL,$
-            dummy:0UL,$
+            hex_calmode:0UL,$
+            alp_calmode:0UL,$
+            bmc_calmode:0UL,$
+            state_name:bytarr(MAX_COMMAND),$
+            hex_calmode_name:bytarr(MAX_COMMAND),$
+            alp_calmode_name:bytarr(MAX_COMMAND),$
+            bmc_calmode_name:bytarr(MAX_COMMAND),$
             start_sec:long64(0),$
             start_nsec:long64(0),$
             end_sec:long64(0),$
             end_nsec:long64(0)}
+
 
 shkcell_struct = {index:0U,$
                   beam_select:0U,$
@@ -70,8 +78,6 @@ wsp_struct = {pitch_cmd:0d,$
 shkevent = {hed:pkthed, $
             beam_ncells:0UL,$
             boxsize:0UL,$
-            hex_calmode:0UL,$
-            alp_calmode:0UL,$
             hex_calstep:0UL,$
             alp_calstep:0UL,$
             xtilt:0d,$
@@ -93,8 +99,8 @@ shkevent = {hed:pkthed, $
             wsp:wsp_struct}
 
 lytevent = {hed:pkthed, $
-            alp_calmode:0UL,$
             alp_calstep:0UL,$
+            bmc_calstep:0UL,$
             xtilt:0d,$
             ytilt:0d,$
             gain_alp_act:dblarr(LOWFS_N_PID),$
@@ -168,15 +174,6 @@ mask = rebin(mask,alpsize,alpsize)
 alpsel = where(mask gt 0.005,complement=alpnotsel)
 alpsel = reverse(alpsel)
 alpimage = mask * 0d
-
-;;Get states from flight code
-states = getstates()
-
-;;Get ALP calmodes
-alp_calmodes = getalpcalmodes()
-
-;;Get HEX calmodes
-hex_calmodes = gethexcalmodes()
 
 ;;Check header size, these should be the same if there is no padding
 print,'Header Size: '+n2s(n_tags(pkthed,/length))
@@ -296,7 +293,7 @@ while 1 do begin
                dsx = 5
                dsy = !D.Y_SIZE - 14
                xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'State: '+string(pkthed.state_name),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/device,charsize=charsize
                st = double(shkevent.hed.start_sec-shk_toff) + double(shkevent.hed.start_nsec)/1e9
                et = double(shkevent.hed.end_sec-shk_toff) + double(shkevent.hed.end_nsec)/1e9
@@ -307,8 +304,8 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alp_calmodes[shkevent.alp_calmode],/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+hex_calmodes[shkevent.hex_calmode],/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+string(shkevent.hed.alp_calmode_name),/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+string(shkevent.hed.hex_calmode_name),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'SHK Boxsize: '+n2s(shkevent.boxsize),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'X-Tilt: '+n2s(shkevent.xtilt,format='(F10.2)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Y-Tilt: '+n2s(shkevent.ytilt,format='(F10.2)'),/device,charsize=charsize
@@ -403,7 +400,7 @@ while 1 do begin
                dsy = !D.Y_SIZE - 14 
                ;;Write data to data window
                xyouts,dsx,dsy-ddy*dc++,'-------Lyot LOWFS-------',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'State: '+string(pkthed.state_name),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/device,charsize=charsize
                st = double(lytevent.hed.start_sec-lyt_toff) + double(lytevent.hed.start_nsec)/1e9
                et = double(lytevent.hed.end_sec-lyt_toff)   + double(lytevent.hed.end_nsec)/1e9
@@ -414,7 +411,7 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alp_calmodes[lytevent.alp_calmode],/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+string(lytevent.hed.alp_calmode_name),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'X-Tilt: '+n2s(lytevent.xtilt,format='(F10.2)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Y-Tilt: '+n2s(lytevent.ytilt,format='(F10.2)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(lytevent.gain_alp_zern[0,0],lytevent.gain_alp_zern[1,0],lytevent.gain_alp_zern[2,0],format='(3F10.3)'),/device,charsize=charsize
