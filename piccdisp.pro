@@ -97,9 +97,11 @@ lytevent = {hed:pkthed, $
             alp_calstep:0UL,$
             xtilt:0d,$
             ytilt:0d,$
+            gain_alp_act:dblarr(LOWFS_N_PID),$
             gain_alp_zern:dblarr(LOWFS_N_PID,LOWFS_N_ZERNIKE),$
             zernike_measured:dblarr(LOWFS_N_ZERNIKE),$
             zernike_target:dblarr(LOWFS_N_ZERNIKE),$
+            alp_measured:dblarr(ALP_NACT),$
             alp:alp_struct}
 
 ;;**** end controller.h ****;;
@@ -146,10 +148,10 @@ window,SHKFULL,xpos=blx,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Shack
 window,LYTFULL,xpos=blx+xsize+xbuf,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Lyot LOWFS Camera'
 window,ALPMAP ,xpos=blx+(xsize+xbuf)*2,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='ALPAO DM Command'
 window,BMCMAP ,xpos=blx+(xsize+xbuf)*2,ypos=bly,xsize=xsize,ysize=ysize,title='BMC DM Command'
-window,SHKZERN,xpos=0,ypos=260,xsize=400,ysize=205,title='Shack-Hartmann Zernikes'
-window,LYTZERN,xpos=0,ypos=0,xsize=400,ysize=205,title='LLOWFS Zernikes'
 window,SHKDATA,xpos=0,ypos=1000,xsize=400,ysize=325,title='Shack-Hartmann Data'
-window,LYTDATA,xpos=0,ypos=493,xsize=400,ysize=180,title='Lyot LOWFS Data'
+window,LYTDATA,xpos=0,ypos=473,xsize=400,ysize=200,title='Lyot LOWFS Data'
+window,SHKZERN,xpos=0,ypos=250,xsize=400,ysize=195,title='Shack-Hartmann Zernikes'
+window,LYTZERN,xpos=0,ypos=0,xsize=400,ysize=195,title='LLOWFS Zernikes'
 
 ;;Text line spacing
 ddy=16 ;;pixels
@@ -416,6 +418,7 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'X-Tilt: '+n2s(lytevent.xtilt,format='(F10.2)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Y-Tilt: '+n2s(lytevent.ytilt,format='(F10.2)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(lytevent.gain_alp_zern[0,0],lytevent.gain_alp_zern[1,0],lytevent.gain_alp_zern[2,0],format='(3F10.3)'),/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP  Act PID: '+string(lytevent.gain_alp_act[0],lytevent.gain_alp_act[1],lytevent.gain_alp_act[2],format='(3F10.3)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'LYT MAX Pixel: '+n2s(max(image)),/device,charsize=charsize
                ;;take snapshot
                snap = TVRD()
