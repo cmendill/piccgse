@@ -1,10 +1,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; function getstates
-;;  - function to read states.h header file
+;;  - function to read states header file
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 function getstates
 line = ''
-header = '/home/cmendill/code/piccflight/src/controller.h'
+header = '../piccflight/src/controller.h'
 
 
 found_states = 0

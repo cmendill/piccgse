@@ -164,10 +164,17 @@ mask = rim*0
 mask[sel]=1
 mask = rebin(mask,alpsize,alpsize)
 alpsel = where(mask gt 0.005,complement=alpnotsel)
+alpsel = reverse(alpsel)
 alpimage = mask * 0d
 
-;;Get states from flight code (states.h)
+;;Get states from flight code
 states = getstates()
+
+;;Get ALP calmodes
+alp_calmodes = getalpcalmodes()
+
+;;Get HEX calmodes
+hex_calmodes = gethexcalmodes()
 
 ;;Check header size, these should be the same if there is no padding
 print,'Header Size: '+n2s(n_tags(pkthed,/length))
@@ -298,8 +305,8 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+n2s(shkevent.alp_calmode),/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+n2s(shkevent.hex_calmode),/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alp_calmodes[shkevent.alp_calmode],/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+hex_calmodes[shkevent.hex_calmode],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'SHK Boxsize: '+n2s(shkevent.boxsize),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'X-Tilt: '+n2s(shkevent.xtilt,format='(F10.2)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Y-Tilt: '+n2s(shkevent.ytilt,format='(F10.2)'),/device,charsize=charsize
@@ -405,7 +412,7 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+n2s(lytevent.alp_calmode),/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alp_calmodes[lytevent.alp_calmode],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'X-Tilt: '+n2s(lytevent.xtilt,format='(F10.2)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Y-Tilt: '+n2s(lytevent.ytilt,format='(F10.2)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(lytevent.gain_alp_zern[0,0],lytevent.gain_alp_zern[1,0],lytevent.gain_alp_zern[2,0],format='(3F10.3)'),/device,charsize=charsize
