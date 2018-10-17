@@ -1,4 +1,4 @@
-pro piccdisp,NOSAVE=NOSAVE,PLOT_CENTROIDS=PLOT_CENTROIDS
+pro piccdisp,NOSAVE=NOSAVE,PLOT_CENTROIDS=PLOT_CENTROIDS,NOBOX=NOBOX
   close,/all
   
 ;;**** begin controller.h ****;;
@@ -257,13 +257,13 @@ while 1 do begin
                for i=0,n_elements(shkevent.cells)-1 do begin
                   if(shkevent.cells[i].beam_select) then begin
                      ;;bottom
-                     oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].bly],color=253
+                     if NOT keyword_set(NOBOX) then oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].bly],color=253
                      ;;top
-                     oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].try,shkevent.cells[i].try],color=253
+                     if NOT keyword_set(NOBOX) then oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].try,shkevent.cells[i].try],color=253
                      ;;left
-                     oplot,[shkevent.cells[i].blx,shkevent.cells[i].blx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
+                     if NOT keyword_set(NOBOX) then oplot,[shkevent.cells[i].blx,shkevent.cells[i].blx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
                      ;;right
-                     oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
+                     if NOT keyword_set(NOBOX) then oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
                      ;;centroid
                      if keyword_set(plot_centroids) then if(shkevent.cells[i].spot_found) then oplot,[shkevent.cells[i].centroid[0]],[shkevent.cells[i].centroid[1]],color=254,psym=2
                   endif
