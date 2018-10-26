@@ -182,7 +182,6 @@ print,'Header Data Size: '+n2s(n_tags(pkthed,/data_length))
 
 ;;Create path
 if not keyword_set(NOSAVE) then begin
-
    path = 'data/picc_fullimages/piccdisp.'+gettimestamp('.')+'/'
    check_and_mkdir,path
 endif
@@ -215,17 +214,17 @@ while 1 do begin
             readu,IMUNIT,pkthed
             if pkthed.packet_type eq SCIFULL then begin
                tag='scifull'
-               scifull_count++
                wset,SCIFULL
                ;;create pixmap window
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                if SCI_NBANDS gt 1 then !P.Multi = [0, 3, 2]
+               image = uintarr(pkthed.imxsize,pkthed.imysize,SCI_NBANDS)
                for i=0,SCI_NBANDS-1 do begin
-                  image = uintarr(pkthed.imxsize,pkthed.imysize)
-                  readu,IMUNIT,image
+                  simage = uintarr(pkthed.imxsize,pkthed.imysize)
+                  readu,IMUNIT,simage
+                  image[*,*,i]=simage
                   wset,wpixmap
                   ;;scale image
-                  simage = image
                   greyrscale,simage,65535
                   ;;display
                   pcs = 1
@@ -244,6 +243,11 @@ while 1 do begin
                ;;display image
                tv,snap
                loadct,0
+               ;;save packet
+               if dosave then save,pkthed,image,$
+                                   filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(scifull_count,format='(I8.8)')+'.idl'
+               
+               scifull_count++
           endif
             if pkthed.packet_type eq SHKFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
@@ -346,7 +350,6 @@ while 1 do begin
                event_image = uintarr(lytevent.hed.imxsize,lytevent.hed.imysize)
                readu,IMUNIT,event_image
                tag='lytfull'
-               lytfull_count++
                ;;****** DISPLAY IMAGE ******
                wset,LYTFULL
                ;;create pixmap window
@@ -430,12 +433,16 @@ while 1 do begin
                ;;switch back to real window
                wset,LYTDATA
                tv,snap
-            endif
+               ;;save packet
+               if dosave then save,pkthed,image,lytevent,$
+                                   filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(lytfull_count,format='(I8.8)')+'.idl'
+               lytfull_count++
+
+             endif
             if pkthed.packet_type eq ACQFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
                tag='acqfull'
-               acqfull_count++
                ;;****** DISPLAY IMAGE ******
                wset,ACQFULL
                ;;create pixmap window
@@ -456,6 +463,10 @@ while 1 do begin
                ;;display image
                tv,snap
                loadct,0
+               ;;save packet
+               if dosave then save,pkthed,image,$
+                                   filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(acqfull_count,format='(I8.8)')+'.idl'
+               acqfull_count++
             endif
          endif else begin
             if n_elements(IMUNIT) gt 0 then begin
