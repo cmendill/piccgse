@@ -10,6 +10,7 @@ ALP_NACT   = read_c_header(header,'ALP_NACT')
 LOWFS_N_ZERNIKE = read_c_header(header,'LOWFS_N_ZERNIKE')
 LOWFS_N_PID     = read_c_header(header,'LOWFS_N_PID')
 MAX_COMMAND     = read_c_header(header,'MAX_COMMAND')
+SCI_NBANDS      = read_c_header(header,'SCI_NBANDS')
 
 ;;Buffer IDs
 SCIEVENT = 0UL
@@ -142,18 +143,18 @@ BMCMAP  = 26UL
 charsize = 1.5
 
 ;;Windows
-xsize=400
-ysize=400
+wxsize=400
+wysize=400
 blx = 405
 bly = 5
 xbuf = 5
 ybuf = 60
-window,ACQFULL,xpos=blx,ypos=bly,xsize=xsize,ysize=ysize,title='Acquisition Camera'
-window,SCIFULL,xpos=blx+xsize+xbuf,ypos=bly,xsize=xsize,ysize=ysize,title='Science Camera'
-window,SHKFULL,xpos=blx,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Shack-Hartmann Camera'
-window,LYTFULL,xpos=blx+xsize+xbuf,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='Lyot LOWFS Camera'
-window,ALPMAP ,xpos=blx+(xsize+xbuf)*2,ypos=bly+ysize+ybuf,xsize=xsize,ysize=ysize,title='ALPAO DM Command'
-window,BMCMAP ,xpos=blx+(xsize+xbuf)*2,ypos=bly,xsize=xsize,ysize=ysize,title='BMC DM Command'
+window,ACQFULL,xpos=blx,ypos=bly,xsize=wxsize,ysize=wysize,title='Acquisition Camera'
+window,SCIFULL,xpos=blx+wxsize+xbuf,ypos=bly,xsize=wxsize,ysize=wysize,title='Science Camera'
+window,SHKFULL,xpos=blx,ypos=bly+wysize+ybuf,xsize=wxsize,ysize=wysize,title='Shack-Hartmann Camera'
+window,LYTFULL,xpos=blx+wxsize+xbuf,ypos=bly+wysize+ybuf,xsize=wxsize,ysize=wysize,title='Lyot LOWFS Camera'
+window,ALPMAP ,xpos=blx+(wxsize+xbuf)*2,ypos=bly+wysize+ybuf,xsize=wxsize,ysize=wysize,title='ALPAO DM Command'
+window,BMCMAP ,xpos=blx+(wxsize+xbuf)*2,ypos=bly,xsize=wxsize,ysize=wysize,title='BMC DM Command'
 window,SHKDATA,xpos=0,ypos=1000,xsize=400,ysize=325,title='Shack-Hartmann Data'
 window,LYTDATA,xpos=0,ypos=473,xsize=400,ysize=200,title='Lyot LOWFS Data'
 window,SHKZERN,xpos=0,ypos=250,xsize=400,ysize=195,title='Shack-Hartmann Zernikes'
@@ -213,20 +214,25 @@ while 1 do begin
             lyt_toff=0L
             readu,IMUNIT,pkthed
             if pkthed.packet_type eq SCIFULL then begin
-               image = uintarr(pkthed.imxsize,pkthed.imysize)
-               readu,IMUNIT,image
                tag='scifull'
                scifull_count++
-               ;;****** DISPLAY IMAGE ******
                wset,SCIFULL
                ;;create pixmap window
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-               wset,wpixmap
-               ;;scale image
-               simage = image
-               greyrscale,simage,65535
-               ;;display
-               imdisp,simage,/noscale,/axis,title='SCI Temp: '+n2s(pkthed.temp,format='(F10.1)')+' C'
+               if SCI_NBANDS gt 1 then !P.Multi = [0, 3, 2]
+               for i=0,SCI_NBANDS-1 do begin
+                  image = uintarr(pkthed.imxsize,pkthed.imysize)
+                  readu,IMUNIT,image
+                  wset,wpixmap
+                  ;;scale image
+                  simage = image
+                  greyrscale,simage,65535
+                  ;;display
+                  pcs = 1
+                  if(!D.X_SIZE gt wxsize) then pcs = 0.7* double(!D.X_SIZE) / double(wxsize)
+                  imdisp,simage,/noscale,/axis,title='SCI Band '+n2s(i)+' Exp: '+n2s(pkthed.exptime,format='(F10.3)')+' Max: '+n2s(max(image)),charsize=pcs
+               endfor
+               !P.Multi = 0
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
