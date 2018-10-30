@@ -291,7 +291,10 @@ while 1 do begin
                loadct,0
                ;;display zernikes
                wset,SHKZERN
+               linecolor
                plot,shkevent.zernike_measured,/xs,psym=10,yrange=[-2.0,2.0],xtitle='Zernike',ytitle='um RMS'
+               oplot,[0,25],[0,0],color=1,linestyle=1
+               loadct,0
                
                ;;write data to data window
                if shk_toff eq 0 then shk_toff = pkthed.start_sec
@@ -356,7 +359,7 @@ while 1 do begin
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,wpixmap
                ;;scale image
-               simage = image
+               simage = event_image
                greyrscale,simage,4092
                ;;display image
                imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
@@ -396,7 +399,10 @@ while 1 do begin
 
                ;;****** DISPLAY DATA ******
                wset,LYTZERN
+               linecolor
                plot,lytevent.zernike_measured*1000,/xs,psym=10,yrange=[-500,500],xtitle='Zernike',ytitle='nm RMS'
+               oplot,[0,25],[0,0],color=1,linestyle=1
+               loadct,0
               
                ;;****** DISPLAY DATA ******
                if lyt_toff eq 0 then lyt_toff = pkthed.start_sec
