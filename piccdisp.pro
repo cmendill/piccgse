@@ -180,6 +180,11 @@ alpimage = mask * 0d
 print,'Header Size: '+n2s(n_tags(pkthed,/length))
 print,'Header Data Size: '+n2s(n_tags(pkthed,/data_length))
 
+;;Open console
+openr,tty,'/dev/tty',/get_lun
+
+
+
 ;;Create path
 if not keyword_set(NOSAVE) then begin
    path = 'data/picc_fullimages/piccdisp.'+gettimestamp('.')+'/'
@@ -190,8 +195,6 @@ endif
 dosave=1
 if keyword_set(NOSAVE) then dosave=0
 
-;;Open console
-openr,tty,'/dev/tty',/get_lun
 
 IMUNIT=0
 while 1 do begin
@@ -359,7 +362,7 @@ while 1 do begin
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,wpixmap
                ;;scale image
-               simage = event_image
+               simage = image
                greyrscale,simage,4092
                ;;display image
                imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
@@ -486,6 +489,13 @@ while 1 do begin
          cmdline = ''
          if(FILE_POLL_INPUT(tty,TIMEOUT=0.000001D)) then begin
             readf,tty,cmdline
+            if cmdline eq 'reset' then begin
+               ;;Create path
+               if not keyword_set(NOSAVE) then begin
+                  path = 'data/picc_fullimages/piccdisp.'+gettimestamp('.')+'/'
+                  check_and_mkdir,path
+               endif
+            endif
             if cmdline eq 'exit' or cmdline eq 'quit' then begin
                ;;clean up
                goto, cleanup
@@ -503,6 +513,13 @@ while 1 do begin
    cmdline = ''
    if(FILE_POLL_INPUT(tty,TIMEOUT=0.000001D)) then begin
       readf,tty,cmdline
+      if cmdline eq 'reset' then begin
+         ;;Create path
+         if not keyword_set(NOSAVE) then begin
+            path = 'data/picc_fullimages/piccdisp.'+gettimestamp('.')+'/'
+            check_and_mkdir,path
+         endif
+      endif
       if cmdline eq 'exit' or cmdline eq 'quit' then begin
          cleanup:
          ;;clean up
