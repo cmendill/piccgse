@@ -62,9 +62,10 @@ shkcell_struct = {index:0U,$
                   intensity:0d,$
                   background:0d,$
                   origin:dblarr(2),$
-                  cenbox_origin:dblarr(2),$
+                  target:dblarr(2),$
                   centroid:dblarr(2),$
-                  deviation:dblarr(2),$
+                  target_deviation:dblarr(2),$
+                  origin_deviation:dblarr(2),$
                   command:dblarr(2)}
 
 hex_struct = {axis_cmd:dblarr(HEX_NAXES),$
@@ -295,8 +296,9 @@ while 1 do begin
                ;;display zernikes
                wset,SHKZERN
                linecolor
-               plot,shkevent.zernike_measured,/xs,psym=10,yrange=[-2.0,2.0],xtitle='Zernike',ytitle='um RMS'
-               oplot,[0,25],[0,0],color=1,linestyle=1
+               plot,shkevent.zernike_measured,/xs,psym=10,yrange=[-2.0,2.0],xtitle='Zernike',ytitle='um RMS',/nodata
+               oplot,shkevent.zernike_target,psym=10,color=1,thick=3
+               oplot,shkevent.zernike_measured,psym=10,color=255
                loadct,0
                
                ;;write data to data window
@@ -403,8 +405,9 @@ while 1 do begin
                ;;****** DISPLAY DATA ******
                wset,LYTZERN
                linecolor
-               plot,lytevent.zernike_measured*1000,/xs,psym=10,yrange=[-500,500],xtitle='Zernike',ytitle='nm RMS'
-               oplot,[0,25],[0,0],color=1,linestyle=1
+               plot,lytevent.zernike_measured*1000,/xs,psym=10,yrange=[-500,500],xtitle='Zernike',ytitle='nm RMS',/nodata
+               oplot,lytevent.zernike_target*1000,psym=10,color=1,thick=3
+               oplot,lytevent.zernike_measured*1000,psym=10,color=255
                loadct,0
               
                ;;****** DISPLAY DATA ******
