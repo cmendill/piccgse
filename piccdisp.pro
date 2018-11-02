@@ -31,15 +31,20 @@ pkthed   = {packet_type:0UL, $
             temp:0.,$
             imxsize:0UL,$
             imysize:0UL,$
-            mode:0UL,$
             state:0UL,$
             hex_calmode:0UL,$
             alp_calmode:0UL,$
             bmc_calmode:0UL,$
+            tgt_calmode:0UL,$
+            hex_calstep:0UL,$
+            alp_calstep:0UL,$
+            bmc_calstep:0UL,$
+            tgt_calstep:0UL,$
             state_name:bytarr(MAX_COMMAND),$
             hex_calmode_name:bytarr(MAX_COMMAND),$
             alp_calmode_name:bytarr(MAX_COMMAND),$
             bmc_calmode_name:bytarr(MAX_COMMAND),$
+            tgt_calmode_name:bytarr(MAX_COMMAND),$
             start_sec:long64(0),$
             start_nsec:long64(0),$
             end_sec:long64(0),$
@@ -80,8 +85,6 @@ wsp_struct = {pitch_cmd:0d,$
 shkevent = {hed:pkthed, $
             beam_ncells:0UL,$
             boxsize:0UL,$
-            hex_calstep:0UL,$
-            alp_calstep:0UL,$
             xtilt:0d,$
             ytilt:0d,$
             kP_alp_cell:0d,$
@@ -101,8 +104,6 @@ shkevent = {hed:pkthed, $
             wsp:wsp_struct}
 
 lytevent = {hed:pkthed, $
-            alp_calstep:0UL,$
-            bmc_calstep:0UL,$
             xtilt:0d,$
             ytilt:0d,$
             gain_alp_act:dblarr(LOWFS_N_PID),$
