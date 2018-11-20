@@ -1,4 +1,4 @@
-pro piccdisp,NOSAVE=NOSAVE,PLOT_CENTROIDS=PLOT_CENTROIDS,NOBOX=NOBOX
+pro piccdisp,NOSAVE=NOSAVE,PLOT_CENTROIDS=PLOT_CENTROIDS,NOBOX=NOBOX,ZAUTOSCALE=ZAUTOSCALE
   close,/all
   
 ;;**** begin controller.h ****;;
@@ -11,6 +11,9 @@ LOWFS_N_ZERNIKE = read_c_header(header,'LOWFS_N_ZERNIKE')
 LOWFS_N_PID     = read_c_header(header,'LOWFS_N_PID')
 MAX_COMMAND     = read_c_header(header,'MAX_COMMAND')
 SCI_NBANDS      = read_c_header(header,'SCI_NBANDS')
+ADC1_NCHAN      = read_c_header(header,'ADC1_NCHAN')
+ADC2_NCHAN      = read_c_header(header,'ADC2_NCHAN')
+ADC3_NCHAN      = read_c_header(header,'ADC3_NCHAN')
 
 ;;Buffer IDs
 SCIEVENT = 0UL
@@ -21,6 +24,8 @@ LYTEVENT = 4UL
 LYTFULL  = 5UL
 ACQEVENT = 6UL
 ACQFULL  = 7UL
+THMEVENT = 8UL
+MTREVENT = 9UL
 
 
 ;;Image packet structure -- aligned on 8 byte boundary
@@ -113,6 +118,10 @@ lytevent = {hed:pkthed, $
             alp_measured:dblarr(ALP_NACT),$
             alp:alp_struct}
 
+thmdata = {adc1:fltarr(ADC1_NCHAN),$
+           adc2:fltarr(ADC2_NCHAN),$
+           adc3:fltarr(ADC3_NCHAN)}
+
 ;;**** end controller.h ****;;
 
 
@@ -127,6 +136,8 @@ scievent_count = 0UL
 shkevent_count = 0UL
 lytevent_count = 0UL
 acqevent_count = 0UL
+thmevent_count = 0UL
+mtrevent_count = 0UL
 scifull_count = 0UL
 shkfull_count = 0UL
 lytfull_count = 0UL
@@ -161,6 +172,7 @@ window,SHKDATA,xpos=0,ypos=1000,xsize=400,ysize=325,title='Shack-Hartmann Data'
 window,LYTDATA,xpos=0,ypos=473,xsize=400,ysize=200,title='Lyot LOWFS Data'
 window,SHKZERN,xpos=0,ypos=250,xsize=400,ysize=195,title='Shack-Hartmann Zernikes'
 window,LYTZERN,xpos=0,ypos=0,xsize=400,ysize=195,title='LLOWFS Zernikes'
+window,THMEVENT,xpos=0,ypos=0,xsize=500,ysize=600,title='Thermal Data'
 
 ;;Text line spacing
 ddy=16 ;;pixels
@@ -212,7 +224,7 @@ while 1 do begin
       while 1 do begin
          ;;install error handler
          ON_IOERROR, RESET_CONNECTION
-          IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=1) GT 0 THEN BEGIN
+          IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=5) GT 0 THEN BEGIN
             dc=0
             shk_toff=0L
             lyt_toff=0L
@@ -228,13 +240,22 @@ while 1 do begin
                   simage = uintarr(pkthed.imxsize,pkthed.imysize)
                   readu,IMUNIT,simage
                   image[*,*,i]=simage
+                  ;;do photometry
+                  m=max(simage,imax)
+                  xy=array_indices(simage,imax)
+                  bgr=mean(simage[10:50,10:50])
+                  xmin = xy[0]-3 > 0
+                  xmax = xy[0]+3 < n_elements(simage[*,0])-1
+                  ymin = xy[1]-3 > 0
+                  ymax = xy[1]+3 < n_elements(simage[0,*])-1
+                  avg=mean(double(simage[xmin:xmax,ymin:ymax]))-bgr
                   wset,wpixmap
                   ;;scale image
                   greyrscale,simage,65535
                   ;;display
                   pcs = 1
                   if(!D.X_SIZE gt wxsize) then pcs = 0.7* double(!D.X_SIZE) / double(wxsize)
-                  imdisp,simage,/noscale,/axis,title='SCI Band '+n2s(i)+' Exp: '+n2s(pkthed.exptime,format='(F10.3)')+' Max: '+n2s(max(image)),charsize=pcs
+                  imdisp,simage,/noscale,/axis,title='Band '+n2s(i)+' Exp: '+n2s(pkthed.exptime,format='(F10.3)')+' Max: '+n2s(max(image))+' Avg: '+n2s(avg,format='(I)'),charsize=pcs
                endfor
                !P.Multi = 0
                ;;take snapshot
@@ -297,7 +318,10 @@ while 1 do begin
                ;;display zernikes
                wset,SHKZERN
                linecolor
-               plot,shkevent.zernike_measured,/xs,psym=10,yrange=[-2.0,2.0],xtitle='Zernike',ytitle='um RMS',/nodata
+               yrange=[-2,2]
+               mm = max(abs(minmax(shkevent.zernike_measured)))*1.05 > 0.1
+               if keyword_set(ZAUTOSCALE) then yrange=[-mm,mm]
+               plot,shkevent.zernike_measured,/xs,psym=10,yrange=yrange,/ys,xtitle='Zernike',ytitle='um RMS',/nodata
                oplot,shkevent.zernike_target,psym=10,color=1,thick=3
                oplot,shkevent.zernike_measured,psym=10,color=255
                loadct,0
@@ -406,7 +430,10 @@ while 1 do begin
                ;;****** DISPLAY DATA ******
                wset,LYTZERN
                linecolor
-               plot,lytevent.zernike_measured*1000,/xs,psym=10,yrange=[-500,500],xtitle='Zernike',ytitle='nm RMS',/nodata
+               yrange=[-500,500]
+               mm=max(abs(minmax(lytevent.zernike_measured*1000)))*1.05 > 10
+               if keyword_set(ZAUTOSCALE) then yrange=[-mm,mm]
+               plot,lytevent.zernike_measured*1000,/xs,psym=10,yrange=yrange,/ys,xtitle='Zernike',ytitle='nm RMS',/nodata
                oplot,lytevent.zernike_target*1000,psym=10,color=1,thick=3
                oplot,lytevent.zernike_measured*1000,psym=10,color=255
                loadct,0
@@ -481,6 +508,43 @@ while 1 do begin
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(acqfull_count,format='(I8.8)')+'.idl'
                acqfull_count++
             endif
+            if pkthed.packet_type eq THMEVENT then begin
+               readu,IMUNIT,thmdata
+               wset,THMEVENT
+                ;;create pixmap window
+               window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+               wset,WPIXMAP
+               ;;set text origin
+               dsx = 5
+               dsy = !D.Y_SIZE - 14 
+               ;;Write data to data window
+               for i=0,ADC3_NCHAN-1 do begin
+                  if i lt ADC1_NCHAN then begin 
+                     xyouts,dsx,dsy-ddy*dc++,'ADC1['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc1[i],format='(F10.3)')+$
+                            '   ADC2['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc2[i],format='(F10.3)')+$
+                            '   ADC3['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc3[i],format='(F10.3)'),/device,charsize=charsize
+                  endif else begin
+                     xyouts,dsx,dsy-ddy*dc++,'                '+$
+                            '   ADC2['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc2[i],format='(F10.3)')+$
+                            '   ADC3['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc3[i],format='(F10.3)'),/device,charsize=charsize
+                  endelse
+               endfor
+               ;;take snapshot
+               snap = TVRD()
+               ;;delete pixmap window
+               wdelete,WPIXMAP
+               ;;switch back to real window
+               wset,THMEVENT
+               tv,snap
+               ;;save packet
+               if dosave then save,pkthed,thmdata,$
+                                   filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(thmevent_count,format='(I8.8)')+'.idl'
+              
+               thmevent_count++
+            endif
+            if pkthed.packet_type eq MTREVENT then begin
+               mtrevent_count++
+            endif
          endif else begin
             if n_elements(IMUNIT) gt 0 then begin
                if IMUNIT gt 0 then free_lun,IMUNIT
@@ -538,6 +602,7 @@ while 1 do begin
          print,'SHKFULL: '+n2s(shkfull_count)
          print,'LYTFULL: '+n2s(lytfull_count)
          print,'ACQFULL: '+n2s(acqfull_count)
+         print,'THMEVENT: '+n2s(thmevent_count)
          ;;exit
          stop
       endif
