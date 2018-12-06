@@ -14,6 +14,7 @@ SCI_NBANDS      = read_c_header(header,'SCI_NBANDS')
 ADC1_NCHAN      = read_c_header(header,'ADC1_NCHAN')
 ADC2_NCHAN      = read_c_header(header,'ADC2_NCHAN')
 ADC3_NCHAN      = read_c_header(header,'ADC3_NCHAN')
+MTR_NDOORS      = read_c_header(header,'MTR_NDOORS')
 
 ;;Buffer IDs
 SCIEVENT = 0UL
@@ -326,7 +327,30 @@ while 1 do begin
                oplot,shkevent.zernike_measured,psym=10,color=255
                loadct,0
                
-               ;;write data to data window
+               ;;****** DISPLAY ALP DM ******
+               wset,ALPMAP
+               ;;create pixmap window
+               window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+               wset,wpixmap
+               ;;fill out image
+               alpimage[alpsel] = shkevent.alp.act_cmd
+               ;;display image
+               implot,alpimage,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
+                      cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command'
+               ;;take snapshot
+               snap = TVRD()
+               ;;delete pixmap window
+               wdelete,wpixmap
+               ;;switch back to real window
+               wset,ALPMAP
+               ;;set color table
+               loadct,39
+               ;;display image
+               tv,snap
+               loadct,0
+
+               
+               ;;****** WRITE TO DATA WINDOW ******
                if shk_toff eq 0 then shk_toff = pkthed.start_sec
                wset,SHKDATA
                ;;create pixmap window
@@ -543,6 +567,8 @@ while 1 do begin
                thmevent_count++
             endif
             if pkthed.packet_type eq MTREVENT then begin
+               door_status = uintarr(MTR_NDOORS)
+               readu,IMUNIT,door_status
                mtrevent_count++
             endif
          endif else begin
@@ -603,6 +629,7 @@ while 1 do begin
          print,'LYTFULL: '+n2s(lytfull_count)
          print,'ACQFULL: '+n2s(acqfull_count)
          print,'THMEVENT: '+n2s(thmevent_count)
+         print,'MTREVENT: '+n2s(mtrevent_count)
          ;;exit
          stop
       endif
