@@ -1,9 +1,15 @@
+pro tmtest, mode
+
+  
 ;;Settings
 ntmtest       = 1024
 tmtestmax     = 65536UL
-cmd_senddata  = '22220001'XUL
 tmserver_addr = '192.168.0.13'
 tmserver_port = '14443'
+
+if mode eq 'picture_gdp' then cmd_senddata  = '11110001'XUL
+if mode eq 'picture_exp' then cmd_senddata  = '22220001'XUL
+
 
 ;;Create Socket connection
 PRINT, 'Attempting to create Socket connection Image Server to >'+tmserver_addr+'< on port '+n2s(tmserver_port)

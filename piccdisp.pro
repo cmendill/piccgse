@@ -15,6 +15,7 @@ ADC1_NCHAN      = read_c_header(header,'ADC1_NCHAN')
 ADC2_NCHAN      = read_c_header(header,'ADC2_NCHAN')
 ADC3_NCHAN      = read_c_header(header,'ADC3_NCHAN')
 MTR_NDOORS      = read_c_header(header,'MTR_NDOORS')
+SSR_NCHAN       = read_c_header(header,'SSR_NCHAN')
 
 ;;Buffer IDs
 SCIEVENT = 0UL
@@ -119,9 +120,11 @@ lytevent = {hed:pkthed, $
             alp_measured:dblarr(ALP_NACT),$
             alp:alp_struct}
 
-thmdata = {adc1:fltarr(ADC1_NCHAN),$
-           adc2:fltarr(ADC2_NCHAN),$
-           adc3:fltarr(ADC3_NCHAN)}
+thmdata = {adc1_temp:fltarr(ADC1_NCHAN),$
+           adc2_temp:fltarr(ADC2_NCHAN),$
+           adc3_temp:fltarr(ADC3_NCHAN),$
+           htr_power:bytarr(SSR_NCHAN),$
+           htr_override:bytarr(SSR_NCHAN)}
 
 ;;**** end controller.h ****;;
 
@@ -544,13 +547,17 @@ while 1 do begin
                ;;Write data to data window
                for i=0,ADC3_NCHAN-1 do begin
                   if i lt ADC1_NCHAN then begin 
-                     xyouts,dsx,dsy-ddy*dc++,'ADC1['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc1[i],format='(F10.3)')+$
-                            '   ADC2['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc2[i],format='(F10.3)')+$
-                            '   ADC3['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc3[i],format='(F10.3)'),/device,charsize=charsize
+                     xyouts,dsx,dsy-ddy*dc++,'ADC1['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc1_temp[i],format='(F+10.3)')+$
+                            '   ADC2['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc2_temp[i],format='(F+10.3)')+$
+                            '   ADC3['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc3_temp[i],format='(F+10.3)'),/device,charsize=charsize
                   endif else begin
-                     xyouts,dsx,dsy-ddy*dc++,'                '+$
-                            '   ADC2['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc2[i],format='(F10.3)')+$
-                            '   ADC3['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc3[i],format='(F10.3)'),/device,charsize=charsize
+                     pwr_str = 'HTR['+n2s(i-16,format='(I2.2)')+']: '+n2s(thmdata.htr_power[i-16],format='(I10)')+'%     '
+                     if thmdata.htr_override[i-16] then begin
+                        pwr_str = 'OVR['+n2s(i-16,format='(I2.2)')+']: '+n2s(thmdata.htr_power[i-16],format='(I10)')+'%     '
+                     endif
+                     xyouts,dsx,dsy-ddy*dc++,pwr_str+$
+                            '   ADC2['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc2_temp[i],format='(F+10.3)')+$
+                            '   ADC3['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc3_temp[i],format='(F+10.3)'),/device,charsize=charsize
                   endelse
                endfor
                ;;take snapshot
