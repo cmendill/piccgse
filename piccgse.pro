@@ -1413,6 +1413,12 @@ PRO piccgse, TMTEST=TMTEST, TMRECORD=TMRECORD, TMPRINT=TMPRINT
   tmtestmax = 65536UL
 
 ;*************************************************
+;* Path Setup
+;*************************************************
+  cd,current=working
+  !PATH = working+':'+!PATH
+  
+;*************************************************
 ;* TLM Parameters
 ;*************************************************
   framestr     = ['A','B','C','D']
@@ -1567,8 +1573,10 @@ PRO piccgse, TMTEST=TMTEST, TMRECORD=TMRECORD, TMPRINT=TMPRINT
 ;*************************************************
   if NOT (keyword_set(TMTEST) OR keyword_set(TMRECORD) OR keyword_set(TMPRINT)) then begin
      obridge_up=obj_new("IDL_IDLBridge",output='')
+     obridge_up->setvar,'!PATH',!PATH
      obridge_up->execute,'piccgse_uplink_console'
      obridge_dn=obj_new("IDL_IDLBridge",output='')
+     obridge_dn->setvar,'!PATH',!PATH
      obridge_dn->execute,'piccgse_downlink_console'
      print,'Console widget started'
   endif

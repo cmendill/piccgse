@@ -93,9 +93,7 @@ b[i++]={id:i,show:1,type1:'gse',type2:'plottype',name:'Y-Profile',cmd:'',tooltip
 b[i++]={id:i,show:1,type1:'gse',type2:'plottype',name:'I-Histogram',cmd:'',tooltip:'Display intensity histogram',igse:1,vgse:3}
 
 ;;Test States
-readheader,states=states
-states = states[10:n_elements(states)-1]
-states = states[sort(states)]
+states = getstates()
 for s=0,n_elements(states)-1 do begin
    b[i++]={id:i,show:1,type1:'states',type2:'',name:states[s],cmd:'state '+strlowcase(states[s]),tooltip:'Switch to STATE_'+states[s],igse:0,vgse:0}
 endfor
