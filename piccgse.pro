@@ -1413,11 +1413,10 @@ PRO piccgse, TMTEST=TMTEST, TMRECORD=TMRECORD, TMPRINT=TMPRINT
   tmtestmax = 65536UL
 
 ;*************************************************
-;* Path Setup
+;* Set Working Directory
 ;*************************************************
-  cd,current=working
-  !PATH = working+':'+!PATH
-  
+  cd,current=working_dir
+    
 ;*************************************************
 ;* TLM Parameters
 ;*************************************************
@@ -1572,13 +1571,23 @@ PRO piccgse, TMTEST=TMTEST, TMRECORD=TMRECORD, TMPRINT=TMPRINT
 ;* START CONSOLE WIDGET
 ;*************************************************
   if NOT (keyword_set(TMTEST) OR keyword_set(TMRECORD) OR keyword_set(TMPRINT)) then begin
+     ;;Create uplink console object
      obridge_up=obj_new("IDL_IDLBridge",output='')
+     ;;Set path
      obridge_up->setvar,'!PATH',!PATH
+     ;;CD to working directory
+     obridge_up->execute,"cd,'"+working_dir+"'"
+     ;;Launch console
      obridge_up->execute,'piccgse_uplink_console'
+     ;;Create downlink console object
      obridge_dn=obj_new("IDL_IDLBridge",output='')
+     ;;Set path
      obridge_dn->setvar,'!PATH',!PATH
+     ;;CD to working directory
+     obridge_dn->execute,"cd,'"+working_dir+"'"
+     ;;Launch console
      obridge_dn->execute,'piccgse_downlink_console'
-     print,'Console widget started'
+     print,'Up/Down Console widgets started'
   endif
 
 ;*************************************************
