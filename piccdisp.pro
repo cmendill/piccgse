@@ -18,20 +18,20 @@ MTR_NDOORS      = read_c_header(header,'MTR_NDOORS')
 SSR_NCHAN       = read_c_header(header,'SSR_NCHAN')
 
 ;;Buffer IDs
-SCIEVENT = 0UL
-SCIFULL  = 1UL
-SHKEVENT = 2UL
-SHKFULL  = 3UL
-LYTEVENT = 4UL
-LYTFULL  = 5UL
-ACQEVENT = 6UL
-ACQFULL  = 7UL
-THMEVENT = 8UL
-MTREVENT = 9UL
-
+SCIEVENT = 0U
+SCIFULL  = 1U
+SHKEVENT = 2U
+SHKFULL  = 3U
+LYTEVENT = 4U
+LYTFULL  = 5U
+ACQEVENT = 6U
+ACQFULL  = 7U
+THMEVENT = 8U
+MTREVENT = 9U
 
 ;;Image packet structure -- aligned on 8 byte boundary
-pkthed   = {packet_type:0UL, $
+pkthed   = {version:0U, $
+            type:0U, $
             frame_number:0UL, $
             exptime:0.,$
             ontime:0.,$
@@ -233,7 +233,7 @@ while 1 do begin
             shk_toff=0L
             lyt_toff=0L
             readu,IMUNIT,pkthed
-            if pkthed.packet_type eq SCIFULL then begin
+            if pkthed.type eq SCIFULL then begin
                tag='scifull'
                wset,SCIFULL
                ;;create pixmap window
@@ -279,7 +279,7 @@ while 1 do begin
                
                scifull_count++
           endif
-            if pkthed.packet_type eq SHKFULL then begin
+            if pkthed.type eq SHKFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
                readu,IMUNIT,shkevent
@@ -403,7 +403,7 @@ while 1 do begin
                
                shkfull_count++
             endif
-            if pkthed.packet_type eq LYTFULL then begin
+            if pkthed.type eq LYTFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
                readu,IMUNIT,lytevent
@@ -506,7 +506,7 @@ while 1 do begin
                lytfull_count++
 
              endif
-            if pkthed.packet_type eq ACQFULL then begin
+            if pkthed.type eq ACQFULL then begin
                image = uintarr(pkthed.imxsize,pkthed.imysize)
                readu,IMUNIT,image
                tag='acqfull'
@@ -535,7 +535,7 @@ while 1 do begin
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(acqfull_count,format='(I8.8)')+'.idl'
                acqfull_count++
             endif
-            if pkthed.packet_type eq THMEVENT then begin
+            if pkthed.type eq THMEVENT then begin
                readu,IMUNIT,thmdata
                wset,THMEVENT
                 ;;create pixmap window
@@ -546,18 +546,17 @@ while 1 do begin
                dsy = !D.Y_SIZE - 14 
                ;;Write data to data window
                for i=0,ADC3_NCHAN-1 do begin
-                  if i lt ADC1_NCHAN then begin 
-                     xyouts,dsx,dsy-ddy*dc++,'ADC1['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc1_temp[i],format='(F+10.3)')+$
-                            '   ADC2['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc2_temp[i],format='(F+10.3)')+$
-                            '   ADC3['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc3_temp[i],format='(F+10.3)'),/device,charsize=charsize
+                  if i lt ADC1_NCHAN then begin
+                     str=string('ADC1['+n2s(i,format='(I2.2)')+']: ',thmdata.adc1_temp[i],$
+                                'ADC2['+n2s(i,format='(I2.2)')+']: ',thmdata.adc2_temp[i],$
+                                'ADC3['+n2s(i,format='(I2.2)')+']: ',thmdata.adc3_temp[i],format='(A,F-+10.3,A,F-+10.3,A,F-+10.3)')
+                     xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
                   endif else begin
-                     pwr_str = 'HTR['+n2s(i-16,format='(I2.2)')+']: '+n2s(thmdata.htr_power[i-16],format='(I10)')+'%     '
-                     if thmdata.htr_override[i-16] then begin
-                        pwr_str = 'OVR['+n2s(i-16,format='(I2.2)')+']: '+n2s(thmdata.htr_power[i-16],format='(I10)')+'%     '
-                     endif
-                     xyouts,dsx,dsy-ddy*dc++,pwr_str+$
-                            '   ADC2['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc2_temp[i],format='(F+10.3)')+$
-                            '   ADC3['+n2s(i,format='(I2.2)')+']: '+n2s(thmdata.adc3_temp[i],format='(F+10.3)'),/device,charsize=charsize
+                     if thmdata.htr_override[i-16] then htr=' OVR' else htr=' HTR'
+                     str=string(htr+'['+n2s(i-16,format='(I2.2)')+']: ',thmdata.htr_power[i-16],$
+                                'ADC2['+n2s(i,format='(I2.2)')+']: ',thmdata.adc2_temp[i],$
+                                'ADC3['+n2s(i,format='(I2.2)')+']: ',thmdata.adc3_temp[i],format='(A,I-10,A,F-+10.3,A,F-+10.3)')
+                     xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
                   endelse
                endfor
                ;;take snapshot
@@ -573,7 +572,7 @@ while 1 do begin
               
                thmevent_count++
             endif
-            if pkthed.packet_type eq MTREVENT then begin
+            if pkthed.type eq MTREVENT then begin
                door_status = uintarr(MTR_NDOORS)
                readu,IMUNIT,door_status
                mtrevent_count++
