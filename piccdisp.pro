@@ -1,147 +1,35 @@
 pro piccdisp,NOSAVE=NOSAVE,PLOT_CENTROIDS=PLOT_CENTROIDS,NOBOX=NOBOX,ZAUTOSCALE=ZAUTOSCALE
   close,/all
   
-;;**** begin controller.h ****;;
 ;;Settings
 header='../piccflight/src/controller.h'
-SHK_NCELLS = read_c_header(header,'SHK_NCELLS')
-HEX_NAXES  = read_c_header(header,'HEX_NAXES')
-ALP_NACT   = read_c_header(header,'ALP_NACT')
-LOWFS_N_ZERNIKE = read_c_header(header,'LOWFS_N_ZERNIKE')
-LOWFS_N_PID     = read_c_header(header,'LOWFS_N_PID')
-MAX_COMMAND     = read_c_header(header,'MAX_COMMAND')
-SCI_NBANDS      = read_c_header(header,'SCI_NBANDS')
-ADC1_NCHAN      = read_c_header(header,'ADC1_NCHAN')
-ADC2_NCHAN      = read_c_header(header,'ADC2_NCHAN')
-ADC3_NCHAN      = read_c_header(header,'ADC3_NCHAN')
-MTR_NDOORS      = read_c_header(header,'MTR_NDOORS')
-SSR_NCHAN       = read_c_header(header,'SSR_NCHAN')
 
-;;Buffer IDs
-SCIEVENT = 0U
-SCIFULL  = 1U
-SHKEVENT = 2U
-SHKFULL  = 3U
-LYTEVENT = 4U
-LYTFULL  = 5U
-ACQEVENT = 6U
-ACQFULL  = 7U
-THMEVENT = 8U
-MTREVENT = 9U
+;;Buffer IDs -- 
+buffer_id = read_c_enum(header,bufids)
+for i=0, n_elements(buffer_id) do execute(buffer_id[i]+'='+n2s(i))
 
-;;Image packet structure -- aligned on 8 byte boundary
-pkthed   = {version:0U, $
-            type:0U, $
-            frame_number:0UL, $
-            exptime:0.,$
-            ontime:0.,$
-            temp:0.,$
-            imxsize:0UL,$
-            imysize:0UL,$
-            state:0UL,$
-            hex_calmode:0UL,$
-            alp_calmode:0UL,$
-            bmc_calmode:0UL,$
-            tgt_calmode:0UL,$
-            hex_calstep:0UL,$
-            alp_calstep:0UL,$
-            bmc_calstep:0UL,$
-            tgt_calstep:0UL,$
-            state_name:bytarr(MAX_COMMAND),$
-            hex_calmode_name:bytarr(MAX_COMMAND),$
-            alp_calmode_name:bytarr(MAX_COMMAND),$
-            bmc_calmode_name:bytarr(MAX_COMMAND),$
-            tgt_calmode_name:bytarr(MAX_COMMAND),$
-            start_sec:long64(0),$
-            start_nsec:long64(0),$
-            end_sec:long64(0),$
-            end_nsec:long64(0)}
+;;Build packet structures
+pkthed   = read_c_struct(header,'pkthed')
+shkfull  = read_c_struct(header,'shkfull')
+lytfull  = read_c_struct(header,'lytfull')
+scifull  = read_c_struct(header,'scifull')
+acqfull  = read_c_struct(header,'acqfull')
+thmevent = read_c_struct(header,'thmevent')
 
-
-shkcell_struct = {index:0U,$
-                  beam_select:0U,$
-                  spot_found:0U,$
-                  spot_captured:0U,$
-                  ;;--------------
-                  maxpix:0UL,$
-                  maxval:0UL,$
-                  ;;--------------
-                  blx:0U,$
-                  bly:0U,$
-                  trx:0U,$
-                  try:0U,$
-                  ;;--------------
-                  intensity:0d,$
-                  background:0d,$
-                  origin:dblarr(2),$
-                  target:dblarr(2),$
-                  centroid:dblarr(2),$
-                  target_deviation:dblarr(2),$
-                  origin_deviation:dblarr(2),$
-                  command:dblarr(2)}
-
-hex_struct = {axis_cmd:dblarr(HEX_NAXES),$
-              zernike_cmd:dblarr(LOWFS_N_ZERNIKE)}
-
-alp_struct = {act_cmd:dblarr(ALP_NACT),$
-              zernike_cmd:dblarr(LOWFS_N_ZERNIKE)}
-
-wsp_struct = {pitch_cmd:0d,$
-              yaw_cmd:0d}
-
-shkevent = {hed:pkthed, $
-            beam_ncells:0UL,$
-            boxsize:0UL,$
-            xtilt:0d,$
-            ytilt:0d,$
-            kP_alp_cell:0d,$
-            kI_alp_cell:0d,$
-            kD_alp_cell:0d,$
-            kP_alp_zern:0d,$
-            kI_alp_zern:0d,$
-            kD_alp_zern:0d,$
-            kP_hex_zern:0d,$
-            kI_hex_zern:0d,$
-            kD_hex_zern:0d,$
-            cells:replicate(shkcell_struct,SHK_NCELLS),$
-            zernike_measured:dblarr(LOWFS_N_ZERNIKE),$
-            zernike_target:dblarr(LOWFS_N_ZERNIKE),$
-            hex:hex_struct,$
-            alp:alp_struct,$
-            wsp:wsp_struct}
-
-lytevent = {hed:pkthed, $
-            xtilt:0d,$
-            ytilt:0d,$
-            gain_alp_act:dblarr(LOWFS_N_PID),$
-            gain_alp_zern:dblarr(LOWFS_N_PID,LOWFS_N_ZERNIKE),$
-            zernike_measured:dblarr(LOWFS_N_ZERNIKE),$
-            zernike_target:dblarr(LOWFS_N_ZERNIKE),$
-            alp_measured:dblarr(ALP_NACT),$
-            alp:alp_struct}
-
-thmdata = {adc1_temp:fltarr(ADC1_NCHAN),$
-           adc2_temp:fltarr(ADC2_NCHAN),$
-           adc3_temp:fltarr(ADC3_NCHAN),$
-           htr_power:bytarr(SSR_NCHAN),$
-           htr_override:bytarr(SSR_NCHAN)}
-
-;;**** end controller.h ****;;
-
+;;Remove headers from structures -- they are read seperately
+struct_delete_field,shkfull,'hed'
+struct_delete_field,lytfull,'hed'
+struct_delete_field,scifull,'hed'
+struct_delete_field,acqfull,'hed'
+struct_delete_field,thmevent,'hed'
 
 ;;Network
 CMD_SENDDATA = '0ABACABB'XUL
 imserver = 'picture'
 import   = 14000
 
-
 ;;Counters
-scievent_count = 0UL
-shkevent_count = 0UL
-lytevent_count = 0UL
-acqevent_count = 0UL
 thmevent_count = 0UL
-mtrevent_count = 0UL
 scifull_count = 0UL
 shkfull_count = 0UL
 lytfull_count = 0UL
@@ -201,9 +89,7 @@ print,'Header Data Size: '+n2s(n_tags(pkthed,/data_length))
 ;;Open console
 openr,tty,'/dev/tty',/get_lun
 
-
-
-;;Create path
+;;Create output path
 if not keyword_set(NOSAVE) then begin
    path = 'data/picc_fullimages/piccdisp.'+gettimestamp('.')+'/'
    check_and_mkdir,path
@@ -212,7 +98,6 @@ endif
 ;;File saving
 dosave=1
 if keyword_set(NOSAVE) then dosave=0
-
 
 IMUNIT=0
 while 1 do begin
@@ -234,32 +119,30 @@ while 1 do begin
             lyt_toff=0L
             readu,IMUNIT,pkthed
             if pkthed.type eq SCIFULL then begin
+               readu,IMUNIT,scifull
                tag='scifull'
                wset,SCIFULL
                ;;create pixmap window
                window,wpixmap,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-               if SCI_NBANDS gt 1 then !P.Multi = [0, 3, 2]
-               image = uintarr(pkthed.imxsize,pkthed.imysize,SCI_NBANDS)
-               for i=0,SCI_NBANDS-1 do begin
-                  simage = uintarr(pkthed.imxsize,pkthed.imysize)
-                  readu,IMUNIT,simage
-                  image[*,*,i]=simage
+               if n_elements(scifull.image) gt 1 then !P.Multi = [0, 3, 2]
+               for i=0,n_elements(scifull.image)-1 do begin
+                  image = reform(scifull.image[i])
                   ;;do photometry
-                  m=max(simage,imax)
-                  xy=array_indices(simage,imax)
-                  bgr=mean(simage[10:50,10:50])
+                  m=max(image,imax)
+                  xy=array_indices(image,imax)
+                  bgr=mean(image[10:50,10:50])
                   xmin = xy[0]-3 > 0
-                  xmax = xy[0]+3 < n_elements(simage[*,0])-1
+                  xmax = xy[0]+3 < n_elements(image[*,0])-1
                   ymin = xy[1]-3 > 0
-                  ymax = xy[1]+3 < n_elements(simage[0,*])-1
-                  avg=mean(double(simage[xmin:xmax,ymin:ymax]))-bgr
+                  ymax = xy[1]+3 < n_elements(image[0,*])-1
+                  avg=mean(double(image[xmin:xmax,ymin:ymax]))-bgr
                   wset,wpixmap
                   ;;scale image
-                  greyrscale,simage,65535
+                  greyrscale,image,65535
                   ;;display
                   pcs = 1
                   if(!D.X_SIZE gt wxsize) then pcs = 0.7* double(!D.X_SIZE) / double(wxsize)
-                  imdisp,simage,/noscale,/axis,title='Band '+n2s(i)+' Exp: '+n2s(pkthed.exptime,format='(F10.3)')+' Max: '+n2s(max(image))+' Avg: '+n2s(avg,format='(I)'),charsize=pcs
+                  imdisp,image,/noscale,/axis,title='Band '+n2s(i)+' Exp: '+n2s(pkthed.exptime,format='(F10.3)')+' Max: '+n2s(max(image))+' Avg: '+n2s(avg,format='(I)'),charsize=pcs
                endfor
                !P.Multi = 0
                ;;take snapshot
@@ -274,9 +157,7 @@ while 1 do begin
                tv,snap
                loadct,0
                ;;save packet
-               if dosave then save,pkthed,image,$
-                                   filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(scifull_count,format='(I8.8)')+'.idl'
-               
+               if dosave then save,pkthed,scifull,filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(scifull_count,format='(I8.8)')+'.idl'
                scifull_count++
           endif
             if pkthed.type eq SHKFULL then begin
