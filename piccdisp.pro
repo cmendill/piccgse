@@ -4,7 +4,7 @@ pro piccdisp,NOSAVE=NOSAVE,PLOT_CENTROIDS=PLOT_CENTROIDS,NOBOX=NOBOX,ZAUTOSCALE=
 ;;Flight Software Header File
 header='../piccflight/src/controller.h'
 
-;;Buffer IDs -- 
+;;Buffer IDs
 buffer_id = read_c_enum(header,'bufids')
 for i=0, n_elements(buffer_id)-1 do void=execute(buffer_id[i]+'='+n2s(i))
 
@@ -17,6 +17,15 @@ acqfull  = read_c_struct(header,'acqfull')
 thmevent = read_c_struct(header,'thmevent')
 mtrevent = read_c_struct(header,'mtrevent')
 
+;;Check for padding
+if check_padding(pkthed)   then stop,'pkthed contains padding'
+if check_padding(shkfull)  then stop,'shkfull contains padding'
+if check_padding(lytfull)  then stop,'lytfull contains padding'
+if check_padding(scifull)  then stop,'scifull contains padding'
+if check_padding(acqfull)  then stop,'acqfull contains padding'
+if check_padding(thmevent) then stop,'thmevent contains padding'
+if check_padding(mtrevent) then stop,'mtrevent contains padding'
+
 ;;Remove headers from structures -- they are read seperately
 struct_delete_field,shkfull,'hed'
 struct_delete_field,lytfull,'hed'
@@ -24,6 +33,18 @@ struct_delete_field,scifull,'hed'
 struct_delete_field,acqfull,'hed'
 struct_delete_field,thmevent,'hed'
 struct_delete_field,mtrevent,'hed'
+
+;;Get states & calmodes
+states = read_c_enum(header,'states')
+for i=0, n_elements(states)-1 do void=execute(states[i]+'='+n2s(i))
+alpcalmodes = read_c_enum(header,'alpcalmodes')
+for i=0, n_elements(calmodes)-1 do void=execute(alpcalmodes[i]+'='+n2s(i))
+hexcalmodes = read_c_enum(header,'hexcalmodes')
+for i=0, n_elements(calmodes)-1 do void=execute(hexcalmodes[i]+'='+n2s(i))
+tgtcalmodes = read_c_enum(header,'tgtcalmodes')
+for i=0, n_elements(calmodes)-1 do void=execute(tgtcalmodes[i]+'='+n2s(i))
+bmccalmodes = read_c_enum(header,'bmccalmodes')
+for i=0, n_elements(calmodes)-1 do void=execute(bmccalmodes[i]+'='+n2s(i))
 
 ;;Network
 CMD_SENDDATA = '0ABACABB'XUL
@@ -89,10 +110,6 @@ mask = rebin(mask,alpsize,alpsize)
 alpsel = where(mask gt 0.005,complement=alpnotsel)
 alpsel = reverse(alpsel)
 alpimage = mask * 0d
-
-;;Check header size, these should be the same if there is no padding
-print,'Header Size: '+n2s(n_tags(pkthed,/length))
-print,'Header Data Size: '+n2s(n_tags(pkthed,/data_length))
 
 ;;Open console
 openr,tty,'/dev/tty',/get_lun
@@ -194,7 +211,7 @@ while 1 do begin
                   ;;right
                   if NOT keyword_set(NOBOX) then oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
                   ;;centroid
-                  if keyword_set(plot_centroids) then if(shkevent.cells[i].spot_found) then begin
+                  if keyword_set(plot_centroids) AND shkevent.cells[i].spot_found then begin
                      xcentroid = shkevent.cells[i].xcentroid
                      ycentroid = shkevent.cells[i].ycentroid
                      oplot,[xcentroid],[ycentroid],color=254,psym=2
@@ -228,7 +245,7 @@ while 1 do begin
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
                ;;fill out image
-               alpimage[alpsel] = shkevent.alp_acmd[*,0]
+               alpimage[alpsel] = shkevent.alp.act_cmd
                ;;display image
                implot,alpimage,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
                       cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command'
@@ -255,7 +272,7 @@ while 1 do begin
                dsx = 5
                dsy = !D.Y_SIZE - 14
                xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'State: '+string(pkthed.state_name),/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/device,charsize=charsize
                st = double(shkevent.hed.start_sec-shk_toff) + double(shkevent.hed.start_nsec)/1e9
                et = double(shkevent.hed.end_sec-shk_toff) + double(shkevent.hed.end_nsec)/1e9
@@ -266,8 +283,8 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+string(shkevent.hed.alp_calmode_name),/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+string(shkevent.hed.hex_calmode_name),/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alpcalmodes[shkevent.hed.alp_calmode],/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+hexcalmodes[shkevent.hed.hex_calmode],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'SHK Boxsize: '+n2s(shkevent.boxsize),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Cell PID: '+string(shkevent.gain_alp_cell,format='(3F10.3)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(shkevent.gain_alp_zern,format='(3F10.3)'),/device,charsize=charsize
@@ -341,7 +358,7 @@ while 1 do begin
                dsy = !D.Y_SIZE - 14 
                ;;Write data to data window
                xyouts,dsx,dsy-ddy*dc++,'-------Lyot LOWFS-------',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'State: '+string(pkthed.state_name),/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/device,charsize=charsize
                st = double(lytevent.hed.start_sec-lyt_toff) + double(lytevent.hed.start_nsec)/1e9
                et = double(lytevent.hed.end_sec-lyt_toff)   + double(lytevent.hed.end_nsec)/1e9
@@ -352,7 +369,7 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+string(lytevent.hed.alp_calmode_name),/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alpcalmodes[lytevent.hed.alp_calmode],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(lytevent.gain_alp_zern[0,0],lytevent.gain_alp_zern[1,0],lytevent.gain_alp_zern[2,0],format='(3F10.3)'),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'LYT MAX Pixel: '+n2s(max(lytfull.image.data)),/device,charsize=charsize
                ;;take snapshot
