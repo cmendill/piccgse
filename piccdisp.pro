@@ -195,8 +195,8 @@ while 1 do begin
                   if NOT keyword_set(NOBOX) then oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
                   ;;centroid
                   if keyword_set(plot_centroids) then if(shkevent.cells[i].spot_found) then begin
-                     xcentroid = shkevent.cells[i].xtarget + shkevent.cells[i].xtarget_deviation[0]
-                     ycentroid = shkevent.cells[i].ytarget + shkevent.cells[i].ytarget_deviation[0]
+                     xcentroid = shkevent.cells[i].xcentroid
+                     ycentroid = shkevent.cells[i].ycentroid
                      oplot,[xcentroid],[ycentroid],color=254,psym=2
                   endif
                endfor
