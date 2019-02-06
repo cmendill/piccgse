@@ -202,14 +202,20 @@ while 1 do begin
                wset,WPIXMAP
                imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
                for i=0,n_elements(shkevent.cells)-1 do begin
-                  ;;bottom
-                  if NOT keyword_set(NOBOX) then oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].bly],color=253
-                  ;;top
-                  if NOT keyword_set(NOBOX) then oplot,[shkevent.cells[i].blx,shkevent.cells[i].trx],[shkevent.cells[i].try,shkevent.cells[i].try],color=253
-                  ;;left
-                  if NOT keyword_set(NOBOX) then oplot,[shkevent.cells[i].blx,shkevent.cells[i].blx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
-                  ;;right
-                  if NOT keyword_set(NOBOX) then oplot,[shkevent.cells[i].trx,shkevent.cells[i].trx],[shkevent.cells[i].bly,shkevent.cells[i].try],color=253
+                  if NOT keyword_set(NOBOX) then begin
+                     blx = floor(shkevent.cells[i].xtarget - shkevent.cells[i].boxsize)
+                     bly = floor(shkevent.cells[i].ytarget - shkevent.cells[i].boxsize)
+                     trx = floor(shkevent.cells[i].xtarget + shkevent.cells[i].boxsize)
+                     try = floor(shkevent.cells[i].ytarget + shkevent.cells[i].boxsize)
+                     ;;bottom
+                     oplot,[blx,trx],[bly,bly],color=253
+                     ;;top
+                     oplot,[blx,trx],[try,try],color=253
+                     ;;left
+                     oplot,[blx,blx],[bly,try],color=253
+                     ;;right
+                     oplot,[trx,trx],[bly,try],color=253
+                  endif
                   ;;centroid
                   if keyword_set(plot_centroids) AND shkevent.cells[i].spot_found then begin
                      xcentroid = shkevent.cells[i].xcentroid
@@ -245,7 +251,7 @@ while 1 do begin
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
                ;;fill out image
-               alpimage[alpsel] = shkevent.alp.act_cmd
+               alpimage[alpsel] = shkevent.alp.acmd
                ;;display image
                implot,alpimage,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
                       cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command'
