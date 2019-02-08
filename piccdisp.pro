@@ -436,8 +436,8 @@ while 1 do begin
                                 'ADC3['+n2s(i,format='(I2.2)')+']: ',thmevent.adc3_temp[i],format='(A,F-+10.3,A,F-+10.3,A,F-+10.3)')
                      xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
                   endif else begin
-                     if thmevent.htr_override[i-16] then htr=' OVR' else htr=' HTR'
-                     str=string(htr+'['+n2s(i-16,format='(I2.2)')+']: ',thmevent.htr_power[i-16],$
+                     if thmevent.htr[i-16].override then htr=' OVR' else htr=' HTR'
+                     str=string(htr+'['+n2s(i-16,format='(I2.2)')+']: ',thmevent.htr[i-16].power,$
                                 'ADC2['+n2s(i,format='(I2.2)')+']: ',thmevent.adc2_temp[i],$
                                 'ADC3['+n2s(i,format='(I2.2)')+']: ',thmevent.adc3_temp[i],format='(A,I-10,A,F-+10.3,A,F-+10.3)')
                      xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
