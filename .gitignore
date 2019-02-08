@@ -1,2 +1,5 @@
 data
 *~
+buttondef.idl
+hkdb.idl
+shmdef.idl
