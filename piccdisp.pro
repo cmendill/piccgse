@@ -46,6 +46,9 @@ for i=0, n_elements(calmodes)-1 do void=execute(tgtcalmodes[i]+'='+n2s(i))
 bmccalmodes = read_c_enum(header,'bmccalmodes')
 for i=0, n_elements(calmodes)-1 do void=execute(bmccalmodes[i]+'='+n2s(i))
 
+;;Get #defines
+SHKBIN = read_c_define(header,"SHKBIN")
+
 ;;Network
 CMD_SENDDATA = '0ABACABB'XUL
 imserver = 'picture'
@@ -93,7 +96,7 @@ window,WSHKDATA,xpos=0,ypos=1000,xsize=400,ysize=325,title='Shack-Hartmann Data'
 window,WLYTDATA,xpos=0,ypos=473,xsize=400,ysize=200,title='Lyot LOWFS Data'
 window,WSHKZERN,xpos=0,ypos=250,xsize=400,ysize=195,title='Shack-Hartmann Zernikes'
 window,WLYTZERN,xpos=0,ypos=0,xsize=400,ysize=195,title='LLOWFS Zernikes'
-window,WTHMDATA,xpos=0,ypos=0,xsize=500,ysize=600,title='Thermal Data'
+window,WTHMDATA,xpos=0,ypos=0,xsize=600,ysize=530,title='Thermal Data'
 
 ;;Text line spacing
 ddy=16 ;;pixels
@@ -116,7 +119,7 @@ openr,tty,'/dev/tty',/get_lun
 
 ;;Create output path
 if not keyword_set(NOSAVE) then begin
-   path = 'data/picc_fullimages/piccdisp.'+gettimestamp('.')+'/'
+   path = 'data/piccdisp/piccdisp.'+gettimestamp('.')+'/'
    check_and_mkdir,path
 endif
 
@@ -203,10 +206,10 @@ while 1 do begin
                imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
                for i=0,n_elements(shkevent.cells)-1 do begin
                   if NOT keyword_set(NOBOX) then begin
-                     blx = floor(shkevent.cells[i].xtarget - shkevent.cells[i].boxsize)
-                     bly = floor(shkevent.cells[i].ytarget - shkevent.cells[i].boxsize)
-                     trx = floor(shkevent.cells[i].xtarget + shkevent.cells[i].boxsize)
-                     try = floor(shkevent.cells[i].ytarget + shkevent.cells[i].boxsize)
+                     blx = floor((shkevent.cells[i].xtarget - shkevent.cells[i].boxsize)/SHKBIN)
+                     bly = floor((shkevent.cells[i].ytarget - shkevent.cells[i].boxsize)/SHKBIN)
+                     trx = floor((shkevent.cells[i].xtarget + shkevent.cells[i].boxsize)/SHKBIN)
+                     try = floor((shkevent.cells[i].ytarget + shkevent.cells[i].boxsize)/SHKBIN)
                      ;;bottom
                      oplot,[blx,trx],[bly,bly],color=253
                      ;;top
@@ -218,8 +221,8 @@ while 1 do begin
                   endif
                   ;;centroid
                   if keyword_set(plot_centroids) AND shkevent.cells[i].spot_found then begin
-                     xcentroid = shkevent.cells[i].xcentroid
-                     ycentroid = shkevent.cells[i].ycentroid
+                     xcentroid = shkevent.cells[i].xcentroid/SHKBIN
+                     ycentroid = shkevent.cells[i].ycentroid/SHKBIN
                      oplot,[xcentroid],[ycentroid],color=254,psym=2
                   endif
                endfor
@@ -420,6 +423,7 @@ while 1 do begin
                acqfull_count++
             endif
             if pkthed.type eq BUFFER_THMEVENT then begin
+               tag='thmevent'
                readu,IMUNIT,thmevent
                wset,WTHMDATA
                 ;;create pixmap window
@@ -430,18 +434,23 @@ while 1 do begin
                dsy = !D.Y_SIZE - 14 
                ;;Write data to data window
                for i=0,31 do begin
-                  if i lt 16 then begin
-                     str=string('ADC1['+n2s(i,format='(I2.2)')+']: ',thmevent.adc1_temp[i],$
-                                'ADC2['+n2s(i,format='(I2.2)')+']: ',thmevent.adc2_temp[i],$
-                                'ADC3['+n2s(i,format='(I2.2)')+']: ',thmevent.adc3_temp[i],format='(A,F-+10.3,A,F-+10.3,A,F-+10.3)')
-                     xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
-                  endif else begin
-                     if thmevent.htr[i-16].override then htr=' OVR' else htr=' HTR'
-                     str=string(htr+'['+n2s(i-16,format='(I2.2)')+']: ',thmevent.htr[i-16].power,$
-                                'ADC2['+n2s(i,format='(I2.2)')+']: ',thmevent.adc2_temp[i],$
-                                'ADC3['+n2s(i,format='(I2.2)')+']: ',thmevent.adc3_temp[i],format='(A,I-10,A,F-+10.3,A,F-+10.3)')
-                     xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
-                  endelse
+                  str=string('ADC1['+n2s(i<15,format='(I2.2)')+']: ',thmevent.adc1_temp[i<15],$
+                             'ADC2['+n2s(i,format='(I2.2)')+']: ',thmevent.adc2_temp[i],$
+                             'ADC3['+n2s(i,format='(I2.2)')+']: ',thmevent.adc3_temp[i],format='(A,F-+18.3,A,F-+13.3,A,F-+13.3)')
+                  xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
+               endfor
+               ;;blackout lower half of adc1
+               blackout = intarr(180,272)
+               tvscl,blackout,0,0
+               ;;Write heater data
+               dc-=16
+               for i=0,15 do begin
+                  if thmevent.htr[i].override then htr='OVR' else htr='HTR'
+                  if NOT thmevent.htr[i].enable then htr='DIS'
+                  str=string(htr+'['+n2s(i,format='(I2.2)')+']: ',thmevent.htr[i].power,' ',$
+                             thmevent.htr[i].temp,' ',$
+                             thmevent.htr[i].setpoint,format='(A,I4,A,F-+6.1,A,F-+6.1)')
+                  xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
                endfor
                ;;take snapshot
                snap = TVRD()
@@ -457,6 +466,7 @@ while 1 do begin
                thmevent_count++
             endif
             if pkthed.type eq BUFFER_MTREVENT then begin
+               tag='mtrevent'
                readu,IMUNIT,mtrevent
                ;;save packet
                if dosave then save,pkthed,mtrevent,$
