@@ -48,6 +48,8 @@ for i=0, n_elements(calmodes)-1 do void=execute(bmccalmodes[i]+'='+n2s(i))
 
 ;;Get #defines
 SHKBIN = read_c_define(header,"SHKBIN")
+LOWFS_N_ZERNIKE = read_c_define(header,"LOWFS_N_ZERNIKE")
+LOWFS_N_PID = read_c_define(header,"LOWFS_N_PID")
 
 ;;Network
 CMD_SENDDATA = '0ABACABB'XUL
@@ -296,9 +298,11 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+hexcalmodes[shkevent.hed.hex_calmode],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'SHK Boxsize: '+n2s(shkevent.boxsize),/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Cell PID: '+string(shkevent.gain_alp_cell,format='(3F10.3)'),/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(shkevent.gain_alp_zern,format='(3F10.3)'),/device,charsize=charsize
+               gain_alp_zern = reform(shkevent.gain_alp_zern,LOWFS_N_PID,LOWFS_N_ZERNIKE)
+               xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+$
+                      string(gain_alp_zern[0,0],gain_alp_zern[1,0],gain_alp_zern[2,0],format='(3F10.3)'),$
+                      /device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'HEX Zern PID: '+string(shkevent.gain_hex_zern,format='(3F10.3)'),/device,charsize=charsize
-
                xyouts,dsx,dsy-ddy*dc++,'MAX Max Pixel: '+n2s(long(max(shkevent.cells.maxval)))+' counts',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'AVG Max Pixel: '+n2s(long(mean(shkevent.cells.maxval)))+' counts',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'AVG Intensity: '+n2s(long(mean(shkevent.cells.intensity)))+' counts/cell',/device,charsize=charsize
@@ -379,7 +383,10 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alpcalmodes[lytevent.hed.alp_calmode],/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+string(lytevent.gain_alp_zern[0,0],lytevent.gain_alp_zern[1,0],lytevent.gain_alp_zern[2,0],format='(3F10.3)'),/device,charsize=charsize
+               gain_alp_zern = reform(shkevent.gain_alp_zern,LOWFS_N_PID,LOWFS_N_ZERNIKE)
+               xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+$
+                      string(gain_alp_zern[0,0],gain_alp_zern[1,0],gain_alp_zern[2,0],format='(3F10.3)'),$
+                      /device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'LYT MAX Pixel: '+n2s(max(lytfull.image.data)),/device,charsize=charsize
                ;;take snapshot
                snap = TVRD()
