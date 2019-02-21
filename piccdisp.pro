@@ -383,7 +383,7 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alpcalmodes[lytevent.hed.alp_calmode],/device,charsize=charsize
-               gain_alp_zern = reform(shkevent.gain_alp_zern,LOWFS_N_PID,LOWFS_N_ZERNIKE)
+               gain_alp_zern = reform(lytevent.gain_alp_zern,LOWFS_N_PID,LOWFS_N_ZERNIKE)
                xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+$
                       string(gain_alp_zern[0,0],gain_alp_zern[1,0],gain_alp_zern[2,0],format='(3F10.3)'),$
                       /device,charsize=charsize
