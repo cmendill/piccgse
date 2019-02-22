@@ -11,26 +11,26 @@ for i=0, n_elements(buffer_id)-1 do void=execute(buffer_id[i]+'='+n2s(i))
 ;;Build packet structures
 pkthed   = read_c_struct(header,'pkthed')
 shkfull  = read_c_struct(header,'shkfull')
-lytfull  = read_c_struct(header,'lytfull')
-scifull  = read_c_struct(header,'scifull')
 acqfull  = read_c_struct(header,'acqfull')
+lytevent = read_c_struct(header,'lytevent')
+scievent = read_c_struct(header,'scievent')
 thmevent = read_c_struct(header,'thmevent')
 mtrevent = read_c_struct(header,'mtrevent')
 
 ;;Check for padding
 if check_padding(pkthed)   then stop,'pkthed contains padding'
 if check_padding(shkfull)  then stop,'shkfull contains padding'
-if check_padding(lytfull)  then stop,'lytfull contains padding'
-if check_padding(scifull)  then stop,'scifull contains padding'
 if check_padding(acqfull)  then stop,'acqfull contains padding'
+if check_padding(lytevent) then stop,'lytevent contains padding'
+if check_padding(scievent) then stop,'scievent contains padding'
 if check_padding(thmevent) then stop,'thmevent contains padding'
 if check_padding(mtrevent) then stop,'mtrevent contains padding'
 
 ;;Remove headers from structures -- they are read seperately
 struct_delete_field,shkfull,'hed'
-struct_delete_field,lytfull,'hed'
-struct_delete_field,scifull,'hed'
 struct_delete_field,acqfull,'hed'
+struct_delete_field,lytevent,'hed'
+struct_delete_field,scievent,'hed'
 struct_delete_field,thmevent,'hed'
 struct_delete_field,mtrevent,'hed'
 
@@ -57,26 +57,26 @@ imserver = 'picture'
 import   = 14000
 
 ;;Counters
-scifull_count  = 0UL
 shkfull_count  = 0UL
-lytfull_count  = 0UL
 acqfull_count  = 0UL
+lytevent_count = 0UL
+scievent_count = 0UL
 thmevent_count = 0UL
 mtrevent_count = 0UL
 
 ;;Window IDs
-WACQFULL = 0UL
-WSCIFULL = 1UL
-WSHKFULL = 2UL
-WLYTFULL = 3UL
-WSHKZERN = 4UL
-WLYTZERN = 5UL
-WSHKDATA = 6UL
-WLYTDATA = 7UL
-WPIXMAP  = 8UL
-WALPMAP  = 9UL
-WBMCMAP  = 10UL
-WTHMDATA = 11UL
+WACQIMAGE = 0UL
+WSCIIMAGE = 1UL
+WSHKIMAGE = 2UL
+WLYTIMAGE = 3UL
+WSHKZERN  = 4UL
+WLYTZERN  = 5UL
+WSHKDATA  = 6UL
+WLYTDATA  = 7UL
+WPIXMAP   = 8UL
+WALPMAP   = 9UL
+WBMCMAP   = 10UL
+WTHMDATA  = 11UL
 
 ;;Display
 charsize = 1.5
@@ -88,10 +88,10 @@ blx = 405
 bly = 5
 xbuf = 5
 ybuf = 60
-window,WACQFULL,xpos=blx,ypos=bly,xsize=wxsize,ysize=wysize,title='Acquisition Camera'
-window,WSCIFULL,xpos=blx+wxsize+xbuf,ypos=bly,xsize=wxsize,ysize=wysize,title='Science Camera'
-window,WSHKFULL,xpos=blx,ypos=bly+wysize+ybuf,xsize=wxsize,ysize=wysize,title='Shack-Hartmann Camera'
-window,WLYTFULL,xpos=blx+wxsize+xbuf,ypos=bly+wysize+ybuf,xsize=wxsize,ysize=wysize,title='Lyot LOWFS Camera'
+window,WACQIMAGE,xpos=blx,ypos=bly,xsize=wxsize,ysize=wysize,title='Acquisition Camera'
+window,WSCIIMAGE,xpos=blx+wxsize+xbuf,ypos=bly,xsize=wxsize,ysize=wysize,title='Science Camera'
+window,WSHKIMAGE,xpos=blx,ypos=bly+wysize+ybuf,xsize=wxsize,ysize=wysize,title='Shack-Hartmann Camera'
+window,WLYTIMAGE,xpos=blx+wxsize+xbuf,ypos=bly+wysize+ybuf,xsize=wxsize,ysize=wysize,title='Lyot LOWFS Camera'
 window,WALPMAP ,xpos=blx+(wxsize+xbuf)*2,ypos=bly+wysize+ybuf,xsize=wxsize,ysize=wysize,title='ALPAO DM Command'
 window,WBMCMAP ,xpos=blx+(wxsize+xbuf)*2,ypos=bly,xsize=wxsize,ysize=wysize,title='BMC DM Command'
 window,WSHKDATA,xpos=0,ypos=1000,xsize=400,ysize=325,title='Shack-Hartmann Data'
@@ -148,16 +148,16 @@ while 1 do begin
             shk_toff=0L
             lyt_toff=0L
             readu,IMUNIT,pkthed
-            if pkthed.type eq BUFFER_SCIFULL then begin
-               readu,IMUNIT,scifull
-               tag='scifull'
-               wset,WSCIFULL
+            if pkthed.type eq BUFFER_SCIEVENT then begin
+               readu,IMUNIT,scievent
+               tag='scievent'
+               wset,WSCIIMAGE
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-               if n_elements(scifull.image) gt 1 then !P.Multi = [0, 3, 2]
-               for i=0,n_elements(scifull.image)-1 do begin
-                  image  = reform(scifull.image[i].data)
-                  simage = reform(scifull.image[i].data)
+               if n_elements(scievent.image) gt 1 then !P.Multi = [0, 3, 2]
+               for i=0,n_elements(scievent.image)-1 do begin
+                  image  = reform(scievent.image[i].data)
+                  simage = reform(scievent.image[i].data)
                   ;;do photometry
                   m=max(simage,imax)
                   xy=array_indices(simage,imax)
@@ -181,15 +181,15 @@ while 1 do begin
                ;;delete pixmap window
                wdelete,WPIXMAP
                ;;switch back to real window
-               wset,WSCIFULL
+               wset,WSCIIMAGE
                ;;set color table
                greyr
                ;;display image
                tv,snap
                loadct,0
                ;;save packet
-               if dosave then save,pkthed,scifull,filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(scifull_count,format='(I8.8)')+'.idl'
-               scifull_count++
+               if dosave then save,pkthed,scievent,filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(scievent_count,format='(I8.8)')+'.idl'
+               scievent_count++
           endif
             if pkthed.type eq BUFFER_SHKFULL then begin
                readu,IMUNIT,shkfull
@@ -201,7 +201,7 @@ while 1 do begin
                greyrscale,simage,4092
                
                ;;****** DISPLAY IMAGE ******
-               wset,WSHKFULL
+               wset,WSHKIMAGE
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
@@ -233,7 +233,7 @@ while 1 do begin
                ;;delete pixmap window
                wdelete,WPIXMAP
                ;;switch back to real window
-               wset,WSHKFULL
+               wset,WSHKIMAGE
                ;;set color table
                greyr
                ;;display image
@@ -322,18 +322,17 @@ while 1 do begin
                
                shkfull_count++
             endif
-            if pkthed.type eq BUFFER_LYTFULL then begin
-               readu,IMUNIT,lytfull
-               tag='lytfull'
-               lytevent = lytfull.lytevent
-               
+            if pkthed.type eq BUFFER_LYTEVENT then begin
+               readu,IMUNIT,lytevent
+               tag='lytevent'
+                            
                ;;****** DISPLAY IMAGE ******
-               wset,WLYTFULL
+               wset,WLYTIMAGE
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
                ;;scale image
-               simage = lytfull.image.data
+               simage = lytevent.image.data
                greyrscale,simage,4092
                ;;display image
                imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
@@ -342,7 +341,7 @@ while 1 do begin
                ;;delete pixmap window
                wdelete,WPIXMAP
                ;;switch back to real window
-               wset,WLYTFULL
+               wset,WLYTIMAGE
                ;;set color table
                greyr
                ;;display image
@@ -373,21 +372,17 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'-------Lyot LOWFS-------',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/device,charsize=charsize
-               st = double(lytevent.hed.start_sec-lyt_toff) + double(lytevent.hed.start_nsec)/1e9
-               et = double(lytevent.hed.end_sec-lyt_toff)   + double(lytevent.hed.end_nsec)/1e9
+               st = double(pkthed.start_sec-lyt_toff) + double(pkthed.start_nsec)/1e9
+               et = double(pkthed.end_sec-lyt_toff)   + double(pkthed.end_nsec)/1e9
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/device,charsize=charsize
-               st = double(pkthed.start_sec-lyt_toff) + double(pkthed.start_nsec)/1e9
-               et = double(pkthed.end_sec-lyt_toff) + double(pkthed.end_nsec)/1e9
-               dt = long((et-st)*1e6)
-               xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alpcalmodes[lytevent.hed.alp_calmode],/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alpcalmodes[pkthed.alp_calmode],/device,charsize=charsize
                gain_alp_zern = reform(lytevent.gain_alp_zern,LOWFS_N_PID,LOWFS_N_ZERNIKE)
                xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+$
                       string(gain_alp_zern[0,0],gain_alp_zern[1,0],gain_alp_zern[2,0],format='(3F10.3)'),$
                       /device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'LYT MAX Pixel: '+n2s(max(lytfull.image.data)),/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'LYT MAX Pixel: '+n2s(max(lytevent.image.data)),/device,charsize=charsize
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
@@ -396,16 +391,16 @@ while 1 do begin
                wset,WLYTDATA
                tv,snap
                ;;save packet
-               if dosave then save,pkthed,lytfull,$
-                                   filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(lytfull_count,format='(I8.8)')+'.idl'
-               lytfull_count++
+               if dosave then save,pkthed,lytevent,$
+                                   filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(lytevent_count,format='(I8.8)')+'.idl'
+               lytevent_count++
 
              endif
             if pkthed.type eq BUFFER_ACQFULL then begin
                readu,IMUNIT,acqfull
                tag='acqfull'
                ;;****** DISPLAY IMAGE ******
-               wset,WACQFULL
+               wset,WACQIMAGE
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
@@ -418,7 +413,7 @@ while 1 do begin
                ;;delete pixmap window
                wdelete,WPIXMAP
                ;;switch back to real window
-               wset,WACQFULL
+               wset,WACQIMAGE
                ;;set color table
                greyr
                ;;display image
@@ -496,7 +491,7 @@ while 1 do begin
             if cmdline eq 'reset' then begin
                ;;Create path
                if not keyword_set(NOSAVE) then begin
-                  path = 'data/picc_fullimages/piccdisp.'+gettimestamp('.')+'/'
+                  path = 'data/piccdisp/piccdisp.'+gettimestamp('.')+'/'
                   check_and_mkdir,path
                endif
             endif
@@ -520,7 +515,7 @@ while 1 do begin
       if cmdline eq 'reset' then begin
          ;;Create path
          if not keyword_set(NOSAVE) then begin
-            path = 'data/picc_fullimages/piccdisp.'+gettimestamp('.')+'/'
+            path = 'data/piccdisp/piccdisp.'+gettimestamp('.')+'/'
             check_and_mkdir,path
          endif
       endif
@@ -534,10 +529,10 @@ while 1 do begin
          while !D.WINDOW ne -1 do wdelete
          ;;print status
          print,'**********Packets received**********'
-         print,'SCIFULL: '+n2s(scifull_count)
          print,'SHKFULL: '+n2s(shkfull_count)
-         print,'LYTFULL: '+n2s(lytfull_count)
          print,'ACQFULL: '+n2s(acqfull_count)
+         print,'LYTEVENT: '+n2s(lytevent_count)
+         print,'SCIEVENT: '+n2s(scievent_count)
          print,'THMEVENT: '+n2s(thmevent_count)
          print,'MTREVENT: '+n2s(mtrevent_count)
          ;;exit
