@@ -307,7 +307,7 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'AVG Max Pixel: '+n2s(long(mean(shkevent.cells.maxval)))+' counts',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'AVG Intensity: '+n2s(long(mean(shkevent.cells.intensity)))+' counts/cell',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'MAX Intensity: '+n2s(long(max(shkevent.cells.intensity)))+' counts/cell',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'BKG Intensity: '+n2s(long(mean(shkevent.cells.background)))+' counts/px',/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'BKG Intensity: '+n2s(mean(shkevent.cells.background),format='(F10.2)')+' counts/px',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'TOT Intensity: '+n2s(long(total(shkevent.cells.intensity)),format='(E10.3)')+' counts',/device,charsize=charsize
                ;;take snapshot
                snap = TVRD()
