@@ -205,7 +205,7 @@ while 1 do begin
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
-               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
+               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'+' CCD: '+n2s(shkevent.ccd_temp,format='(F10.1)')+' C'
                for i=0,n_elements(shkevent.cells)-1 do begin
                   if NOT keyword_set(NOBOX) then begin
                      blx = floor((shkevent.cells[i].xtarget - shkevent.cells[i].boxsize)/SHKBIN)
@@ -294,6 +294,7 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'CCD Temp: '+n2s(shkevent.ccd_temp,format='(F10.3)')+' C',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alpcalmodes[shkevent.hed.alp_calmode],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+hexcalmodes[shkevent.hed.hex_calmode],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'SHK Boxsize: '+n2s(shkevent.boxsize),/device,charsize=charsize
@@ -335,7 +336,7 @@ while 1 do begin
                simage = lytevent.image.data
                greyrscale,simage,4092
                ;;display image
-               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
+               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'+' CCD: '+n2s(lytevent.ccd_temp,format='(F10.1)')+' C'
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
@@ -377,6 +378,7 @@ while 1 do begin
                dt = long((et-st)*1e6)
                xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'CCD Temp: '+n2s(lytevent.ccd_temp,format='(F10.3)')+' C',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alpcalmodes[pkthed.alp_calmode],/device,charsize=charsize
                gain_alp_zern = reform(lytevent.gain_alp_zern,LOWFS_N_PID,LOWFS_N_ZERNIKE)
                xyouts,dsx,dsy-ddy*dc++,'ALP Zern PID: '+$
