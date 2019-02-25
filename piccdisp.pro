@@ -449,11 +449,9 @@ while 1 do begin
                ;;Write heater data
                dc-=16
                for i=0,15 do begin
-                  if thmevent.htr[i].override then htr='OVR' else htr='HTR'
-                  if NOT thmevent.htr[i].enable then htr='DIS'
-                  str=string(htr+'['+n2s(i,format='(I2.2)')+']: ',thmevent.htr[i].power,' ',$
+                  str=string(string(thmevent.htr[i].name)+'['+n2s(i,format='(I2.2)')+']: ',thmevent.htr[i].power,' ',$
                              thmevent.htr[i].temp,' ',$
-                             thmevent.htr[i].setpoint,format='(A,I4,A,F-+6.1,A,F-+6.1)')
+                             thmevent.htr[i].setpoint,format='(A,I-4,A,F-+6.1,A,F-+6.1)')
                   xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
                endfor
                ;;take snapshot
