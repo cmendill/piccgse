@@ -125,6 +125,12 @@ if not keyword_set(NOSAVE) then begin
    check_and_mkdir,path
 endif
 
+;;Load temperature sensor database
+t = load_tempdb()
+adc1 = t[where(t.adc eq 1)]
+adc2 = t[where(t.adc eq 2)]
+adc3 = t[where(t.adc eq 3)]
+
 ;;File saving
 dosave=1
 if keyword_set(NOSAVE) then dosave=0
@@ -438,9 +444,9 @@ while 1 do begin
                dsy = !D.Y_SIZE - 14 
                ;;Write data to data window
                for i=0,31 do begin
-                  str=string('ADC1['+n2s(i<15,format='(I2.2)')+']: ',thmevent.adc1_temp[i<15],$
-                             'ADC2['+n2s(i,format='(I2.2)')+']: ',thmevent.adc2_temp[i],$
-                             'ADC3['+n2s(i,format='(I2.2)')+']: ',thmevent.adc3_temp[i],format='(A,F-+18.3,A,F-+13.3,A,F-+13.3)')
+                  str=string(adc1[i<15].abbr+': ',thmevent.adc1_temp[i<15],$
+                             adc2[i].abbr+': ',thmevent.adc2_temp[i],$
+                             adc3[i].abbr+': ',thmevent.adc3_temp[i],format='(A,F-+25.3,A,F-+13.3,A,F-+13.3)')
                   xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
                endfor
                ;;blackout lower half of adc1
