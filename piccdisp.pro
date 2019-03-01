@@ -442,12 +442,24 @@ while 1 do begin
                ;;set text origin
                dsx = 5
                dsy = !D.Y_SIZE - 14 
+               red=1
+               green=2
+               blue=3
                ;;Write data to data window
                for i=0,31 do begin
-                  str=string(adc1[i<15].abbr+': ',thmevent.adc1_temp[i<15],$
-                             adc2[i].abbr+': ',thmevent.adc2_temp[i],$
-                             adc3[i].abbr+': ',thmevent.adc3_temp[i],format='(A,F-+25.3,A,F-+13.3,A,F-+13.3)')
-                  xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
+                  color = green
+                  if thmevent.adc1_temp[i<15] lt adc1[i<15].min then color = blue
+                  if thmevent.adc1_temp[i<15] gt adc1[i<15].max then color = red
+                  xyouts,dsx,dsy-ddy*dc,string(adc1[i<15].abbr+': ',thmevent.adc1_temp[i<15],format='(A,F-+25.3)'),/device,charsize=charsize,color=color
+                  color = green
+                  if thmevent.adc2_temp[i] lt adc2[i].min then color = blue
+                  if thmevent.adc2_temp[i] gt adc2[i].max then color = red
+                  xyouts,dsx,dsy-ddy*dc,string(adc2[i].abbr+': ',thmevent.adc2_temp[i],format='(T35,A,F-+15.3)'),/device,charsize=charsize,color=color
+                  color = green
+                  if thmevent.adc3_temp[i] lt adc3[i].min then color = blue
+                  if thmevent.adc3_temp[i] gt adc3[i].max then color = red
+                  xyouts,dsx,dsy-ddy*dc,string(adc3[i].abbr+': ',thmevent.adc3_temp[i],format='(T55,A,F-+15.3)'),/device,charsize=charsize,color=color
+                  dc++
                endfor
                ;;blackout lower half of adc1
                blackout = intarr(180,272)
@@ -458,7 +470,7 @@ while 1 do begin
                   str=string(string(thmevent.htr[i].name)+'['+n2s(i,format='(I2.2)')+']: ',thmevent.htr[i].power,' ',$
                              thmevent.htr[i].temp,' ',$
                              thmevent.htr[i].setpoint,format='(A,I-4,A,F-+6.1,A,F-+6.1)')
-                  xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize
+                  xyouts,dsx,dsy-ddy*dc++,str,/device,charsize=charsize,color=255
                endfor
                ;;take snapshot
                snap = TVRD()
@@ -466,7 +478,9 @@ while 1 do begin
                wdelete,WPIXMAP
                ;;switch back to real window
                wset,WTHMDATA
+               linecolor
                tv,snap
+               loadct,0
                ;;save packet
                if dosave then save,pkthed,thmevent,$
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(thmevent_count,format='(I8.8)')+'.idl'
