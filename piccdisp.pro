@@ -450,6 +450,7 @@ while 1 do begin
                   color = green
                   if thmevent.adc1_temp[i<15] lt adc1[i<15].min then color = blue
                   if thmevent.adc1_temp[i<15] gt adc1[i<15].max then color = red
+                  if (i mod 2 eq 1) OR i gt 8 then color = 255
                   xyouts,dsx,dsy-ddy*dc,string(adc1[i<15].abbr+': ',thmevent.adc1_temp[i<15],format='(A,F-+25.3)'),/device,charsize=charsize,color=color
                   color = green
                   if thmevent.adc2_temp[i] lt adc2[i].min then color = blue
