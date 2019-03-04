@@ -2,7 +2,7 @@
 ;; pro piccgse_loadConfig
 ;;  - procedure to load config file
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-pro piccgse_loadConfig, path, set  
+pro piccgse_loadConfig, path  
   common piccgse_block, set
   
   ;;Open the config file
@@ -11,9 +11,10 @@ pro piccgse_loadConfig, path, set
   ;;Read config file
   line = ''
   for i=0L,file_lines(path)-1 do begin
-
      ;;Read line
      readf, unit, line
+     ;;Check for comment
+     if strmid(line,0,1) eq '#' then continue
      ;;Parse line
      pieces = strsplit(strcompress(line), ' ',/extract)
      if n_elements(pieces) ge 2 then begin
@@ -33,6 +34,7 @@ pro piccgse_loadConfig, path, set
            'TMSERVER_IDLFILE': set.tmserver_idlfile  = value
 
            ;;SHK Window
+           'SHK_SHOW'        : set.w[set.wshk].show  = value
            'SHK_NAME'        : set.w[set.wshk].name  = value
            'SHK_XSIZE'       : set.w[set.wshk].xsize = value
            'SHK_YSIZE'       : set.w[set.wshk].ysize = value
@@ -41,6 +43,7 @@ pro piccgse_loadConfig, path, set
            'SHK_FONT'        : set.w[set.wshk].font  = value
            
            ;;LYT Window
+           'LYT_SHOW'        : set.w[set.wlyt].show  = value
            'LYT_NAME'        : set.w[set.wlyt].name  = value
            'LYT_XSIZE'       : set.w[set.wlyt].xsize = value
            'LYT_YSIZE'       : set.w[set.wlyt].ysize = value
@@ -49,6 +52,7 @@ pro piccgse_loadConfig, path, set
            'LYT_FONT'        : set.w[set.wlyt].font  = value
            
            ;;ALP Window
+           'ALP_SHOW'        : set.w[set.walp].show  = value
            'ALP_NAME'        : set.w[set.walp].name  = value
            'ALP_XSIZE'       : set.w[set.walp].xsize = value
            'ALP_YSIZE'       : set.w[set.walp].ysize = value
@@ -57,6 +61,7 @@ pro piccgse_loadConfig, path, set
            'ALP_FONT'        : set.w[set.walp].font  = value
            
            ;;BMC Window
+           'BMC_SHOW'        : set.w[set.wbmc].show  = value
            'BMC_NAME'        : set.w[set.wbmc].name  = value
            'BMC_XSIZE'       : set.w[set.wbmc].xsize = value
            'BMC_YSIZE'       : set.w[set.wbmc].ysize = value
@@ -65,6 +70,7 @@ pro piccgse_loadConfig, path, set
            'BMC_FONT'        : set.w[set.wbmc].font  = value
            
            ;;ACQ Window
+           'ACQ_SHOW'        : set.w[set.wacq].show  = value
            'ACQ_NAME'        : set.w[set.wacq].name  = value
            'ACQ_XSIZE'       : set.w[set.wacq].xsize = value
            'ACQ_YSIZE'       : set.w[set.wacq].ysize = value
@@ -73,6 +79,7 @@ pro piccgse_loadConfig, path, set
            'ACQ_FONT'        : set.w[set.wacq].font  = value
            
            ;;SCI Window
+           'SCI_SHOW'        : set.w[set.wsci].show  = value
            'SCI_NAME'        : set.w[set.wsci].name  = value
            'SCI_XSIZE'       : set.w[set.wsci].xsize = value
            'SCI_YSIZE'       : set.w[set.wsci].ysize = value
@@ -81,6 +88,7 @@ pro piccgse_loadConfig, path, set
            'SCI_FONT'        : set.w[set.wsci].font  = value
            
            ;;ZER Window
+           'ZER_SHOW'        : set.w[set.wzer].show  = value
            'ZER_NAME'        : set.w[set.wzer].name  = value
            'ZER_XSIZE'       : set.w[set.wzer].xsize = value
            'ZER_YSIZE'       : set.w[set.wzer].ysize = value
@@ -89,22 +97,22 @@ pro piccgse_loadConfig, path, set
            'ZER_FONT'        : set.w[set.wzer].font  = value
            
            ;;THM Window
+           'THM_SHOW'        : set.w[set.wthm].show  = value
            'THM_NAME'        : set.w[set.wthm].name  = value
            'THM_XSIZE'       : set.w[set.wthm].xsize = value
            'THM_YSIZE'       : set.w[set.wthm].ysize = value
            'THM_XPOS'        : set.w[set.wthm].xpos  = value
            'THM_YPOS'        : set.w[set.wthm].ypos  = value
            'THM_FONT'        : set.w[set.wthm].font  = value
-           
- 
-           else : stop,'ERROR (piccgse_loadConfig): Tag '+tag+' not found'
+
+           else: ;;do nothing
         endcase
      endif
   endfor
   
 
   ;;Close the config file
-  free_lun,cunit
+  free_lun,unit
   
 end
 
@@ -139,8 +147,8 @@ end
 pro piccgse_createWindows
   common piccgse_block, set
   for i=0, n_elements(set.w)-1 do begin
-     if set.w[i].show then WINDOW, set.w[i].index, XSIZE=set.w[i].xsize, YSIZE=set.w[i].ysize,$
-                                   XPOS=set.w[i].xpos, YPOS=set.w[i].ypos, TITLE=set.w[i]name,RETAIN=2
+     if set.w[i].show then window, set.w[i].index, XSIZE=set.w[i].xsize, YSIZE=set.w[i].ysize,$
+                                   XPOS=set.w[i].xpos, YPOS=set.w[i].ypos, TITLE=set.w[i].name, RETAIN=2
   endfor
 end
 
@@ -529,16 +537,16 @@ pro piccgse, NOSAVE=NOSAVE
                  shm_var[SHM_DATA] = 0
               endif
            endelse
+        endif else begin
+           ;;if not connected, reconnect
+           TMUNIT = piccgse_tmConnect()
+           if TMUNIT GT 0 then begin 
+              tm_connected = 1 
+              tm_last_connected = systime(1)
+              tm_last_data      = systime(1)
+           endif else wait,1
         endelse
-     endif else begin
-        ;;if not connected, reconnect
-        TMUNIT = piccgse_tmConnect()
-        if TMUNIT GT 0 then begin 
-           tm_connected = 1 
-           tm_last_connected = systime(1)
-           tm_last_data      = systime(1)
-        endif else wait,1
-     endelse
+     endif
      
      ;;----------------------------------------------------------
      ;; Check config file
@@ -592,9 +600,6 @@ pro piccgse, NOSAVE=NOSAVE
            print,'Exiting IDL'
            exit
         endif
-        
-        ;;plot type
-        set.plottype=shm_var[SHM_PTYPE]
         
         ;;reset
         if shm_var[SHM_RESET] then begin

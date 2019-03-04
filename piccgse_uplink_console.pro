@@ -1,13 +1,11 @@
 pro command_event, ev
   common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
-  common command_block, SHM_SIZE, SHM_TIMESTAMP
-  if n_elements(SHM_SIZE) eq 0 then restore,'shmdef.idl'
-  
+  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP
   ;;command line event
   widget_control,ev.id,GET_VALUE=val
   
   ;;send command
-  printf,serfd,val
+  if serfd ge 0 then printf,serfd,val
   
   ;;print command to screen
   ts=gettimestamp('.')
@@ -32,8 +30,7 @@ end
 
 pro serial_command_buttons_event, ev
   common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
-  common serial_command_block, SHM_SIZE, SHM_TIMESTAMP
-  if n_elements(SHM_SIZE) eq 0 then restore,'shmdef.idl'
+  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP
  
   ;;get command
   widget_control,ev.id,GET_UVALUE=uval
@@ -52,7 +49,7 @@ pro serial_command_buttons_event, ev
      cmd = buttondb[sel].cmd
      
      ;;send command
-     printf,serfd,cmd
+     if serfd ge 0 then printf,serfd,cmd
      
      ;;print command to screen
      ts=gettimestamp('.')
@@ -76,8 +73,7 @@ end
 
 pro gse_command_buttons_event, ev 
   common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
-  common gse_command_block, SHM_SIZE, SHM_CMD
-  if n_elements(SHM_SIZE) eq 0 then restore,'shmdef.idl'
+  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP
 
   event_type = TAG_NAMES(ev, /STRUCTURE_NAME) 
 
@@ -113,8 +109,8 @@ end
 
 pro gsepath_event, ev
   common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
-  common gsepath_block, path, SHM_SIZE, SHM_TIMESTAMP
-  if n_elements(SHM_SIZE) eq 0 then restore,'shmdef.idl'
+  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP
+  common gsepath_block, path
  
   temp='piccgse.'+strcompress(string(shm_var[SHM_TIMESTAMP:n_elements(shm_var)-1]),/REMOVE_ALL)
   if n_elements(path) eq 0 then begin
@@ -131,8 +127,7 @@ end
 
 pro connstat_event, ev
   common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
-  common connstat_block, SHM_SIZE, SHM_LINK, SHM_DATA
-  if n_elements(SHM_SIZE) eq 0 then restore,'shmdef.idl'
+  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP
 
   ;;get light bitmaps
   red_light = read_bmp('bmp/red.bmp',/rgb)
@@ -150,27 +145,26 @@ end
 
 pro piccgse_uplink_console
   common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP
 
-  ;;move to the correct working directory, starts in /home/cmendill
-  CD,'/home/cmendill/code/piccgse/',current=old_dir
-
-  
   ;;restore shared memory definitions
   restore,'shmdef.idl'
   
-  
-  ;;restore button commands
-  restore,'buttondef.idl'
+  ;;load buttons
+  buttondb = load_buttondb()
   
   ;;setup serial port
   spawn,'./serial/serial_setup'
 
   ;;open serial connection
-  dev = '/dev/ttyUSB0'
-  openw,serfd,dev,/get_lun
+  dev = '/dev/ttyUSB1'
+  openw,serfd,dev,/get_lun,error=error
+  if error ne 0 then begin
+     print,'ERROR (piccgse_uplink_console): Could not open '+dev
+     serfd = -1
+  endif
   
   ;;setup shared memory
-  shm_size = 128
   shmmap, 'shm', /byte, shm_size
   shm_var = shmvar('shm')
   print,'Shared memory mapped'
@@ -199,9 +193,8 @@ pro piccgse_uplink_console
   cmd_label = widget_label(sub2,value='Command Line:',/align_left)
   cmd_text  = widget_text(sub2,xsize=size,ysize=1,/editable)
   xmanager,'command',sub2,/no_block
-  
-  
- ;;Camera flight buttons
+    
+  ;;Camera flight buttons
   camflt  = widget_base(base,/column,/align_center)
   camflt_sub1 = widget_base(camflt,/row,/align_center)
   camflt_sub2 = widget_base(camflt,column=1,/frame,/align_center)
@@ -217,7 +210,6 @@ pro piccgse_uplink_console
   ;;install event handler
   xmanager,'serial_command_buttons',camflt_sub2,/no_block
 
-
   ;;Status icons
   red_light   = read_bmp('bmp/red.bmp',/rgb)
   red_light   = transpose(red_light,[1,2,0])
@@ -229,61 +221,30 @@ pro piccgse_uplink_console
   data_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light,/align_center)
   ;;install event handler
   xmanager,'connstat',connstat,/no_block
-
-
-
-  ;;FPS flight buttons
-  fpsflt  = widget_base(base,/column)
-  fpsflt_sub1 = widget_base(fpsflt,/row)
-  fpsflt_sub2 = widget_base(fpsflt,column=3,/frame)
-  button_label = widget_label(fpsflt_sub1,value='FPS Commands',/align_left)
-  ;;--make buttons
-  sel = where(buttondb.type1 eq 'fps_flight' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
-  if nsel gt 0 then begin
-     buttons = buttondb[sel]
-     for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(fpsflt_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
-     endfor
-  endif
-  ;;install event handler
-  xmanager,'serial_command_buttons',fpsflt_sub2,/no_block
   
   ;;GSE path display
-  fpsflt_sub3 = widget_base(fpsflt,/row)
-  gsepath_label = widget_label(fpsflt_sub3,value='GSE Path: ',/align_left)
-  gsepath_text = widget_text(fpsflt_sub3,xsize=22,ysize=1)
+  gsepath = widget_base(base,/row)
+  gsepath_label = widget_label(gsepath,value='GSE Path: ',/align_left)
+  gsepath_text = widget_text(gsepath,xsize=22,ysize=1)
   ;;install event handler
   xmanager,'gsepath',gsepath_text,/no_block
 
-
-
-  ;;nuller flight buttons
-  nullflt  = widget_base(base,/column)
-  nullflt_sub1 = widget_base(nullflt,/row)
-  nullflt_sub2 = widget_base(nullflt,column=3,/frame)
-  button_label = widget_label(nullflt_sub1,value='Nuller Commands',/align_left)
-  ;;--make buttons
-  sel = where(buttondb.type1 eq 'nuller_flight' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
-  if nsel gt 0 then begin
-     buttons = buttondb[sel]
-     for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(nullflt_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
-     endfor
-  endif
+  ;;LYT commands
+  lyt = widget_base(base,/column)
   ;;--make arrow buttons
-  nullflt_sub3 = widget_base(nullflt,/row)
-  button_label = widget_label(nullflt_sub3,value='WFS Window: ',/align_left)
-  sel = where(buttondb.type1 eq 'nuller_flight' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
+  lyt_sub1 = widget_base(lyt,/row)
+  button_label = widget_label(lyt_sub1,value='LYT Offset: ',/align_left)
+  sel = where(buttondb.type1 eq 'lyt' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
      buttons = buttondb[sel]
      for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(nullflt_sub3, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
+        bid = WIDGET_BUTTON(lyt_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
      endfor
   endif
   ;;install event handler
-  xmanager,'serial_command_buttons',nullflt,/no_block
+  xmanager,'serial_command_buttons',lyt_sub1,/no_block
  
-   ;;GSE buttons
+  ;;GSE buttons
   gse  = widget_base(base,/column)
   gse_sub1 = widget_base(gse,/row)
   gse_sub2 = widget_base(gse,column=1,/frame)
@@ -304,20 +265,7 @@ pro piccgse_uplink_console
   endif
   xmanager,'gse_command_buttons',gse_sub2,/no_block
 
-  ;;STATES buttons
-  states  = gse;widget_base(base,/row)
-  states_sub1 = widget_base(states,/row)
-  states_sub2 = widget_base(states,column=1,/frame)
-  button_label = widget_label(states_sub1,value='Test States',/align_left)
-  ;;--make plottype dropdown
-  sel = where(buttondb.type1 eq 'states' and buttondb.show eq 1,nsel)
-  if nsel gt 0 then begin
-     buttons = buttondb[sel]
-     dropid=widget_list(states_sub2,VALUE=buttons.name,uvalue=buttons.id,SCR_YSIZE=105,SCR_XSIZE=120)
-  endif
-  xmanager,'serial_command_buttons',states_sub2,/no_block
-
-
+ 
   ;;create widgets
   widget_control,base,/realize
 
