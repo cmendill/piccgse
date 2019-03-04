@@ -173,9 +173,387 @@ end
 ;; pro piccgse_processData
 ;;  - procedure to process and plot data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-pro piccgse_processData, header, packet
+pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
- 
+  common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
+  common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, bmcimg, bmcsel, adc1, adc2, adc3
+
+  ;;Initialize common block
+  if n_elements(states) eq 0 then begin 
+     ;;Flight software header file
+     header='../piccflight/src/controller.h'
+     
+     ;;Get states & calmodes
+     states = read_c_enum(header,'states')
+     for i=0, n_elements(states)-1 do void=execute(states[i]+'='+n2s(i))
+     alpcalmodes = read_c_enum(header,'alpcalmodes')
+     for i=0, n_elements(calmodes)-1 do void=execute(alpcalmodes[i]+'='+n2s(i))
+     hexcalmodes = read_c_enum(header,'hexcalmodes')
+     for i=0, n_elements(calmodes)-1 do void=execute(hexcalmodes[i]+'='+n2s(i))
+     tgtcalmodes = read_c_enum(header,'tgtcalmodes')
+     for i=0, n_elements(calmodes)-1 do void=execute(tgtcalmodes[i]+'='+n2s(i))
+     bmccalmodes = read_c_enum(header,'bmccalmodes')
+     for i=0, n_elements(calmodes)-1 do void=execute(bmccalmodes[i]+'='+n2s(i))
+          
+     ;;Get #defines
+     SHKBIN = read_c_define(header,"SHKBIN")
+     SHKXS  = read_c_define(header,"SHKXS")
+     SHKYS  = read_c_define(header,"SHKYS")
+     LOWFS_N_ZERNIKE = read_c_define(header,"LOWFS_N_ZERNIKE")
+     LOWFS_N_PID = read_c_define(header,"LOWFS_N_PID")
+
+     ;;Blank SHK image
+     shkimg = intarr(shkxs,shkys)
+
+     ;;ALPAO DM Display
+     os = 64
+     alpsize = 11
+     xyimage,alpsize*os,alpsize*os,xim,yim,rim,/quadrant
+     rim /= os
+     sel = where(rim lt 5.)
+     mask = rim*0
+     mask[sel]=1
+     mask = rebin(mask,alpsize,alpsize)
+     alpsel = where(mask gt 0.005,complement=alpnotsel)
+     alpsel = reverse(alpsel)
+     alpimg = mask * 0d
+     
+     ;;BMC DM Display
+     os = 64
+     bmcsize = 34
+     xyimage,bmcsize*os,bmcsize*os,xim,yim,rim,/quadrant
+     rim /= os
+     sel = where(rim lt 16)
+     mask = rim*0
+     mask[sel]=1
+     mask = rebin(mask,bmcsize,bmcsize)
+     bmcsel = where(mask gt 0.001,complement=bmcnotsel)
+     bmcsel = reverse(bmcsel)
+     bmcimg = mask * 0d
+
+     ;;Temperature database
+     t = load_tempdb()
+     adc1 = t[where(t.adc eq 1)]
+     adc2 = t[where(t.adc eq 2)]
+     adc3 = t[where(t.adc eq 3)]
+  endif
+
+
+  ;;SHKPKT
+  if tag eq 'shkpkt' then begin
+     ;;Display image
+     if set.w[set.wshk].show then begin
+        ;;set window
+        wset,set.wshk
+        ;;create pixmap window
+        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,WPIXMAP
+        ;;display blank image
+        imdisp,shkimg,/axis,/erase,title='Frame: '+n2s(hed.frmtime*1000,format='(F10.1)')+' ms'+' CCD: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C'
+        ;;setup plotting
+        plot_sym,0,/fill
+        ;;loop over cells
+        for i=0,n_elements(pkt.cells)-1 do begin
+           ;;draw centroid box
+           blx = floor((pkt.cells[i].xtarget - pkt.cells[i].boxsize)/SHKBIN)
+           bly = floor((pkt.cells[i].ytarget - pkt.cells[i].boxsize)/SHKBIN)
+           trx = floor((pkt.cells[i].xtarget + pkt.cells[i].boxsize)/SHKBIN)
+           try = floor((pkt.cells[i].ytarget + pkt.cells[i].boxsize)/SHKBIN)
+           ;;bottom
+           oplot,[blx,trx],[bly,bly]
+           ;;top
+           oplot,[blx,trx],[try,try]
+           ;;left
+           oplot,[blx,blx],[bly,try]
+           ;;right
+           oplot,[trx,trx],[bly,try]
+           ;;plot centroid
+           if pkt.cells[i].spot_found then begin
+              xcentroid = (pkt.cells[i].xtarget + pkt.cells[i].xtarget_deviation[0])/SHKBIN
+              ycentroid = (pkt.cells[i].ytarget + pkt.cells[i].ytarget_deviation[0])/SHKBIN
+              if cells[i].maxval eq 255 then color = 1 else color = 255
+              oplot,[xcentroid],[ycentroid],color=color,psym=8,symsize=0.5
+           endif
+        endfor
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,WPIXMAP
+        ;;switch back to real window
+        wset,set.wshk
+        ;;set color table
+        linecolor
+        ;;display image
+        tv,snap
+        loadct,0
+     endif
+     
+     ;;Display Zernikes
+     if set.w[set.wzer].show then begin
+        ;;set window
+        wset,set.wzer
+        ;;create pixmap window
+        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
+        wset,WPIXMAP
+        ;;set text origin and spacing
+        dy = 14
+        dx = 100
+        sx = 5            
+        sy = !D.Y_SIZE - dy
+        nl = 24
+        c  = 0
+        ;;calc zernike values
+        zavg = mean(pkt.zernike_measured,dimension=2)
+        zstd = stdev(pkt.zernike_measured,dimension=2)
+        ztar = pkt.zernike_target
+        ;;print zernikes
+        for i=0,n_elements(zavg)-1 do begin
+           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F5.2,F5.2)',/device,charsize=charsize
+        endfor
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,WPIXMAP
+        ;;switch back to real window
+        wset,set.wzer
+        ;;set color table
+        loadct,0
+        ;;display data
+        tv,snap,0,0
+        loadct,0
+     endif
+     
+     ;;Display ALPAO Command
+     if set.w[set.walp].show then begin
+        ;;set window
+        wset,set.walp
+        ;;create pixmap window
+        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,WPIXMAP
+        ;;fill out image
+        alpimg[alpsel] = pkt.alp_acmd[*,0]
+        ;;display image
+        implot,alpimg,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
+               cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command'
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,WPIXMAP
+        ;;switch back to real window
+        wset,set.walp
+        ;;set color table
+        loadct,39
+        ;;display image
+        tv,snap
+        loadct,0
+     endif  
+  
+     
+  ;;LYTPKT
+  if tag eq 'lytpkt' then begin
+     ;;Display Image
+     if set.w[set.wlyt].show then begin
+        ;;set window
+        wset,set.wlyt
+        ;;create pixmap window
+        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,WPIXMAP
+        ;;scale image
+        simage = pkt.image.data
+        greyrscale,simage,4092
+        ;;display image
+        imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(hed.ontime*1000,format='(F10.1)')+' ms'+' CCD: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C'
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,WPIXMAP
+        ;;switch back to real window
+        wset,set.wlyt
+        ;;set color table
+        greyr
+        ;;display image
+        tv,snap
+        loadct,0
+     endif
+
+     ;;Display Zernikes
+     if set.w[set.wzer].show then begin
+        ;;set window
+        wset,set.wzer
+        ;;create pixmap window
+        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
+        wset,WPIXMAP
+        ;;set text origin and spacing
+        dy = 14
+        dx = 100
+        sx = 5            
+        sy = !D.Y_SIZE - dy
+        nl = 24
+        c  = 0
+        ;;calc zernike values
+        zavg = mean(pkt.zernike_measured,dimension=2)
+        zstd = stdev(pkt.zernike_measured,dimension=2)
+        ztar = pkt.zernike_target
+        ;;print zernikes
+        for i=0,n_elements(zavg)-1 do begin
+           xyouts,,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F5.2,F5.2)',/device,charsize=charsize
+        endfor
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,WPIXMAP
+        ;;switch back to real window
+        wset,set.wzer
+        ;;set color table
+        loadct,0
+        ;;display data
+        tv,snap,0,!D.X_SIZE/2
+        loadct,0
+     endif
+  endif
+
+  ;;SCIEVENT
+  if tag eq 'scievent' then begin
+     ;;Display Image
+     if set.w[set.wsci].show then begin
+        ;;set window
+        wset,set.wsci
+        ;;create pixmap window
+        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,WPIXMAP
+        !P.Multi = [0, n_elements(pkt.image)]
+        for i=0,n_elements(pkt.image)-1 do begin
+           image  = reform(pkt.image[i].data)
+           simage = reform(pkt.image[i].data)
+           ;;do photometry
+           m=max(simage,imax)
+           xy=array_indices(simage,imax)
+           bgr=mean(simage[10:50,10:50])
+           xmin = xy[0]-3 > 0
+           xmax = xy[0]+3 < n_elements(simage[*,0])-1
+           ymin = xy[1]-3 > 0
+           ymax = xy[1]+3 < n_elements(simage[0,*])-1
+           avg=mean(double(simage[xmin:xmax,ymin:ymax]))-bgr
+           wset,WPIXMAP
+           ;;scale image
+           greyrscale,simage,65535
+           ;;display
+           pcs = 1
+           if(!D.X_SIZE gt wxsize) then pcs = 0.7* double(!D.X_SIZE) / double(wxsize)
+           imdisp,simage,/noscale,/axis,title='Band '+n2s(i)+' Exp: '+n2s(pkthed.exptime,format='(F10.3)')+' Max: '+n2s(max(image))+' Avg: '+n2s(avg,format='(I)'),charsize=pcs
+        endfor
+        !P.Multi = 0
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,WPIXMAP
+        ;;switch back to real window
+        wset,set.wsci
+        ;;set color table
+        greyr
+        ;;display image
+        tv,snap
+        loadct,0
+     endif
+     ;;Display BMC Command
+     if set.w[set.wbmc].show then begin
+        ;;set window
+        wset,set.wbmc
+        ;;create pixmap window
+        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,WPIXMAP
+        ;;fill out image
+        bmcimg[bmcsel] = pkt.bmc_acmd[*,0]
+        ;;display image
+        implot,bmcimg,ctable=0,blackout=bmcnotsel,range=[-1,1],/erase,$
+               cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='BMC DM Command'
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,WPIXMAP
+        ;;switch back to real window
+        wset,set.wbmc
+        ;;set color table
+        loadct,39
+        ;;display image
+        tv,snap
+        loadct,0
+     endif
+  endif
+  
+  ;;THMEVENT
+  if tag eq 'thmevent' then begin
+     ;;Display Thermal Data
+     if set.w[set.wthm].show then begin
+        ;;set window
+        wset,set.wthm
+        ;;create pixmap window
+        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,WPIXMAP
+        ;;set text origin and spacing
+        dy = 14
+        dx = 100
+        sx = 5            
+        sy = !D.Y_SIZE - dy
+        nl = 24
+        c  = 0
+        red=1
+        green=2
+        blue=3
+        white=255
+        ;;adc1 data
+        for i=0,n_elements(adc1) do begin
+           color = green
+           if pkt.adc1_temp[i] lt adc1[i].min then color = blue
+           if pkt.adc1_temp[i] gt adc1[i].max then color = red
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc1[i].abbr+': ',pkt.adc1_temp[i],format='(A,F-+5.1)'),/device,charsize=charsize,color=color
+           c++
+        endfor
+        ;;adc2 data
+        for i=0,n_elements(adc2) do begin
+           color = green
+           if pkt.adc2_temp[i] lt adc2[i].min then color = blue
+           if pkt.adc2_temp[i] gt adc2[i].max then color = red
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc2[i].abbr+': ',pkt.adc2_temp[i],format='(A,F-+5.1)'),/device,charsize=charsize,color=color
+           c++
+        endfor
+        ;;adc3 data
+        for i=0,n_elements(adc3) do begin
+           color = green
+           if pkt.adc3_temp[i] lt adc3[i].min then color = blue
+           if pkt.adc3_temp[i] gt adc3[i].max then color = red
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc3[i].abbr+': ',pkt.adc3_temp[i],format='(A,F-+5.1)'),/device,charsize=charsize,color=color
+           c++
+        endfor
+        ;;heater data
+        for i=0,n_elements(pkt.htr) do begin
+           str=string(string(pkt.htr[i].name)+'['+n2s(i,format='(I2.2)')+']: ',pkt.htr[i].power,' ',$
+                      pkt.htr[i].temp,' ',$
+                      pkt.htr[i].setpoint,format='(A,I-4,A,F-+6.1,A,F-+6.1)')
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),str,/device,charsize=charsize,color=white
+           c++
+        endfor
+        ;;humidity sensors
+        for i=0,n_elements(pkt.hum) do begin
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(i,pkt.hum[i].temp,pkt.hum[i].humidity,format='(I2,F5.1,F5.1)',/device,charsize=charsize,color=white
+           c++
+        endfor
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,WPIXMAP
+        ;;switch back to real window
+        wset,set.wthm
+        linecolor
+        tv,snap
+        loadct,0
+     endif
+  endif
+     
+  ;;save data
+  if set.savedata then save,hed,pkt,tag,filename=set.datapath+tag+'.'+gettimestamp('.')+'.'+n2s(hed.frame_number,format='(I8.8)')+'.idl'
+  
+  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -246,8 +624,16 @@ pro piccgse, NOSAVE=NOSAVE
 
   ;;Settings
   set = {tmserver_type:'',tmserver_addr:'',tmserver_port:0U,$
-         tmserver_tmfile:'',tmserver_idlfile:'',datapath:'',pktlogunit:0,$
+         tmserver_tmfile:'',tmserver_idlfile:'',datapath:'',pktlogunit:0,savedata:(NOT keyword_set(NOSAVE)),$
          wshk:0,wlyt:1,walp:2,wbmc:3,wsci:4,wacq:5,wzer:6,wthm:7,w:replicate(win,8)}
+  set.w[0].index = set.wshk
+  set.w[1].index = set.wlyt
+  set.w[2].index = set.walp
+  set.w[3].index = set.wbmc
+  set.w[4].index = set.wsci
+  set.w[5].index = set.wacq
+  set.w[6].index = set.wzer
+  set.w[7].index = set.wthm
 
 ;*************************************************
 ;* GET INFORMATION FROM FLIGHT SOFTWARE
@@ -261,46 +647,29 @@ pro piccgse, NOSAVE=NOSAVE
   
   ;;Build packet structures
   pkthed   = read_c_struct(header,'pkthed')
-  shkfull  = read_c_struct(header,'shkfull')
-  acqfull  = read_c_struct(header,'acqfull')
-  lytevent = read_c_struct(header,'lytevent')
+  shkpkt   = read_c_struct(header,'shkpkt')
+  lytpkt   = read_c_struct(header,'lytpkt')
   scievent = read_c_struct(header,'scievent')
+  acqevent = read_c_struct(header,'acqevent')
   thmevent = read_c_struct(header,'thmevent')
   mtrevent = read_c_struct(header,'mtrevent')
 
   ;;Check for padding
   if check_padding(pkthed)   then stop,'pkthed contains padding'
-  if check_padding(shkfull)  then stop,'shkfull contains padding'
-  if check_padding(acqfull)  then stop,'acqfull contains padding'
-  if check_padding(lytevent) then stop,'lytevent contains padding'
+  if check_padding(shkpkt)   then stop,'shkpkt contains padding'
+  if check_padding(lytpkt)   then stop,'lytpkt contains padding'
   if check_padding(scievent) then stop,'scievent contains padding'
+  if check_padding(acqevent) then stop,'acqevent contains padding'
   if check_padding(thmevent) then stop,'thmevent contains padding'
   if check_padding(mtrevent) then stop,'mtrevent contains padding'
 
   ;;Remove headers from structures -- they are read seperately
-  struct_delete_field,shkfull,'hed'
-  struct_delete_field,acqfull,'hed'
-  struct_delete_field,lytevent,'hed'
+  struct_delete_field,shkpkt,'hed'
+  struct_delete_field,lytpkt,'hed'
   struct_delete_field,scievent,'hed'
+  struct_delete_field,acqevent,'hed'
   struct_delete_field,thmevent,'hed'
   struct_delete_field,mtrevent,'hed'
-
-  ;;Get states & calmodes
-  states = read_c_enum(header,'states')
-  for i=0, n_elements(states)-1 do void=execute(states[i]+'='+n2s(i))
-  alpcalmodes = read_c_enum(header,'alpcalmodes')
-  for i=0, n_elements(calmodes)-1 do void=execute(alpcalmodes[i]+'='+n2s(i))
-  hexcalmodes = read_c_enum(header,'hexcalmodes')
-  for i=0, n_elements(calmodes)-1 do void=execute(hexcalmodes[i]+'='+n2s(i))
-  tgtcalmodes = read_c_enum(header,'tgtcalmodes')
-  for i=0, n_elements(calmodes)-1 do void=execute(tgtcalmodes[i]+'='+n2s(i))
-  bmccalmodes = read_c_enum(header,'bmccalmodes')
-  for i=0, n_elements(calmodes)-1 do void=execute(bmccalmodes[i]+'='+n2s(i))
-
-  ;;Get #defines
-  SHKBIN = read_c_define(header,"SHKBIN")
-  LOWFS_N_ZERNIKE = read_c_define(header,"LOWFS_N_ZERNIKE")
-  LOWFS_N_PID = read_c_define(header,"LOWFS_N_PID")
 
 ;*************************************************
 ;* LOAD CONFIGURATION FILE
@@ -433,7 +802,7 @@ pro piccgse, NOSAVE=NOSAVE
         endif else begin
            restore,idlfiles[ifile]
            ;;process data
-           piccgse_processDATA,header,packet
+           piccgse_processDATA,header,packet,tag
            ;;save time
            t_last_telemetry = t_now
            ;;increment file for next time
@@ -505,7 +874,7 @@ pro piccgse, NOSAVE=NOSAVE
                           readu, TMUNIT, sync
                           if(sync eq mss(TLM_POSTSYNC))then begin
                              ;;process packet
-                             piccgse_processData,pkthed,pkt
+                             piccgse_processData,pkthed,pkt,tag
                              msg2 = gettimestamp('.')+': '+'packet.'+tag+'.'+sfn
                           endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps2.'+n2s(sync,format='(Z4.4)')
                        endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps1.'+n2s(sync,format='(Z4.4)')
