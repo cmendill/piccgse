@@ -1,6 +1,6 @@
 pro console_event, ev
   common downlink_block,serfd,conlogfd,base,con_text,shm_var,nchar
-  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP
+  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
   
   ;;console event
   newline=''
@@ -51,7 +51,7 @@ end
 
 pro piccgse_downlink_console
   common downlink_block,serfd,conlogfd,base,con_text,shm_var,nchar
-  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP
+  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
 
   ;;restore shared memory definitions
   restore,'shmdef.idl'

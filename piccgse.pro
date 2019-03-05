@@ -186,9 +186,9 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
-  ;common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
-  ;common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, bmcimg, bmcsel, adc1, adc2, adc3
-  ;common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm
+  common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
+  common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, bmcimg, bmcsel, adc1, adc2, adc3
+  common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm
 
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -366,9 +366,9 @@ pro piccgse_processData, hed, pkt, tag
         ;;display image
         tv,snap
         loadct,0
-     endif  
+     endif
+  endif
   
-     
   ;;LYTPKT
   if tag eq 'lytpkt' then begin
      ;;Display Image
@@ -429,7 +429,7 @@ pro piccgse_processData, hed, pkt, tag
         loadct,0
      endif
   endif
-
+  
   ;;SCIEVENT
   if tag eq 'scievent' then begin
      ;;Display Image
@@ -473,6 +473,7 @@ pro piccgse_processData, hed, pkt, tag
         tv,snap
         loadct,0
      endif
+     
      ;;Display BMC Command
      if set.w[wbmc].show then begin
         ;;set window
@@ -498,7 +499,7 @@ pro piccgse_processData, hed, pkt, tag
         loadct,0
      endif
   endif
-  
+    
   ;;THMEVENT
   if tag eq 'thmevent' then begin
      ;;Display Thermal Data
@@ -567,11 +568,10 @@ pro piccgse_processData, hed, pkt, tag
         loadct,0
      endif
   endif
-     
+  
   ;;save data
   if set.savedata then save,hed,pkt,tag,filename=set.datapath+tag+'.'+gettimestamp('.')+'.'+n2s(hed.frame_number,format='(I8.8)')+'.idl'
-  
-  
+    
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
