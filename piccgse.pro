@@ -186,9 +186,9 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
-  common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
-  common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, bmcimg, bmcsel, adc1, adc2, adc3
-  common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm
+  ;common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
+  ;common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, bmcimg, bmcsel, adc1, adc2, adc3
+  ;common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm
 
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -328,7 +328,7 @@ pro piccgse_processData, hed, pkt, tag
         ztar = pkt.zernike_target
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
-           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F5.2,F5.2)',/device,charsize=charsize
+           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F5.2,F5.2)'),/device,charsize=charsize
         endfor
         ;;take snapshot
         snap = TVRD()
@@ -414,7 +414,7 @@ pro piccgse_processData, hed, pkt, tag
         ztar = pkt.zernike_target*1000
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
-           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F5.2,F5.2)',/device,charsize=charsize
+           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F5.2,F5.2)'),/device,charsize=charsize
         endfor
         ;;take snapshot
         snap = TVRD()
@@ -553,7 +553,7 @@ pro piccgse_processData, hed, pkt, tag
         endfor
         ;;humidity sensors
         for i=0,n_elements(pkt.hum) do begin
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(i,pkt.hum[i].temp,pkt.hum[i].humidity,format='(I2,F5.1,F5.1)',/device,charsize=charsize,color=white
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(i,pkt.hum[i].temp,pkt.hum[i].humidity,format='(I2,F5.1,F5.1)'),/device,charsize=charsize,color=white
            c++
         endfor
         ;;take snapshot
@@ -580,7 +580,7 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 function piccgse_tmConnect
   common piccgse_block, set
-
+  
   ;;Check if we are reading from a file
   if set.tmserver_type eq 'tmfile' then begin
      openr,TMUNIT,set.tmserver_tmfile,/GET_LUN,ERROR=con_status
