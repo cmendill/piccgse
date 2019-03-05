@@ -91,7 +91,7 @@ pro gse_command_buttons_event, ev
      
      ;;set command
      shm_var[buttondb[sel].igse]=buttondb[sel].vgse
-     
+
      ;;trigger update
      shm_var[SHM_CMD]=1
      
@@ -196,11 +196,11 @@ pro piccgse_uplink_console
     
   ;;Camera flight buttons
   camflt  = widget_base(base,/column,/align_center)
-  camflt_sub1 = widget_base(camflt,/row,/align_center)
-  camflt_sub2 = widget_base(camflt,column=1,/frame,/align_center)
+  camflt_sub1 = widget_base(camflt,/row,/align_center)            
+  camflt_sub2 = widget_base(camflt,column=1,/frame,/align_center) 
   button_label = widget_label(camflt_sub1,value='Camera Commands',/align_center)
   ;;--make buttons
-  sel = where(buttondb.type1 eq 'camera_flight' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
+  sel = where(buttondb.type1 eq 'camera' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
      buttons = buttondb[sel]
      for i=0,n_elements(buttons)-1 do begin
@@ -257,14 +257,16 @@ pro piccgse_uplink_console
         bid = WIDGET_BUTTON(gse_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
      endfor
   endif
-  ;;--make plottype dropdown
-  sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq 'plottype' and buttondb.show eq 1,nsel)
+  ;;--make toggles
+  sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq 'toggle' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
      buttons = buttondb[sel]
-     dropid=widget_droplist(gse_sub2,VALUE=buttons.name,uvalue=buttons.id)
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(gse_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+     endfor
   endif
   xmanager,'gse_command_buttons',gse_sub2,/no_block
-
+  
  
   ;;create widgets
   widget_control,base,/realize

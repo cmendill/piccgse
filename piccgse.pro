@@ -4,6 +4,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_loadConfig, path  
   common piccgse_block, set
+
+
+  ;;Get window indicies
+  wshk = where(set.w.id eq 'shk')
+  wlyt = where(set.w.id eq 'lyt')
+  wacq = where(set.w.id eq 'acq')
+  wsci = where(set.w.id eq 'sci')
+  walp = where(set.w.id eq 'alp')
+  wbmc = where(set.w.id eq 'bmc')
+  wzer = where(set.w.id eq 'zer')
+  wthm = where(set.w.id eq 'thm')
   
   ;;Open the config file
   openr, unit, path, /get_lun
@@ -34,76 +45,76 @@ pro piccgse_loadConfig, path
            'TMSERVER_IDLFILE': set.tmserver_idlfile  = value
 
            ;;SHK Window
-           'SHK_SHOW'        : set.w[set.wshk].show  = value
-           'SHK_NAME'        : set.w[set.wshk].name  = value
-           'SHK_XSIZE'       : set.w[set.wshk].xsize = value
-           'SHK_YSIZE'       : set.w[set.wshk].ysize = value
-           'SHK_XPOS'        : set.w[set.wshk].xpos  = value
-           'SHK_YPOS'        : set.w[set.wshk].ypos  = value
-           'SHK_FONT'        : set.w[set.wshk].font  = value
+           'SHK_SHOW'        : set.w[wshk].show  = value
+           'SHK_NAME'        : set.w[wshk].name  = value
+           'SHK_XSIZE'       : set.w[wshk].xsize = value
+           'SHK_YSIZE'       : set.w[wshk].ysize = value
+           'SHK_XPOS'        : set.w[wshk].xpos  = value
+           'SHK_YPOS'        : set.w[wshk].ypos  = value
+           'SHK_FONT'        : set.w[wshk].font  = value
            
            ;;LYT Window
-           'LYT_SHOW'        : set.w[set.wlyt].show  = value
-           'LYT_NAME'        : set.w[set.wlyt].name  = value
-           'LYT_XSIZE'       : set.w[set.wlyt].xsize = value
-           'LYT_YSIZE'       : set.w[set.wlyt].ysize = value
-           'LYT_XPOS'        : set.w[set.wlyt].xpos  = value
-           'LYT_YPOS'        : set.w[set.wlyt].ypos  = value
-           'LYT_FONT'        : set.w[set.wlyt].font  = value
+           'LYT_SHOW'        : set.w[wlyt].show  = value
+           'LYT_NAME'        : set.w[wlyt].name  = value
+           'LYT_XSIZE'       : set.w[wlyt].xsize = value
+           'LYT_YSIZE'       : set.w[wlyt].ysize = value
+           'LYT_XPOS'        : set.w[wlyt].xpos  = value
+           'LYT_YPOS'        : set.w[wlyt].ypos  = value
+           'LYT_FONT'        : set.w[wlyt].font  = value
            
            ;;ALP Window
-           'ALP_SHOW'        : set.w[set.walp].show  = value
-           'ALP_NAME'        : set.w[set.walp].name  = value
-           'ALP_XSIZE'       : set.w[set.walp].xsize = value
-           'ALP_YSIZE'       : set.w[set.walp].ysize = value
-           'ALP_XPOS'        : set.w[set.walp].xpos  = value
-           'ALP_YPOS'        : set.w[set.walp].ypos  = value
-           'ALP_FONT'        : set.w[set.walp].font  = value
+           'ALP_SHOW'        : set.w[walp].show  = value
+           'ALP_NAME'        : set.w[walp].name  = value
+           'ALP_XSIZE'       : set.w[walp].xsize = value
+           'ALP_YSIZE'       : set.w[walp].ysize = value
+           'ALP_XPOS'        : set.w[walp].xpos  = value
+           'ALP_YPOS'        : set.w[walp].ypos  = value
+           'ALP_FONT'        : set.w[walp].font  = value
            
            ;;BMC Window
-           'BMC_SHOW'        : set.w[set.wbmc].show  = value
-           'BMC_NAME'        : set.w[set.wbmc].name  = value
-           'BMC_XSIZE'       : set.w[set.wbmc].xsize = value
-           'BMC_YSIZE'       : set.w[set.wbmc].ysize = value
-           'BMC_XPOS'        : set.w[set.wbmc].xpos  = value
-           'BMC_YPOS'        : set.w[set.wbmc].ypos  = value
-           'BMC_FONT'        : set.w[set.wbmc].font  = value
+           'BMC_SHOW'        : set.w[wbmc].show  = value
+           'BMC_NAME'        : set.w[wbmc].name  = value
+           'BMC_XSIZE'       : set.w[wbmc].xsize = value
+           'BMC_YSIZE'       : set.w[wbmc].ysize = value
+           'BMC_XPOS'        : set.w[wbmc].xpos  = value
+           'BMC_YPOS'        : set.w[wbmc].ypos  = value
+           'BMC_FONT'        : set.w[wbmc].font  = value
            
            ;;ACQ Window
-           'ACQ_SHOW'        : set.w[set.wacq].show  = value
-           'ACQ_NAME'        : set.w[set.wacq].name  = value
-           'ACQ_XSIZE'       : set.w[set.wacq].xsize = value
-           'ACQ_YSIZE'       : set.w[set.wacq].ysize = value
-           'ACQ_XPOS'        : set.w[set.wacq].xpos  = value
-           'ACQ_YPOS'        : set.w[set.wacq].ypos  = value
-           'ACQ_FONT'        : set.w[set.wacq].font  = value
+           'ACQ_SHOW'        : set.w[wacq].show  = value
+           'ACQ_NAME'        : set.w[wacq].name  = value
+           'ACQ_XSIZE'       : set.w[wacq].xsize = value
+           'ACQ_YSIZE'       : set.w[wacq].ysize = value
+           'ACQ_XPOS'        : set.w[wacq].xpos  = value
+           'ACQ_YPOS'        : set.w[wacq].ypos  = value
+           'ACQ_FONT'        : set.w[wacq].font  = value
            
            ;;SCI Window
-           'SCI_SHOW'        : set.w[set.wsci].show  = value
-           'SCI_NAME'        : set.w[set.wsci].name  = value
-           'SCI_XSIZE'       : set.w[set.wsci].xsize = value
-           'SCI_YSIZE'       : set.w[set.wsci].ysize = value
-           'SCI_XPOS'        : set.w[set.wsci].xpos  = value
-           'SCI_YPOS'        : set.w[set.wsci].ypos  = value
-           'SCI_FONT'        : set.w[set.wsci].font  = value
+           'SCI_SHOW'        : set.w[wsci].show  = value
+           'SCI_NAME'        : set.w[wsci].name  = value
+           'SCI_XSIZE'       : set.w[wsci].xsize = value
+           'SCI_YSIZE'       : set.w[wsci].ysize = value
+           'SCI_XPOS'        : set.w[wsci].xpos  = value
+           'SCI_YPOS'        : set.w[wsci].ypos  = value
+           'SCI_FONT'        : set.w[wsci].font  = value
            
            ;;ZER Window
-           'ZER_SHOW'        : set.w[set.wzer].show  = value
-           'ZER_NAME'        : set.w[set.wzer].name  = value
-           'ZER_XSIZE'       : set.w[set.wzer].xsize = value
-           'ZER_YSIZE'       : set.w[set.wzer].ysize = value
-           'ZER_XPOS'        : set.w[set.wzer].xpos  = value
-           'ZER_YPOS'        : set.w[set.wzer].ypos  = value
-           'ZER_FONT'        : set.w[set.wzer].font  = value
+           'ZER_SHOW'        : set.w[wzer].show  = value
+           'ZER_NAME'        : set.w[wzer].name  = value
+           'ZER_XSIZE'       : set.w[wzer].xsize = value
+           'ZER_YSIZE'       : set.w[wzer].ysize = value
+           'ZER_XPOS'        : set.w[wzer].xpos  = value
+           'ZER_YPOS'        : set.w[wzer].ypos  = value
+           'ZER_FONT'        : set.w[wzer].font  = value
            
            ;;THM Window
-           'THM_SHOW'        : set.w[set.wthm].show  = value
-           'THM_NAME'        : set.w[set.wthm].name  = value
-           'THM_XSIZE'       : set.w[set.wthm].xsize = value
-           'THM_YSIZE'       : set.w[set.wthm].ysize = value
-           'THM_XPOS'        : set.w[set.wthm].xpos  = value
-           'THM_YPOS'        : set.w[set.wthm].ypos  = value
-           'THM_FONT'        : set.w[set.wthm].font  = value
+           'THM_SHOW'        : set.w[wthm].show  = value
+           'THM_NAME'        : set.w[wthm].name  = value
+           'THM_XSIZE'       : set.w[wthm].xsize = value
+           'THM_YSIZE'       : set.w[wthm].ysize = value
+           'THM_XPOS'        : set.w[wthm].xpos  = value
+           'THM_YPOS'        : set.w[wthm].ypos  = value
+           'THM_FONT'        : set.w[wthm].font  = value
 
            else: ;;do nothing
         endcase
@@ -147,7 +158,7 @@ end
 pro piccgse_createWindows
   common piccgse_block, set
   for i=0, n_elements(set.w)-1 do begin
-     if set.w[i].show then window, set.w[i].index, XSIZE=set.w[i].xsize, YSIZE=set.w[i].ysize,$
+     if set.w[i].show then window, i, XSIZE=set.w[i].xsize, YSIZE=set.w[i].ysize,$
                                    XPOS=set.w[i].xpos, YPOS=set.w[i].ypos, TITLE=set.w[i].name, RETAIN=2
   endfor
 end
@@ -177,6 +188,7 @@ pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
   common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, bmcimg, bmcsel, adc1, adc2, adc3
+  common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm
 
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -236,15 +248,25 @@ pro piccgse_processData, hed, pkt, tag
      adc1 = t[where(t.adc eq 1)]
      adc2 = t[where(t.adc eq 2)]
      adc3 = t[where(t.adc eq 3)]
+
+     ;;Get window indicies
+     wshk = where(set.w.id eq 'shk')
+     wlyt = where(set.w.id eq 'lyt')
+     wacq = where(set.w.id eq 'acq')
+     wsci = where(set.w.id eq 'sci')
+     walp = where(set.w.id eq 'alp')
+     wbmc = where(set.w.id eq 'bmc')
+     wzer = where(set.w.id eq 'zer')
+     wthm = where(set.w.id eq 'thm')
   endif
 
 
   ;;SHKPKT
   if tag eq 'shkpkt' then begin
      ;;Display image
-     if set.w[set.wshk].show then begin
+     if set.w[wshk].show then begin
         ;;set window
-        wset,set.wshk
+        wset,wshk
         ;;create pixmap window
         window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,WPIXMAP
@@ -280,7 +302,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;delete pixmap window
         wdelete,WPIXMAP
         ;;switch back to real window
-        wset,set.wshk
+        wset,wshk
         ;;set color table
         linecolor
         ;;display image
@@ -289,18 +311,16 @@ pro piccgse_processData, hed, pkt, tag
      endif
      
      ;;Display Zernikes
-     if set.w[set.wzer].show then begin
+     if set.w[wzer].show then begin
         ;;set window
-        wset,set.wzer
+        wset,wzer
         ;;create pixmap window
         window,WPIXMAP,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
         wset,WPIXMAP
         ;;set text origin and spacing
         dy = 14
-        dx = 100
         sx = 5            
         sy = !D.Y_SIZE - dy
-        nl = 24
         c  = 0
         ;;calc zernike values
         zavg = mean(pkt.zernike_measured,dimension=2)
@@ -315,7 +335,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;delete pixmap window
         wdelete,WPIXMAP
         ;;switch back to real window
-        wset,set.wzer
+        wset,wzer
         ;;set color table
         loadct,0
         ;;display data
@@ -324,9 +344,9 @@ pro piccgse_processData, hed, pkt, tag
      endif
      
      ;;Display ALPAO Command
-     if set.w[set.walp].show then begin
+     if set.w[walp].show then begin
         ;;set window
-        wset,set.walp
+        wset,walp
         ;;create pixmap window
         window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,WPIXMAP
@@ -340,7 +360,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;delete pixmap window
         wdelete,WPIXMAP
         ;;switch back to real window
-        wset,set.walp
+        wset,walp
         ;;set color table
         loadct,39
         ;;display image
@@ -352,9 +372,9 @@ pro piccgse_processData, hed, pkt, tag
   ;;LYTPKT
   if tag eq 'lytpkt' then begin
      ;;Display Image
-     if set.w[set.wlyt].show then begin
+     if set.w[wlyt].show then begin
         ;;set window
-        wset,set.wlyt
+        wset,wlyt
         ;;create pixmap window
         window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,WPIXMAP
@@ -368,7 +388,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;delete pixmap window
         wdelete,WPIXMAP
         ;;switch back to real window
-        wset,set.wlyt
+        wset,wlyt
         ;;set color table
         greyr
         ;;display image
@@ -377,33 +397,31 @@ pro piccgse_processData, hed, pkt, tag
      endif
 
      ;;Display Zernikes
-     if set.w[set.wzer].show then begin
+     if set.w[wzer].show then begin
         ;;set window
-        wset,set.wzer
+        wset,wzer
         ;;create pixmap window
         window,WPIXMAP,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
         wset,WPIXMAP
         ;;set text origin and spacing
         dy = 14
-        dx = 100
         sx = 5            
         sy = !D.Y_SIZE - dy
-        nl = 24
         c  = 0
         ;;calc zernike values
-        zavg = mean(pkt.zernike_measured,dimension=2)
-        zstd = stdev(pkt.zernike_measured,dimension=2)
-        ztar = pkt.zernike_target
+        zavg = mean(pkt.zernike_measured,dimension=2)*1000
+        zstd = stdev(pkt.zernike_measured,dimension=2)*1000
+        ztar = pkt.zernike_target*1000
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
-           xyouts,,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F5.2,F5.2)',/device,charsize=charsize
+           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F5.2,F5.2)',/device,charsize=charsize
         endfor
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
         wdelete,WPIXMAP
         ;;switch back to real window
-        wset,set.wzer
+        wset,wzer
         ;;set color table
         loadct,0
         ;;display data
@@ -415,9 +433,9 @@ pro piccgse_processData, hed, pkt, tag
   ;;SCIEVENT
   if tag eq 'scievent' then begin
      ;;Display Image
-     if set.w[set.wsci].show then begin
+     if set.w[wsci].show then begin
         ;;set window
-        wset,set.wsci
+        wset,wsci
         ;;create pixmap window
         window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,WPIXMAP
@@ -448,7 +466,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;delete pixmap window
         wdelete,WPIXMAP
         ;;switch back to real window
-        wset,set.wsci
+        wset,wsci
         ;;set color table
         greyr
         ;;display image
@@ -456,9 +474,9 @@ pro piccgse_processData, hed, pkt, tag
         loadct,0
      endif
      ;;Display BMC Command
-     if set.w[set.wbmc].show then begin
+     if set.w[wbmc].show then begin
         ;;set window
-        wset,set.wbmc
+        wset,wbmc
         ;;create pixmap window
         window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,WPIXMAP
@@ -472,7 +490,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;delete pixmap window
         wdelete,WPIXMAP
         ;;switch back to real window
-        wset,set.wbmc
+        wset,wbmc
         ;;set color table
         loadct,39
         ;;display image
@@ -484,9 +502,9 @@ pro piccgse_processData, hed, pkt, tag
   ;;THMEVENT
   if tag eq 'thmevent' then begin
      ;;Display Thermal Data
-     if set.w[set.wthm].show then begin
+     if set.w[wthm].show then begin
         ;;set window
-        wset,set.wthm
+        wset,wthm
         ;;create pixmap window
         window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,WPIXMAP
@@ -543,7 +561,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;delete pixmap window
         wdelete,WPIXMAP
         ;;switch back to real window
-        wset,set.wthm
+        wset,wthm
         linecolor
         tv,snap
         loadct,0
@@ -620,20 +638,21 @@ pro piccgse, NOSAVE=NOSAVE
 ;* DEFINE SETTINGS STRUCTURES
 ;*************************************************
   ;;Windows
-  win = {name:'',xsize:0,ysize:0,xpos:0,ypos:0,index:0,font:'',show:0}
+  win = {id:'',name:'',show:0,xsize:0,ysize:0,xpos:0,ypos:0,font:''}
 
   ;;Settings
-  set = {tmserver_type:'',tmserver_addr:'',tmserver_port:0U,$
-         tmserver_tmfile:'',tmserver_idlfile:'',datapath:'',pktlogunit:0,savedata:(NOT keyword_set(NOSAVE)),$
-         wshk:0,wlyt:1,walp:2,wbmc:3,wsci:4,wacq:5,wzer:6,wthm:7,w:replicate(win,8)}
-  set.w[0].index = set.wshk
-  set.w[1].index = set.wlyt
-  set.w[2].index = set.walp
-  set.w[3].index = set.wbmc
-  set.w[4].index = set.wsci
-  set.w[5].index = set.wacq
-  set.w[6].index = set.wzer
-  set.w[7].index = set.wthm
+  set = {tmserver_type:'',tmserver_addr:'',tmserver_port:0U,tmserver_tmfile:'',tmserver_idlfile:'',$
+         datapath:'',pktlogunit:0,savedata:(NOT keyword_set(NOSAVE)),w:replicate(win,8)}
+  
+  ;;Assign window ID tags
+  set.w[0].id = 'shk'
+  set.w[1].id = 'lyt'
+  set.w[2].id = 'alp'
+  set.w[3].id = 'bmc'
+  set.w[4].id = 'sci'
+  set.w[5].id = 'acq'
+  set.w[6].id = 'zer'
+  set.w[7].id = 'thm'
 
 ;*************************************************
 ;* GET INFORMATION FROM FLIGHT SOFTWARE
@@ -943,8 +962,7 @@ pro piccgse, NOSAVE=NOSAVE
               help,idlfiles
            endif
 
-           ;;Check if hist structure needs to be reset
-           
+           ;;Check if we need to reset windows
            if piccgse_newWindows(old_set) then piccgse_createWindows
            
         endif
