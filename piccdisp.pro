@@ -214,18 +214,20 @@ while 1 do begin
                imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'+' CCD: '+n2s(shkevent.ccd_temp,format='(F10.1)')+' C'
                for i=0,n_elements(shkevent.cells)-1 do begin
                   if NOT keyword_set(NOBOX) then begin
+                     color = 254
+                     if shkevent.cells[i].spot_found then color = 253
                      blx = floor((shkevent.cells[i].xtarget - shkevent.cells[i].boxsize)/SHKBIN)
                      bly = floor((shkevent.cells[i].ytarget - shkevent.cells[i].boxsize)/SHKBIN)
                      trx = floor((shkevent.cells[i].xtarget + shkevent.cells[i].boxsize)/SHKBIN)
                      try = floor((shkevent.cells[i].ytarget + shkevent.cells[i].boxsize)/SHKBIN)
                      ;;bottom
-                     oplot,[blx,trx],[bly,bly],color=253
+                     oplot,[blx,trx],[bly,bly],color=color
                      ;;top
-                     oplot,[blx,trx],[try,try],color=253
+                     oplot,[blx,trx],[try,try],color=color
                      ;;left
-                     oplot,[blx,blx],[bly,try],color=253
+                     oplot,[blx,blx],[bly,try],color=color
                      ;;right
-                     oplot,[trx,trx],[bly,try],color=253
+                     oplot,[trx,trx],[bly,try],color=color
                   endif
                   ;;centroid
                   if keyword_set(plot_centroids) AND shkevent.cells[i].spot_found then begin
