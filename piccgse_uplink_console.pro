@@ -217,26 +217,26 @@ pro piccgse_uplink_console
   cmd_text  = widget_text(sub2,xsize=size,ysize=1,/editable)
   xmanager,'command',sub2,/no_block
     
-  ;;Camera flight buttons
-  camflt  = widget_base(base,/column,/align_center)
-  camflt_sub1 = widget_base(camflt,/row,/align_center)            
-  camflt_sub2 = widget_base(camflt,column=1,/frame,/align_center) 
-  button_label = widget_label(camflt_sub1,value='Camera Commands',/align_center)
+  ;;Camera buttons
+  cam      = widget_base(base,/column,/align_center)
+  cam_sub1 = widget_base(cam,/row,/align_center)            
+  cam_sub2 = widget_base(cam,column=1,/frame,/align_center) 
+  button_label = widget_label(cam_sub1,value='Camera Commands',/align_center)
   ;;--make buttons
   sel = where(buttondb.type1 eq 'camera' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
      buttons = buttondb[sel]
      for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(camflt_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+        bid = WIDGET_BUTTON(cam_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
      endfor
   endif
   ;;install event handler
-  xmanager,'serial_command_buttons',camflt_sub2,/no_block
+  xmanager,'serial_command_buttons',cam_sub2,/no_block
 
   ;;Status icons
   red_light   = read_bmp('bmp/red.bmp',/rgb)
   red_light   = transpose(red_light,[1,2,0])
-  connstat       = widget_base(camflt,/row)
+  connstat       = widget_base(cam,/row)
   connstat_sub1  = widget_base(connstat,column=2,/frame)
   button_label = widget_label(connstat_sub1,value=' LINK ',/align_center)
   link_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light,/align_center)
@@ -245,13 +245,6 @@ pro piccgse_uplink_console
   ;;install event handler
   xmanager,'connstat',connstat,/no_block
   
-  ;;GSE path display
-  gsepath = widget_base(base,/row)
-  gsepath_label = widget_label(gsepath,value='GSE Path: ',/align_left)
-  gsepath_text = widget_text(gsepath,xsize=22,ysize=1)
-  ;;install event handler
-  xmanager,'gsepath',gsepath_text,/no_block
-
   ;;LYT commands
   lyt = widget_base(base,/column)
   ;;--make arrow buttons
@@ -266,6 +259,14 @@ pro piccgse_uplink_console
   endif
   ;;install event handler
   xmanager,'serial_command_buttons',lyt_sub1,/no_block
+
+  ;;GSE path display
+  gsepath = widget_base(lyt,/row)
+  gsepath_label = widget_label(gsepath,value='GSE Path: ',/align_left)
+  gsepath_text = widget_text(gsepath,xsize=22,ysize=1)
+  ;;install event handler
+  xmanager,'gsepath',gsepath_text,/no_block
+
  
   ;;GSE buttons
   gse  = widget_base(base,/column)

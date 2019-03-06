@@ -630,8 +630,10 @@ end
 ;;KEYWORDS:
 ;;   NOSAVE
 ;;      Do not save data
+;;   NOUPLINK
+;;      Use bidirectional downlink for commands instead of uplink
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-pro piccgse, NOSAVE=NOSAVE
+pro piccgse, NOSAVE=NOSAVE, NOUPLINK=NOUPLINK
   common piccgse_block, set
 
 ;*************************************************
@@ -760,6 +762,7 @@ restore,'settings.idl'
   shm_var = shmvar('shm')
   shm_var[*] = bytarr(shm_size)
   shm_var[SHM_RUN] = 1
+  shm_var[SHM_UPLINK] = NOT keyword_set(NOUPLINK)
   shm_var[SHM_TIMESTAMP:SHM_TIMESTAMP+strlen(STARTUP_TIMESTAMP)-1]=byte(STARTUP_TIMESTAMP)
   print,'Shared memory mapped'
   
