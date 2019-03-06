@@ -70,14 +70,10 @@ pro piccgse_downlink_console
   print,'Shared memory mapped'
 
   ;;setup base widget
-  downlink_xs = 500
-  screen_dimensions = get_screen_size()
-  sxs = fix(screen_dimensions[0])
-  sys = fix(screen_dimensions[1])
-  wxs = downlink_xs
+  wxs = 500
   wys = 268
   wxp = 0
-  wyp = sys-wys
+  wyp = 2000
   title = 'PICTURE Downlink Console'
   base = WIDGET_BASE(xsize=wxs,ysize=wys,xoffset=wxp,yoffset=wyp,/row,title=title)
   

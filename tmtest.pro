@@ -8,9 +8,7 @@ empty_code    = 'FADE'XU
 tmtest_count  = 0UL
 flush_count   = 0UL
 tmarray       = uintarr(ntmtest)
-nflush_words  = 25000UL
-;;nflush_words  = 0UL
-nflush        = nflush_words/ntmtest
+nflush        = 150
 
 if mode eq 'picture_gdp' then begin
    ;;Get data from tmserver connected to GDP

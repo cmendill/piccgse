@@ -170,15 +170,10 @@ pro piccgse_uplink_console
   print,'Shared memory mapped'
 
   ;;setup base widget
-  downlink_xs = 500
-  nudge = 16
-  screen_dimensions = get_screen_size()
-  sxs = fix(screen_dimensions[0])
-  sys = fix(screen_dimensions[1])
-  wxs = sxs-downlink_xs-nudge
+  wxs = 818
   wys = 268
-  wxp = downlink_xs+nudge
-  wyp = sys-wys
+  wxp = 688
+  wyp = 2000
   title = 'PICTURE Uplink Command Console'
   base = WIDGET_BASE(xsize=wxs,ysize=wys,xoffset=wxp,yoffset=wyp,/row,title=title)
     
