@@ -1,15 +1,29 @@
+;;UPLINK
+;;  Function to format CSBF "Request-to-Send" packets for command uplink
+pro uplink, fd, cmd
+  
+  
+
+end
+
 pro command_event, ev
-  common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
   ;;command line event
-  widget_control,ev.id,GET_VALUE=val
+  widget_control,ev.id,GET_VALUE=cmd
   
   ;;send command
-  if serfd ge 0 then printf,serfd,val
+  if upfd ge 0 then begin
+     if shm_uplink then begin
+        uplink,upfd,cmd
+     endif else begin
+        printf,upfd,cmd
+     endelse
+  endif
   
   ;;print command to screen
   ts=gettimestamp('.')
-  cmdstr=ts+': '+val
+  cmdstr=ts+': '+cmd
   widget_control,log_text,SET_VALUE=cmdstr,/APPEND
   widget_control,ev.id,set_value=''
   
@@ -29,7 +43,7 @@ end
 
 
 pro serial_command_buttons_event, ev
-  common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
  
   ;;get command
@@ -49,8 +63,14 @@ pro serial_command_buttons_event, ev
      cmd = buttondb[sel].cmd
      
      ;;send command
-     if serfd ge 0 then printf,serfd,cmd
-     
+     if upfd ge 0 then begin
+        if shm_uplink then begin
+           uplink,upfd,cmd
+        endif else begin
+           printf,upfd,cmd
+        endelse
+     endif
+    
      ;;print command to screen
      ts=gettimestamp('.')
      cmdstr=ts+': '+cmd
@@ -72,7 +92,7 @@ pro serial_command_buttons_event, ev
 end
 
 pro gse_command_buttons_event, ev 
-  common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
 
   event_type = TAG_NAMES(ev, /STRUCTURE_NAME) 
@@ -108,7 +128,7 @@ pro gse_command_buttons_event, ev
 end
 
 pro gsepath_event, ev
-  common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
   common gsepath_block, path
  
@@ -126,7 +146,7 @@ pro gsepath_event, ev
 end
 
 pro connstat_event, ev
-  common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
 
   ;;get light bitmaps
@@ -144,26 +164,34 @@ pro connstat_event, ev
 end
 
 pro piccgse_uplink_console
-  common uplink_block,serfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
 
-  ;;restore shared memory definitions
-  restore,'shmdef.idl'
+  ;;restore settings
+  restore,'settings.idl'
   
   ;;load buttons
   buttondb = load_buttondb()
   
-  ;;setup serial port
-  spawn,'./serial/serial_setup'
-
+  ;;choose serial device
+  if(shm_uplink) then begin
+     dev  = uplink_dev
+     baud = uplink_baud
+  endif else begin
+     dev  = dnlink_dev
+     baud = dnlink_baud
+  endelse
+  
   ;;open serial connection
-  dev = '/dev/ttyUSB1'
-  openw,serfd,dev,/get_lun,error=error
+  openw,upfd,dev,/get_lun,error=error
   if error ne 0 then begin
      print,'ERROR (piccgse_uplink_console): Could not open '+dev
-     serfd = -1
+     upfd = -1
   endif
   
+  ;;configure serial port
+  if upfd ge 0 then spawn,'stty -F '+dev+' '+baud+' cs8 -cstopb -parenb'
+
   ;;setup shared memory
   shmmap, 'shm', /byte, shm_size
   shm_var = shmvar('shm')

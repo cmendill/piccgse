@@ -635,6 +635,11 @@ pro piccgse, NOSAVE=NOSAVE
   common piccgse_block, set
 
 ;*************************************************
+;* LOAD SETTINGS
+;*************************************************
+restore,'settings.idl'
+  
+;*************************************************
 ;* DEFINE SETTINGS STRUCTURES
 ;*************************************************
   ;;Windows
@@ -747,7 +752,6 @@ pro piccgse, NOSAVE=NOSAVE
 ;*************************************************
 ;* SETUP SHARED MEMORY
 ;*************************************************
-  restore,'shmdef.idl'
   shmmap, 'shm', /byte, shm_size
   ;;NOTE: This creates a file /dev/shm/shm of size shm_size bytes
   ;;      The file does not get deleted when you quit IDL, so if
@@ -779,7 +783,7 @@ pro piccgse, NOSAVE=NOSAVE
   ;;CD to working directory
   obridge_dn->execute,"cd,'"+working_dir+"'"
   ;;Launch console
-  obridge_dn->execute,'piccgse_downlink_console'
+  obridge_dn->execute,'piccgse_dnlink_console'
   print,'Up/Down Console widgets started'
 
 ;*************************************************

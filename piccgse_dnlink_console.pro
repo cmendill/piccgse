@@ -1,5 +1,5 @@
 pro console_event, ev
-  common downlink_block,serfd,conlogfd,base,con_text,shm_var,nchar
+  common dnlink_block,dnfd,conlogfd,base,con_text,shm_var,nchar
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
   
   ;;console event
@@ -7,9 +7,12 @@ pro console_event, ev
   tag = 0B
   bytesread=0L
 
-  if serfd ge 0 then begin
-     while FILE_POLL_INPUT(serfd,TIMEOUT=0.01) do begin
-        readu,serfd,tag
+  if dnfd ge 0 then begin
+     ;;read data until we reach a line feed
+     ;;NOTE: we could use readf here, but that may reach EOF before
+     ;;finding a linefeed. readf would be much more efficient.
+     while FILE_POLL_INPUT(dnfd,TIMEOUT=0.01) do begin
+        readu,dnfd,tag
         bytesread++
         if tag ne  7B and $ ;;Bell
            tag ne  8B and $ ;;Backspace
@@ -18,14 +21,14 @@ pro console_event, ev
            tag ne 11B and $ ;;Vertical Tab
            tag ne 12B and $ ;;Formfeed
            tag ne 13B and $ ;;Carriage Return
-           tag ne 27B     $ ;;Escape
+           tag ne 27B and $ ;;Escape
+           strlen(newline) lt nchar $ ;;Truncate lines to nchar
         then newline+=string(byte(tag))
         if tag eq 10B then break ;;Linefeed
-        if strlen(newline) eq nchar then break
      endwhile
      
      ;;If we are here, the serial port is empty or we reached a linefeed
-
+     
      if bytesread gt 0 then begin
         ;;print console text to screen
         widget_control,ev.id,set_value=newline,/append
@@ -49,21 +52,23 @@ pro console_event, ev
   
 end
 
-pro piccgse_downlink_console
-  common downlink_block,serfd,conlogfd,base,con_text,shm_var,nchar
+pro piccgse_dnlink_console
+  common dnlink_block,dnfd,conlogfd,base,con_text,shm_var,nchar
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
 
-  ;;restore shared memory definitions
-  restore,'shmdef.idl'
+  ;;restore settings
+  restore,'settings.idl'
  
   ;;open serial connection
-  dev = '/dev/ttyUSB0'
-  openr,serfd,dev,/get_lun,error=error
+  openr,dnfd,dnlink_dev,/get_lun,error=error
   if error ne 0 then begin
-     print,'ERROR (piccgse_downlink_console): Could not open '+dev
-     serfd = -1
+     print,'ERROR (piccgse_dnlink_console): Could not open '+dnlink_dev
+     dnfd = -1
   endif
- 
+
+  ;;configure serial port
+  if dnfd ge 0 then spawn,'stty -F '+dnlink_dev+' '+dnlink_baud+' cs8 -cstopb -parenb'
+  
   ;;setup shared memory
   shmmap, 'shm', /byte, shm_size
   shm_var = shmvar('shm')
@@ -75,7 +80,7 @@ pro piccgse_downlink_console
   wxp = 0
   wyp = 2000
   title = 'PICTURE Downlink Console'
-  base = WIDGET_BASE(xsize=wxs,ysize=wys,xoffset=wxp,yoffset=wyp,/row,title=title)
+  base = widget_base(xsize=wxs,ysize=wys,xoffset=wxp,yoffset=wyp,/row,title=title)
   
   ;;setup downlink console
   nchar = 80

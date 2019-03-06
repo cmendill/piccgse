@@ -1,4 +1,12 @@
-;;define piccgse shared memory parameters
+;;PICCGSE Static Settings
+
+;;Serial Ports
+uplink_dev  = '/dev/ttyUSB1'
+uplink_baud = '2400' 
+dnlink_dev  = '/dev/ttyUSB0'
+dnlink_baud = '115200'
+
+;;Shared Memory
 ;;NOTE: SHMEM creates a file /dev/shm/shm of size shm_size bytes
 ;;      The file does not get deleted when you quit IDL, so if
 ;;      shm_size changes, you must delete this file manualy. 
@@ -11,6 +19,6 @@ SHM_ACQ       = 4     ;;4  --> Show/Hide ACQ camera
 SHM_UPLINK    = 5     ;;5  --> Enable/Disable CMD uplink
 SHM_CMD       = 27    ;;27 --> Command has been given
 SHM_TIMESTAMP = 28    ;;28-127--> File timestamp
-save,/VARIABLES,file='shmdef.idl'
-print,'Wrote: shmdef.idl'
+save,/variables,file='settings.idl'
+print,'Wrote: settings.idl'
 end
