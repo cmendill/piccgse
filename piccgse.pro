@@ -137,7 +137,7 @@ pro piccgse_setupFiles,STARTUP_TIMESTAMP=STARTUP_TIMESTAMP
   
   ;;set paths and filenames
   STARTUP_TIMESTAMP = gettimestamp('.')
-  set.datapath = 'data/data/piccgse.'+STARTUP_TIMESTAMP+'/'
+  set.datapath = 'data/piccgse/piccgse.'+STARTUP_TIMESTAMP+'/'
   check_and_mkdir,set.datapath
   pktlogfile = set.datapath+'piccgse.'+STARTUP_TIMESTAMP+'.pktlog.txt'
   
@@ -188,7 +188,7 @@ pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
   common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, bmcimg, bmcsel, adc1, adc2, adc3
-  common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm
+  common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm, wpix
 
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -235,14 +235,14 @@ pro piccgse_processData, hed, pkt, tag
      bmcsize = 34
      xyimage,bmcsize*os,bmcsize*os,xim,yim,rim,/quadrant
      rim /= os
-     sel = where(rim lt 16)
+     sel = where(rim lt 17)
      mask = rim*0
      mask[sel]=1
      mask = rebin(mask,bmcsize,bmcsize)
-     bmcsel = where(mask gt 0.001,complement=bmcnotsel)
+     bmcsel = where(mask gt 0.005,complement=bmcnotsel)
      bmcsel = reverse(bmcsel)
      bmcimg = mask * 0d
-
+     
      ;;Temperature database
      t = load_tempdb()
      adc1 = t[where(t.adc eq 1)]
@@ -258,8 +258,8 @@ pro piccgse_processData, hed, pkt, tag
      wbmc = where(set.w.id eq 'bmc')
      wzer = where(set.w.id eq 'zer')
      wthm = where(set.w.id eq 'thm')
+     wpix = n_elements(set.w)+1
   endif
-
 
   ;;SHKPKT
   if tag eq 'shkpkt' then begin
@@ -268,12 +268,12 @@ pro piccgse_processData, hed, pkt, tag
         ;;set window
         wset,wshk
         ;;create pixmap window
-        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,WPIXMAP
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
         ;;display blank image
-        imdisp,shkimg,/axis,/erase,title='Frame: '+n2s(hed.frmtime*1000,format='(F10.1)')+' ms'+' CCD: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C'
+        imdisp,shkimg,/axis,/erase,title='Frame: '+n2s(hed.ontime*1000,format='(F10.1)')+' ms'+' CCD: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C'
         ;;setup plotting
-        plot_sym,0,/fill
+        plotsym,0,/fill
         ;;loop over cells
         for i=0,n_elements(pkt.cells)-1 do begin
            ;;draw centroid box
@@ -300,7 +300,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
-        wdelete,WPIXMAP
+        wdelete,wpix
         ;;switch back to real window
         wset,wshk
         ;;set color table
@@ -315,16 +315,18 @@ pro piccgse_processData, hed, pkt, tag
         ;;set window
         wset,wzer
         ;;create pixmap window
-        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
-        wset,WPIXMAP
+        window,wpix,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
+        wset,wpix
         ;;set text origin and spacing
         dy = 14
         sx = 5            
         sy = !D.Y_SIZE - dy
         c  = 0
         ;;calc zernike values
-        zavg = mean(pkt.zernike_measured,dimension=2)
-        zstd = stdev(pkt.zernike_measured,dimension=2)
+        ;zavg = mean(pkt.zernike_measured,dimension=2)
+        ;zstd = stdev(pkt.zernike_measured,dimension=2)
+        zavg = 0
+        zstd = 0
         ztar = pkt.zernike_target
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
@@ -333,7 +335,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
-        wdelete,WPIXMAP
+        wdelete,wpix
         ;;switch back to real window
         wset,wzer
         ;;set color table
@@ -348,8 +350,8 @@ pro piccgse_processData, hed, pkt, tag
         ;;set window
         wset,walp
         ;;create pixmap window
-        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,WPIXMAP
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
         ;;fill out image
         alpimg[alpsel] = pkt.alp_acmd[*,0]
         ;;display image
@@ -358,7 +360,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
-        wdelete,WPIXMAP
+        wdelete,wpix
         ;;switch back to real window
         wset,walp
         ;;set color table
@@ -376,8 +378,8 @@ pro piccgse_processData, hed, pkt, tag
         ;;set window
         wset,wlyt
         ;;create pixmap window
-        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,WPIXMAP
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
         ;;scale image
         simage = pkt.image.data
         greyrscale,simage,4092
@@ -386,7 +388,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
-        wdelete,WPIXMAP
+        wdelete,wpix
         ;;switch back to real window
         wset,wlyt
         ;;set color table
@@ -401,16 +403,18 @@ pro piccgse_processData, hed, pkt, tag
         ;;set window
         wset,wzer
         ;;create pixmap window
-        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
-        wset,WPIXMAP
+        window,wpix,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
+        wset,wpix
         ;;set text origin and spacing
         dy = 14
         sx = 5            
         sy = !D.Y_SIZE - dy
         c  = 0
         ;;calc zernike values
-        zavg = mean(pkt.zernike_measured,dimension=2)*1000
-        zstd = stdev(pkt.zernike_measured,dimension=2)*1000
+        ;zavg = mean(pkt.zernike_measured,dimension=2)*1000
+        ;zstd = stdev(pkt.zernike_measured,dimension=2)*1000
+        zavg = 0
+        zstd = 0
         ztar = pkt.zernike_target*1000
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
@@ -419,7 +423,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
-        wdelete,WPIXMAP
+        wdelete,wpix
         ;;switch back to real window
         wset,wzer
         ;;set color table
@@ -437,8 +441,8 @@ pro piccgse_processData, hed, pkt, tag
         ;;set window
         wset,wsci
         ;;create pixmap window
-        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,WPIXMAP
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
         !P.Multi = [0, n_elements(pkt.image)]
         for i=0,n_elements(pkt.image)-1 do begin
            image  = reform(pkt.image[i].data)
@@ -452,19 +456,18 @@ pro piccgse_processData, hed, pkt, tag
            ymin = xy[1]-3 > 0
            ymax = xy[1]+3 < n_elements(simage[0,*])-1
            avg=mean(double(simage[xmin:xmax,ymin:ymax]))-bgr
-           wset,WPIXMAP
+           wset,wpix
            ;;scale image
            greyrscale,simage,65535
            ;;display
-           pcs = 1
-           if(!D.X_SIZE gt wxsize) then pcs = 0.7* double(!D.X_SIZE) / double(wxsize)
-           imdisp,simage,/noscale,/axis,title='Band '+n2s(i)+' Exp: '+n2s(pkthed.exptime,format='(F10.3)')+' Max: '+n2s(max(image))+' Avg: '+n2s(avg,format='(I)'),charsize=pcs
+           charsize = 1
+           imdisp,simage,/noscale,/axis,title='Band '+n2s(i)+' Exp: '+n2s(hed.exptime,format='(F10.3)')+' Max: '+n2s(max(image))+' Avg: '+n2s(avg,format='(I)'),charsize=charsize
         endfor
         !P.Multi = 0
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
-        wdelete,WPIXMAP
+        wdelete,wpix
         ;;switch back to real window
         wset,wsci
         ;;set color table
@@ -479,17 +482,17 @@ pro piccgse_processData, hed, pkt, tag
         ;;set window
         wset,wbmc
         ;;create pixmap window
-        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,WPIXMAP
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
         ;;fill out image
-        bmcimg[bmcsel] = pkt.bmc_acmd[*,0]
+        bmcimg[bmcsel] = pkt.bmc.acmd
         ;;display image
         implot,bmcimg,ctable=0,blackout=bmcnotsel,range=[-1,1],/erase,$
                cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='BMC DM Command'
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
-        wdelete,WPIXMAP
+        wdelete,wpix
         ;;switch back to real window
         wset,wbmc
         ;;set color table
@@ -507,60 +510,61 @@ pro piccgse_processData, hed, pkt, tag
         ;;set window
         wset,wthm
         ;;create pixmap window
-        window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,WPIXMAP
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
         ;;set text origin and spacing
-        dy = 14
-        dx = 100
+        dy = 16
+        dx = 130
         sx = 5            
         sy = !D.Y_SIZE - dy
         nl = 24
         c  = 0
+        charsize = 1.6
         red=1
         green=2
         blue=3
         white=255
         ;;adc1 data
-        for i=0,n_elements(adc1) do begin
+        for i=0,n_elements(adc1)-1 do begin
            color = green
            if pkt.adc1_temp[i] lt adc1[i].min then color = blue
            if pkt.adc1_temp[i] gt adc1[i].max then color = red
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc1[i].abbr+': ',pkt.adc1_temp[i],format='(A,F-+5.1)'),/device,charsize=charsize,color=color
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc1[i].abbr+':',pkt.adc1_temp[i],format='(A-7,F-+6.1)'),/device,charsize=charsize,color=color
            c++
         endfor
         ;;adc2 data
-        for i=0,n_elements(adc2) do begin
+        for i=0,n_elements(adc2)-1 do begin
            color = green
            if pkt.adc2_temp[i] lt adc2[i].min then color = blue
            if pkt.adc2_temp[i] gt adc2[i].max then color = red
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc2[i].abbr+': ',pkt.adc2_temp[i],format='(A,F-+5.1)'),/device,charsize=charsize,color=color
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc2[i].abbr+':',pkt.adc2_temp[i],format='(A-7,F-+6.1)'),/device,charsize=charsize,color=color
            c++
         endfor
         ;;adc3 data
-        for i=0,n_elements(adc3) do begin
+        for i=0,n_elements(adc3)-1 do begin
            color = green
            if pkt.adc3_temp[i] lt adc3[i].min then color = blue
            if pkt.adc3_temp[i] gt adc3[i].max then color = red
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc3[i].abbr+': ',pkt.adc3_temp[i],format='(A,F-+5.1)'),/device,charsize=charsize,color=color
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc3[i].abbr+':',pkt.adc3_temp[i],format='(A-7,F-+6.1)'),/device,charsize=charsize,color=color
            c++
         endfor
-        ;;heater data
-        for i=0,n_elements(pkt.htr) do begin
-           str=string(string(pkt.htr[i].name)+'['+n2s(i,format='(I2.2)')+']: ',pkt.htr[i].power,' ',$
+       ;;heater data
+        for i=0,n_elements(pkt.htr)-1 do begin
+           str=string(string(pkt.htr[i].name)+':',pkt.htr[i].power,' ',$
                       pkt.htr[i].temp,' ',$
-                      pkt.htr[i].setpoint,format='(A,I-4,A,F-+6.1,A,F-+6.1)')
+                      pkt.htr[i].setpoint,format='(A-7,I-4,A,F-+6.1,A,F-+6.1)')
            xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),str,/device,charsize=charsize,color=white
            c++
         endfor
         ;;humidity sensors
-        for i=0,n_elements(pkt.hum) do begin
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(i,pkt.hum[i].temp,pkt.hum[i].humidity,format='(I2,F5.1,F5.1)'),/device,charsize=charsize,color=white
+        for i=0,n_elements(pkt.hum)-1 do begin
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(i,pkt.hum[i].temp,pkt.hum[i].humidity,format='(I2,F6.1,F6.1)'),/device,charsize=charsize,color=white
            c++
         endfor
-        ;;take snapshot
+         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
-        wdelete,WPIXMAP
+        wdelete,wpix
         ;;switch back to real window
         wset,wthm
         linecolor
@@ -679,6 +683,10 @@ restore,'settings.idl'
   acqevent = read_c_struct(header,'acqevent')
   thmevent = read_c_struct(header,'thmevent')
   mtrevent = read_c_struct(header,'mtrevent')
+
+  ;;Get #defines
+  TLM_PRESYNC  =    '12345678'XUL
+  TLM_POSTSYNC =    'DEADBEEF'XUL
 
   ;;Check for padding
   if check_padding(pkthed)   then stop,'pkthed contains padding'
@@ -886,6 +894,7 @@ restore,'settings.idl'
                           tag = 'thmevent'
                           pkt = thmevent
                        end
+                       else:;;do nothing
                     endcase
                     ;;If we identified the packet
                     if tag ne '' then begin 
