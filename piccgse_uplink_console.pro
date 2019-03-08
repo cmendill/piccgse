@@ -1,9 +1,26 @@
 ;;UPLINK
 ;;  Function to format CSBF "Request-to-Send" packets for command uplink
 pro uplink, fd, cmd
-  
-  
-
+  pkt = bytarr(260)
+  ;;Fill out static packet elements
+  pkt[0]   = 16  ;;start byte == 0x10
+  pkt[1]   = 0   ;;link routing (0=LOS,1=TDRSS,2=Iridium)
+  pkt[2]   = 9   ;;routing addresss (9=COMM1,C=COMM2)
+  pkt[3]   = 255 ;;length (always 255, zero-padded)
+  pkt[259] = 3   ;;stop byte == 0x3
+  ;;Fill out command
+  barr = bytarr(255)
+  bcmd = byte(cmd)
+  if n_elements(bcmd) gt 255 then begin
+     print, 'Uplink command failed: length exceedes 255 characters'
+  endif else begin
+     ;;Add command to byte array
+     barr[0:n_elements(bcmd)-1] = bcmd
+     ;;Add byte array to packet
+     pkt[4:258] = barr
+     ;;Send packet
+     writeu,fd,pkt
+  endelse
 end
 
 pro command_event, ev
