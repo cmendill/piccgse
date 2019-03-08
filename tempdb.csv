@@ -74,8 +74,8 @@
 3,24,Electronics,Power Supply 5V DC/DC,PS05,-40,50,24
 3,25,Electronics,Power Supply 12V DC/DC,PS12,-40,50,25
 3,26,Electronics,Power Supply 24V DC/DC,PS24,-40,50,26
-3,27,Electronics,ALPAO Board 1,ALB3,0,50,27
-3,28,Electronics,ALPAO Board 2,ALB3,0,50,28
-3,29,Electronics,ALPAO Board 3,ALB2,0,50,29
-3,30,Electronics,ALPAO Board 4,ALB1,0,50,30
+3,27,Electronics,ALPAO Board 1,ALB1,0,50,27
+3,28,Electronics,ALPAO Board 2,ALB2,0,50,28
+3,29,Electronics,ALPAO Board 3,ALB3,0,50,29
+3,30,Electronics,ALPAO Board 4,ALB4,0,50,30
 3,31,Electronics,Hexapod Board 1,HXB1,0,50,31
