@@ -200,7 +200,7 @@ pro piccgse_uplink_console
   ;;setup base widget
   wxs = 818
   wys = 268
-  wxp = 688
+  wxp = 688+35
   wyp = 2000
   title = 'PICTURE Uplink Command Console'
   base = WIDGET_BASE(xsize=wxs,ysize=wys,xoffset=wxp,yoffset=wyp,/row,title=title)
