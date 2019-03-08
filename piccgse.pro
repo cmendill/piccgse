@@ -15,6 +15,9 @@ pro piccgse_loadConfig, path
   wbmc = where(set.w.id eq 'bmc')
   wzer = where(set.w.id eq 'zer')
   wthm = where(set.w.id eq 'thm')
+  wsda = where(set.w.id eq 'sda')
+  wlda = where(set.w.id eq 'lda')
+  wsys = where(set.w.id eq 'sys')
   
   ;;Open the config file
   openr, unit, path, /get_lun
@@ -116,7 +119,33 @@ pro piccgse_loadConfig, path
            'THM_YPOS'        : set.w[wthm].ypos  = value
            'THM_FONT'        : set.w[wthm].font  = value
 
-           else: ;;do nothing
+           ;;SDA Window
+           'SDA_SHOW'        : set.w[wsda].show  = value
+           'SDA_NAME'        : set.w[wsda].name  = value
+           'SDA_XSIZE'       : set.w[wsda].xsize = value
+           'SDA_YSIZE'       : set.w[wsda].ysize = value
+           'SDA_XPOS'        : set.w[wsda].xpos  = value
+           'SDA_YPOS'        : set.w[wsda].ypos  = value
+           'SDA_FONT'        : set.w[wsda].font  = value
+
+           ;;LDA Window
+           'LDA_SHOW'        : set.w[wlda].show  = value
+           'LDA_NAME'        : set.w[wlda].name  = value
+           'LDA_XSIZE'       : set.w[wlda].xsize = value
+           'LDA_YSIZE'       : set.w[wlda].ysize = value
+           'LDA_XPOS'        : set.w[wlda].xpos  = value
+           'LDA_YPOS'        : set.w[wlda].ypos  = value
+           'LDA_FONT'        : set.w[wlda].font  = value
+
+           ;;SYS Window
+           'SYS_SHOW'        : set.w[wsys].show  = value
+           'SYS_NAME'        : set.w[wsys].name  = value
+           'SYS_XSIZE'       : set.w[wsys].xsize = value
+           'SYS_YSIZE'       : set.w[wsys].ysize = value
+           'SYS_XPOS'        : set.w[wsys].xpos  = value
+           'SYS_YPOS'        : set.w[wsys].ypos  = value
+           'SYS_FONT'        : set.w[wsys].font  = value
+          else: ;;do nothing
         endcase
      endif
   endfor
@@ -188,7 +217,7 @@ pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
   common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
-  common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm, wpix
+  common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm, wsda, wlda, wsys, wpix
 
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -258,6 +287,9 @@ pro piccgse_processData, hed, pkt, tag
      wbmc = where(set.w.id eq 'bmc')
      wzer = where(set.w.id eq 'zer')
      wthm = where(set.w.id eq 'thm')
+     wsda = where(set.w.id eq 'sda')
+     wlda = where(set.w.id eq 'lda')
+     wsys = where(set.w.id eq 'sys')
      wpix = n_elements(set.w)+1
   endif
   
@@ -659,17 +691,20 @@ restore,'settings.idl'
 
   ;;Settings
   set = {tmserver_type:'',tmserver_addr:'',tmserver_port:0U,tmserver_tmfile:'',tmserver_idlfile:'',$
-         datapath:'',pktlogunit:0,savedata:(NOT keyword_set(NOSAVE)),w:replicate(win,8)}
+         datapath:'',pktlogunit:0,savedata:(NOT keyword_set(NOSAVE)),w:replicate(win,11)}
   
   ;;Assign window ID tags
-  set.w[0].id = 'shk'
-  set.w[1].id = 'lyt'
-  set.w[2].id = 'alp'
-  set.w[3].id = 'bmc'
-  set.w[4].id = 'sci'
-  set.w[5].id = 'acq'
-  set.w[6].id = 'zer'
-  set.w[7].id = 'thm'
+  set.w[0].id  = 'shk'
+  set.w[1].id  = 'lyt'
+  set.w[2].id  = 'alp'
+  set.w[3].id  = 'bmc'
+  set.w[4].id  = 'sci'
+  set.w[5].id  = 'acq'
+  set.w[6].id  = 'zer'
+  set.w[7].id  = 'thm'
+  set.w[8].id  = 'sda'
+  set.w[9].id  = 'lda'
+  set.w[10].id = 'sys'
 
 ;*************************************************
 ;* GET INFORMATION FROM FLIGHT SOFTWARE
