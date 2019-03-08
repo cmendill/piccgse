@@ -187,7 +187,7 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
-  common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, bmcimg, bmcsel, adc1, adc2, adc3
+  common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm, wpix
 
   ;;Initialize common block
@@ -260,7 +260,10 @@ pro piccgse_processData, hed, pkt, tag
      wthm = where(set.w.id eq 'thm')
      wpix = n_elements(set.w)+1
   endif
-
+  
+  ;;Swap column/row major for 2D arrays
+  struct_swap_majority,pkt
+  
   ;;SHKPKT
   if tag eq 'shkpkt' then begin
      ;;Display image
@@ -291,9 +294,9 @@ pro piccgse_processData, hed, pkt, tag
            oplot,[trx,trx],[bly,try]
            ;;plot centroid
            if pkt.cells[i].spot_found then begin
-              xcentroid = (pkt.cells[i].xtarget + pkt.cells[i].xtarget_deviation[0])/SHKBIN
-              ycentroid = (pkt.cells[i].ytarget + pkt.cells[i].ytarget_deviation[0])/SHKBIN
-              if cells[i].maxval eq 255 then color = 1 else color = 255
+              xcentroid = (double(pkt.cells[i].xtarget) + double(pkt.cells[i].xtarget_deviation[0]))/SHKBIN
+              ycentroid = (double(pkt.cells[i].ytarget) + double(pkt.cells[i].ytarget_deviation[0]))/SHKBIN
+              if pkt.cells[i].maxval eq 255 then color = 1 else color = 255
               oplot,[xcentroid],[ycentroid],color=color,psym=8,symsize=0.5
            endif
         endfor
@@ -318,19 +321,21 @@ pro piccgse_processData, hed, pkt, tag
         window,wpix,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
         wset,wpix
         ;;set text origin and spacing
-        dy = 14
+        dy = 16
         sx = 5            
         sy = !D.Y_SIZE - dy
         c  = 0
+        charsize = 1.6
         ;;calc zernike values
-        ;zavg = mean(pkt.zernike_measured,dimension=2)
-        ;zstd = stdev(pkt.zernike_measured,dimension=2)
-        zavg = 0
-        zstd = 0
+        zavg = mean(pkt.zernike_measured,dimension=2)
+        zstd = stddev(pkt.zernike_measured,dimension=2)
         ztar = pkt.zernike_target
+        ;;print header
+        xyouts,sx,sy-dy*c++,string('--- SHK ZERNIKES ---',format='(A20)'),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device,charsize=charsize
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
-           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F5.2,F5.2)'),/device,charsize=charsize
+           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.2,F+6.2,F+6.2)'),/device,charsize=charsize
         endfor
         ;;take snapshot
         snap = TVRD()
@@ -406,19 +411,21 @@ pro piccgse_processData, hed, pkt, tag
         window,wpix,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
         wset,wpix
         ;;set text origin and spacing
-        dy = 14
+        dy = 16
         sx = 5            
         sy = !D.Y_SIZE - dy
         c  = 0
+        charsize = 1.6
         ;;calc zernike values
-        ;zavg = mean(pkt.zernike_measured,dimension=2)*1000
-        ;zstd = stdev(pkt.zernike_measured,dimension=2)*1000
-        zavg = 0
-        zstd = 0
+        zavg = mean(pkt.zernike_measured,dimension=2)*1000
+        zstd = stddev(pkt.zernike_measured,dimension=2)*1000
         ztar = pkt.zernike_target*1000
+        ;;print header
+        xyouts,sx,sy-dy*c++,string('--- LYT ZERNIKES ---',format='(A20)'),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device,charsize=charsize
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
-           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F5.2,F5.2)'),/device,charsize=charsize
+           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.1,F+6.1,F+6.1)'),/device,charsize=charsize
         endfor
         ;;take snapshot
         snap = TVRD()
@@ -429,7 +436,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;set color table
         loadct,0
         ;;display data
-        tv,snap,0,!D.X_SIZE/2
+        tv,snap,!D.X_SIZE/2,0
         loadct,0
      endif
   endif
@@ -460,8 +467,7 @@ pro piccgse_processData, hed, pkt, tag
            ;;scale image
            greyrscale,simage,65535
            ;;display
-           charsize = 1
-           imdisp,simage,/noscale,/axis,title='Band '+n2s(i)+' Exp: '+n2s(hed.exptime,format='(F10.3)')+' Max: '+n2s(max(image))+' Avg: '+n2s(avg,format='(I)'),charsize=charsize
+           imdisp,simage,margin=0.01,charsize=1.8,/noscale,/axis,title='Band '+n2s(i)+' Exp: '+n2s(hed.exptime,format='(F10.3)')+' Max: '+n2s(max(image))+' Avg: '+n2s(avg,format='(I)')
         endfor
         !P.Multi = 0
         ;;take snapshot
