@@ -612,7 +612,7 @@ pro piccgse_processData, hed, pkt, tag
   endif
   
   ;;save data
-  if set.savedata then save,hed,pkt,tag,filename=set.datapath+tag+'.'+gettimestamp('.')+'.'+n2s(hed.frame_number,format='(I8.8)')+'.idl'
+  if set.savedata then save,hed,pkt,tag,filename=set.datapath+'piccgse.'+gettimestamp('.')+'.'+tag+'.'+n2s(hed.frame_number,format='(I8.8)')+'.idl'
     
 end
 
@@ -768,7 +768,7 @@ restore,'settings.idl'
 ;* SETUP FILES
 ;*************************************************
   piccgse_setupFiles,STARTUP_TIMESTAMP=STARTUP_TIMESTAMP
-
+ 
 ;*************************************************
 ;* CREATE WINDOWS
 ;*************************************************
@@ -798,6 +798,10 @@ restore,'settings.idl'
      ifile = 0L
      print,'Opening idlfile images'
      help,idlfiles
+     set.savedata=0
+  endif
+  if(set.tmserver_type eq 'tmfile') then begin
+     set.savedata=0
   endif
   
 ;*************************************************
@@ -877,7 +881,7 @@ restore,'settings.idl'
         endif else begin
            restore,idlfiles[ifile]
            ;;process data
-           piccgse_processDATA,header,packet,tag
+           piccgse_processData,hed,pkt,tag
            ;;save time
            t_last_telemetry = t_now
            ;;increment file for next time
