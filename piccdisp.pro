@@ -415,9 +415,11 @@ while 1 do begin
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
                ;;scale image
-               simage = acqfull.image.data
-               greyrscale,simage,2L^14 - 1
-               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'
+               image = acqfull.image.data
+               simage = image
+               greyrscale,simage,255
+               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'+' Min: '+n2s(uint(min(image)))+$
+                      ' Max: '+n2s(uint(max(image)))
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window

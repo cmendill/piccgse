@@ -540,7 +540,43 @@ pro piccgse_processData, hed, pkt, tag
         loadct,0
      endif
   endif
-    
+
+  ;;ACQEVENT
+  if tag eq 'acqevent' then begin
+     ;;Display Image
+     if set.w[wacq].show then begin
+        ;;set window
+        wset,wacq
+        ;;create pixmap window
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
+        ;;save gif
+        openw,unit,'acq.gif',/get_lun
+        data = pkt.gif[0:pkt.gif_nbytes-1]
+        writeu,unit,data
+        free_lun,unit
+        ;;read gif
+        read_gif,'acq.gif',image
+        ;;scale image
+        simage = image
+        greyrscale,simage,255
+        ;;display image
+        imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(hed.ontime*1000,format='(F10.1)')+' ms'+' Min: '+n2s(uint(min(image)))+$
+                      ' Max: '+n2s(uint(max(image)))
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,wpix
+        ;;switch back to real window
+        wset,wacq
+        ;;set color table
+        greyr
+        ;;display image
+        tv,snap
+        loadct,0
+     endif
+  endif
+   
   ;;THMEVENT
   if tag eq 'thmevent' then begin
      ;;Display Thermal Data
