@@ -46,7 +46,7 @@ pro command_event, ev
   
   ;;log command
   gsets=strcompress(string(shm_var[SHM_TIMESTAMP:n_elements(shm_var)-1]),/REMOVE_ALL)
-  logfile='data/gsedata/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
+  logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
   if not file_test(logfile) then begin
      ;;close logfile if it is open
      if n_elements(cmdlogfd) gt 0 then free_lun,cmdlogfd
@@ -95,7 +95,7 @@ pro serial_command_buttons_event, ev
 
      ;;log command
      gsets=strcompress(string(shm_var[SHM_TIMESTAMP:n_elements(shm_var)-1]),/REMOVE_ALL)
-     logfile='data/gsedata/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
+     logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
      if not file_test(logfile) then begin
         ;;close logfile if it is open
         if n_elements(cmdlogfd) gt 0 then free_lun,cmdlogfd
@@ -190,8 +190,13 @@ pro piccgse_uplink_console
   ;;load buttons
   buttondb = load_buttondb()
   
+  ;;setup shared memory
+  shmmap, 'shm', /byte, shm_size
+  shm_var = shmvar('shm')
+  print,'Shared memory mapped'
+
   ;;choose serial device
-  if(shm_uplink) then begin
+  if(shm_var[shm_uplink]) then begin
      dev  = uplink_dev
      baud = uplink_baud
   endif else begin
@@ -207,12 +212,10 @@ pro piccgse_uplink_console
   endif
   
   ;;configure serial port
-  if upfd ge 0 then spawn,'stty -F '+dev+' '+baud+' cs8 -cstopb -parenb'
-
-  ;;setup shared memory
-  shmmap, 'shm', /byte, shm_size
-  shm_var = shmvar('shm')
-  print,'Shared memory mapped'
+  if upfd ge 0 then begin
+     spawn,'stty -F '+dev+' '+baud+' cs8 -cstopb -parenb'
+     print,'UPLINK: Opened '+dev
+  endif
 
   ;;setup base widget
   wxs = 818

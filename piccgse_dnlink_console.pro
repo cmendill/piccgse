@@ -34,7 +34,7 @@ pro console_event, ev
         widget_control,ev.id,set_value=newline,/append
         ;;print console text to log file
         gsets=strcompress(string(shm_var[SHM_TIMESTAMP:n_elements(shm_var)-1]),/REMOVE_ALL)
-        logfile='data/gsedata/piccgse.'+gsets+'/piccgse.'+gsets+'.conlog.txt'
+        logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.conlog.txt'
         if not file_test(logfile) then begin
            ;;close logfile if it is open
            if n_elements(conlogfd) gt 0 then free_lun,conlogfd
@@ -67,7 +67,10 @@ pro piccgse_dnlink_console
   endif
 
   ;;configure serial port
-  if dnfd ge 0 then spawn,'stty -F '+dnlink_dev+' '+dnlink_baud+' cs8 -cstopb -parenb'
+  if dnfd ge 0 then begin
+     spawn,'stty -F '+dnlink_dev+' '+dnlink_baud+' cs8 -cstopb -parenb'
+     print,'DNLINK: Opened '+dnlink_dev
+  endif
   
   ;;setup shared memory
   shmmap, 'shm', /byte, shm_size

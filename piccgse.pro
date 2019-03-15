@@ -560,9 +560,11 @@ pro piccgse_processData, hed, pkt, tag
         ;;scale image
         simage = image
         greyrscale,simage,255
+        ;;calculate event time
+        dt = long((double(hed.end_sec) - double(hed.start_sec))*1d3 + (double(hed.end_nsec) - double(hed.start_nsec))/1d6)
         ;;display image
-        imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(hed.ontime*1000,format='(F10.1)')+' ms'+' Min: '+n2s(uint(min(image)))+$
-                      ' Max: '+n2s(uint(max(image)))
+        imdisp,simage,/noscale,/axis,/erase,title=n2s(hed.ontime*1000,format='(F10.1)')+' ms '+n2s(uint(min(image)))+$
+                      ' - '+n2s(uint(max(image)))+' ET: '+n2s(dt)+' ms'
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window

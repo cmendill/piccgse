@@ -151,8 +151,6 @@ while 1 do begin
          ON_IOERROR, RESET_CONNECTION
           IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=5) GT 0 THEN BEGIN
             dc=0
-            shk_toff=0L
-            lyt_toff=0L
             readu,IMUNIT,pkthed
             if pkthed.type eq BUFFER_SCIEVENT then begin
                readu,IMUNIT,scievent
@@ -179,7 +177,7 @@ while 1 do begin
                   ;;display
                   pcs = 1
                   if(!D.X_SIZE gt wxsize) then pcs = 0.7* double(!D.X_SIZE) / double(wxsize)
-                  imdisp,simage,/noscale,/axis,title='Band '+n2s(i)+' Exp: '+n2s(pkthed.exptime,format='(F10.3)')+' Max: '+n2s(max(image))+' Avg: '+n2s(avg,format='(I)'),charsize=pcs
+                  imdisp,simage,/noscale,/axis,title='B'+n2s(i)+' E: '+n2s(pkthed.exptime,format='(F10.3)')+' M: '+n2s(max(image))+' A: '+n2s(avg,format='(I)')+' T: '+n2s(scievent.ccd_temp,format='(F10.1)'),charsize=pcs
                endfor
                !P.Multi = 0
                ;;take snapshot
@@ -282,7 +280,6 @@ while 1 do begin
 
                
                ;;****** WRITE TO DATA WINDOW ******
-               if shk_toff eq 0 then shk_toff = pkthed.start_sec
                wset,WSHKDATA
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
@@ -293,15 +290,11 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/device,charsize=charsize
-               st = double(shkevent.hed.start_sec-shk_toff) + double(shkevent.hed.start_nsec)/1e9
-               et = double(shkevent.hed.end_sec-shk_toff) + double(shkevent.hed.end_nsec)/1e9
-               dt = long((et-st)*1e6)
+               dt = long((double(shkevent.hed.end_sec) - double(shkevent.hed.start_sec))*1d6 + (double(shkevent.hed.end_nsec) - double(shkevent.hed.start_nsec))/1d3)
                xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/device,charsize=charsize
-               st = double(pkthed.start_sec-shk_toff) + double(pkthed.start_nsec)/1e9
-               et = double(pkthed.end_sec-shk_toff) + double(pkthed.end_nsec)/1e9
-               dt = long((et-st)*1e6)
+               dt = long((double(pkthed.end_sec) - double(pkthed.start_sec))*1d6 + (double(pkthed.end_nsec) - double(pkthed.start_nsec))/1d3)
                xyouts,dsx,dsy-ddy*dc++,'Full Time: '+n2s(dt)+' us',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1d6))+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'CCD Temp: '+n2s(shkevent.ccd_temp,format='(F10.3)')+' C',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alpcalmodes[shkevent.hed.alp_calmode],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Hex Cal Mode: '+hexcalmodes[shkevent.hed.hex_calmode],/device,charsize=charsize
@@ -369,7 +362,6 @@ while 1 do begin
                loadct,0
               
                ;;****** DISPLAY DATA ******
-               if lyt_toff eq 0 then lyt_toff = pkthed.start_sec
                wset,WLYTDATA
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
@@ -381,11 +373,9 @@ while 1 do begin
                xyouts,dsx,dsy-ddy*dc++,'-------Lyot LOWFS-------',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/device,charsize=charsize
-               st = double(pkthed.start_sec-lyt_toff) + double(pkthed.start_nsec)/1e9
-               et = double(pkthed.end_sec-lyt_toff)   + double(pkthed.end_nsec)/1e9
-               dt = long((et-st)*1e6)
+               dt = long((double(pkthed.end_sec) - double(pkthed.start_sec))*1d6 + (double(pkthed.end_nsec) - double(pkthed.start_nsec))/1d3)
                xyouts,dsx,dsy-ddy*dc++,'Event Time: '+n2s(dt)+' us',/device,charsize=charsize
-               xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1e6))+' us',/device,charsize=charsize
+               xyouts,dsx,dsy-ddy*dc++,'Meas. Exp: '+n2s(long(pkthed.ontime*1d6))+' us',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'CCD Temp: '+n2s(lytevent.ccd_temp,format='(F10.3)')+' C',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'ALP Cal Mode: '+alpcalmodes[pkthed.alp_calmode],/device,charsize=charsize
                gain_alp_zern = reform(lytevent.gain_alp_zern,LOWFS_N_PID,LOWFS_N_ZERNIKE)
@@ -418,8 +408,10 @@ while 1 do begin
                image = acqfull.image.data
                simage = image
                greyrscale,simage,255
+               ;;calculate event time
+               dt = long((double(pkthed.end_sec) - double(pkthed.start_sec))*1d3 + (double(pkthed.end_nsec) - double(pkthed.start_nsec))/1d6)
                imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'+' Min: '+n2s(uint(min(image)))+$
-                      ' Max: '+n2s(uint(max(image)))
+                      ' Max: '+n2s(uint(max(image)))+' Event Time: '+n2s(dt)+' ms'
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
@@ -454,7 +446,6 @@ while 1 do begin
                   color = green
                   if thmevent.adc1_temp[i<15] lt adc1[i<15].min then color = blue
                   if thmevent.adc1_temp[i<15] gt adc1[i<15].max then color = red
-                  if (i mod 2 eq 1) OR i gt 8 then color = 255
                   xyouts,dsx,dsy-ddy*dc,string(adc1[i<15].abbr+': ',thmevent.adc1_temp[i<15],format='(A,F-+25.3)'),/device,charsize=charsize,color=color
                   color = green
                   if thmevent.adc2_temp[i] lt adc2[i].min then color = blue
