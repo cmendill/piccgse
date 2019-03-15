@@ -1,4 +1,4 @@
-pro piccdisp,NOSAVE=NOSAVE,PLOT_CENTROIDS=PLOT_CENTROIDS,NOBOX=NOBOX,ZAUTOSCALE=ZAUTOSCALE
+pro piccdisp,NOSAVE=NOSAVE,PLOT_CENTROIDS=PLOT_CENTROIDS,NOBOX=NOBOX,ZAUTOSCALE=ZAUTOSCALE, NOSHK=NOSHK, NOLYT=NOLYT, NOSCI=NOSCI, NOTHM=NOTHM, NOACQ=NOACQ, NOMTR=NOMTR
   close,/all
   
 ;;Flight Software Header File
@@ -55,6 +55,7 @@ LOWFS_N_PID = read_c_define(header,"LOWFS_N_PID")
 CMD_SENDDATA = '0ABACABB'XUL
 imserver = 'picture'
 import   = 14000
+cmdline = ''
 
 ;;Counters
 shkfull_count  = 0UL
@@ -136,6 +137,8 @@ dosave=1
 if keyword_set(NOSAVE) then dosave=0
 
 IMUNIT=0
+
+;;Start connection loop
 while 1 do begin
    RESET_CONNECTION: PRINT, !ERR_STRING ;;Jump here if an IO error occured
    if IMUNIT gt 0 then free_lun,IMUNIT
@@ -146,14 +149,21 @@ while 1 do begin
       PRINT, 'Socket created'
       ;;Ask for images
       WRITEU,IMUNIT,CMD_SENDDATA
+
+      ;;Start data loop
       while 1 do begin
          ;;install error handler
          ON_IOERROR, RESET_CONNECTION
-          IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=5) GT 0 THEN BEGIN
+         IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=5) GT 0 THEN BEGIN
             dc=0
             readu,IMUNIT,pkthed
+            
             if pkthed.type eq BUFFER_SCIEVENT then begin
                readu,IMUNIT,scievent
+               
+               ;;Check if we should ignore these packets
+               if keyword_set(NOSCI) then continue
+
                tag='scievent'
                wset,WSCIIMAGE
                ;;create pixmap window
@@ -177,7 +187,8 @@ while 1 do begin
                   ;;display
                   pcs = 1
                   if(!D.X_SIZE gt wxsize) then pcs = 0.7* double(!D.X_SIZE) / double(wxsize)
-                  imdisp,simage,/noscale,/axis,title='B'+n2s(i)+' E: '+n2s(pkthed.exptime,format='(F10.3)')+' M: '+n2s(max(image))+' A: '+n2s(avg,format='(I)')+' T: '+n2s(scievent.ccd_temp,format='(F10.1)'),charsize=pcs
+                  imdisp,simage,/noscale,/axis,title='B'+n2s(i)+' E: '+n2s(pkthed.exptime,format='(F10.3)')+' M: '+n2s(max(image))+' A: '$
+                         +n2s(avg,format='(I)')+' T: '+n2s(scievent.ccd_temp,format='(F10.1)'),charsize=pcs
                endfor
                !P.Multi = 0
                ;;take snapshot
@@ -194,9 +205,14 @@ while 1 do begin
                ;;save packet
                if dosave then save,pkthed,scievent,filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(scievent_count,format='(I8.8)')+'.idl'
                scievent_count++
-          endif
+            endif
+            
             if pkthed.type eq BUFFER_SHKFULL then begin
                readu,IMUNIT,shkfull
+
+               ;;Check if we should ignore these packets
+               if keyword_set(NOSHK) then continue
+
                tag='shkfull'
                shkevent = shkfull.shkevent
 
@@ -209,7 +225,8 @@ while 1 do begin
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
-               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'+' CCD: '+n2s(shkevent.ccd_temp,format='(F10.1)')+' C'
+               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'+$
+                      ' CCD: '+n2s(shkevent.ccd_temp,format='(F10.1)')+' C'
                for i=0,n_elements(shkevent.cells)-1 do begin
                   if NOT keyword_set(NOBOX) then begin
                      color = 254
@@ -324,10 +341,15 @@ while 1 do begin
                
                shkfull_count++
             endif
+            
             if pkthed.type eq BUFFER_LYTEVENT then begin
                readu,IMUNIT,lytevent
+
+               ;;Check if we should ignore these packets
+               if keyword_set(NOLYT) then continue
+
                tag='lytevent'
-                            
+               
                ;;****** DISPLAY IMAGE ******
                wset,WLYTIMAGE
                ;;create pixmap window
@@ -360,7 +382,7 @@ while 1 do begin
                oplot,lytevent.zernike_target*1000,psym=10,color=1,thick=3
                oplot,lytevent.zernike_measured[*,0]*1000,psym=10,color=255
                loadct,0
-              
+               
                ;;****** DISPLAY DATA ******
                wset,WLYTDATA
                ;;create pixmap window
@@ -395,9 +417,14 @@ while 1 do begin
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(lytevent_count,format='(I8.8)')+'.idl'
                lytevent_count++
 
-             endif
+            endif
+            
             if pkthed.type eq BUFFER_ACQFULL then begin
                readu,IMUNIT,acqfull
+
+               ;;Check if we should ignore these packets
+               if keyword_set(NOACQ) then continue
+
                tag='acqfull'
                ;;****** DISPLAY IMAGE ******
                wset,WACQIMAGE
@@ -428,11 +455,16 @@ while 1 do begin
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(acqfull_count,format='(I8.8)')+'.idl'
                acqfull_count++
             endif
+            
             if pkthed.type eq BUFFER_THMEVENT then begin
                tag='thmevent'
                readu,IMUNIT,thmevent
+
+               ;;Check if we should ignore these packets
+               if keyword_set(NOTHM) then continue
+
                wset,WTHMDATA
-                ;;create pixmap window
+               ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
                ;;set text origin
@@ -480,27 +512,33 @@ while 1 do begin
                ;;save packet
                if dosave then save,pkthed,thmevent,$
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(thmevent_count,format='(I8.8)')+'.idl'
-              
+               
                thmevent_count++
             endif
+            
             if pkthed.type eq BUFFER_MTREVENT then begin
                tag='mtrevent'
                readu,IMUNIT,mtrevent
+
+               ;;Check if we should ignore these packets
+               if keyword_set(NOMTR) then continue
+
                ;;save packet
                if dosave then save,pkthed,mtrevent,$
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(thmevent_count,format='(I8.8)')+'.idl'
-              
+               
                mtrevent_count++
             endif
+            
          endif else begin
+            ;;Data Timout -- Break out of loop and reconnect
             if n_elements(IMUNIT) gt 0 then begin
                if IMUNIT gt 0 then free_lun,IMUNIT
             endif
             break
          endelse
-
+         
          ;;User commands
-         cmdline = ''
          if(FILE_POLL_INPUT(tty,TIMEOUT=0.000001D)) then begin
             readf,tty,cmdline
             if cmdline eq 'reset' then begin
@@ -522,7 +560,6 @@ while 1 do begin
    endelse
 
    ;;User commands
-   cmdline = ''
    if(FILE_POLL_INPUT(tty,TIMEOUT=0.000001D)) then begin
       readf,tty,cmdline
       if cmdline eq 'reset' then begin
@@ -552,8 +589,11 @@ while 1 do begin
          stop
       endif
    endif
-   wait,0.2
+
+   ;;Wait for connection
+   wait,1
 endwhile
+
 
 
 end
