@@ -499,8 +499,7 @@ while 1 do begin
             break
          endelse
 
-         ;;Pause for just a bit to handle I/O with user
-         wait, 0.000001d
+         ;;User commands
          cmdline = ''
          if(FILE_POLL_INPUT(tty,TIMEOUT=0.000001D)) then begin
             readf,tty,cmdline
@@ -518,13 +517,11 @@ while 1 do begin
          endif
          
       endwhile
-      
    endif else begin
       MESSAGE, !ERR_STRING, /INFORM
    endelse
 
-   ;;Pause for just a bit to handle I/O with user
-   wait, 0.000001d
+   ;;User commands
    cmdline = ''
    if(FILE_POLL_INPUT(tty,TIMEOUT=0.000001D)) then begin
       readf,tty,cmdline
