@@ -3,7 +3,7 @@
 ;;device settings
 dev  = '/dev/ttyUSB0'
 baud = '115200'
-data = bytarr[128]
+data = bytarr(128)
 
 ;;output device (stdout)
 stdout = -1
@@ -22,8 +22,9 @@ while 1 do begin
    if file_poll_input(unit) then begin
       ;;read unformatted data
       readu,unit,data,transfer_count=num
+      print,'Got '+n2s(num)+' characters'
       ;;write unformmated data to stdout
-      writeu,stdout,data[0:num-1]
+      ;writeu,stdout,data[0:num-1]
    endif
 endwhile
 

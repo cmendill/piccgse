@@ -120,6 +120,9 @@ alpimage = mask * 0d
 ;;Open console
 openr,tty,'/dev/tty',/get_lun
 
+;;Open output log
+openw,log,'piccdisp.log',/get_lun
+
 ;;Create output path
 if not keyword_set(NOSAVE) then begin
    path = 'data/piccdisp/piccdisp.'+gettimestamp('.')+'/'
@@ -155,15 +158,16 @@ while 1 do begin
          ;;install error handler
          ON_IOERROR, RESET_CONNECTION
          IF FILE_POLL_INPUT(IMUNIT,TIMEOUT=5) GT 0 THEN BEGIN
+            start_time = systime(1)
             dc=0
             readu,IMUNIT,pkthed
-            
             if pkthed.type eq BUFFER_SCIEVENT then begin
                readu,IMUNIT,scievent
-               
+               read_time = systime(1)
+
                ;;Check if we should ignore these packets
                if keyword_set(NOSCI) then continue
-
+               
                tag='scievent'
                wset,WSCIIMAGE
                ;;create pixmap window
@@ -204,12 +208,17 @@ while 1 do begin
                loadct,0
                ;;save packet
                if dosave then save,pkthed,scievent,filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(scievent_count,format='(I8.8)')+'.idl'
+               ;;write log
+               end_time = systime(1)
+               printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
+                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
                scievent_count++
             endif
             
             if pkthed.type eq BUFFER_SHKFULL then begin
                readu,IMUNIT,shkfull
-
+               read_time = systime(1)
+               
                ;;Check if we should ignore these packets
                if keyword_set(NOSHK) then continue
 
@@ -251,6 +260,7 @@ while 1 do begin
                      oplot,[xcentroid],[ycentroid],color=254,psym=2
                   endif
                endfor
+               
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
@@ -262,6 +272,7 @@ while 1 do begin
                ;;display image
                tv,snap
                loadct,0
+               
                ;;display zernikes
                wset,WSHKZERN
                linecolor
@@ -304,6 +315,7 @@ while 1 do begin
                ;;set text origin
                dsx = 5
                dsy = !D.Y_SIZE - 14
+               
                xyouts,dsx,dsy-ddy*dc++,'-------Shack-Hartmann-------',/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'State: '+states[pkthed.state],/device,charsize=charsize
                xyouts,dsx,dsy-ddy*dc++,'Frame Number: '+n2s(pkthed.frame_number),/device,charsize=charsize
@@ -339,11 +351,16 @@ while 1 do begin
                if dosave then save,pkthed,shkfull,$
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(shkfull_count,format='(I8.8)')+'.idl'
                
+               ;;write log
+               end_time = systime(1)
+               printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
+                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
                shkfull_count++
             endif
             
             if pkthed.type eq BUFFER_LYTEVENT then begin
                readu,IMUNIT,lytevent
+               read_time = systime(1)
 
                ;;Check if we should ignore these packets
                if keyword_set(NOLYT) then continue
@@ -415,12 +432,16 @@ while 1 do begin
                ;;save packet
                if dosave then save,pkthed,lytevent,$
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(lytevent_count,format='(I8.8)')+'.idl'
+               ;;write log
+               end_time = systime(1)
+               printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
+                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
                lytevent_count++
-
             endif
             
             if pkthed.type eq BUFFER_ACQFULL then begin
                readu,IMUNIT,acqfull
+               read_time = systime(1)
 
                ;;Check if we should ignore these packets
                if keyword_set(NOACQ) then continue
@@ -453,16 +474,21 @@ while 1 do begin
                ;;save packet
                if dosave then save,pkthed,acqfull,$
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(acqfull_count,format='(I8.8)')+'.idl'
+               ;;write log
+               end_time = systime(1)
+               printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
+                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
                acqfull_count++
             endif
             
             if pkthed.type eq BUFFER_THMEVENT then begin
-               tag='thmevent'
                readu,IMUNIT,thmevent
+               read_time = systime(1)
 
                ;;Check if we should ignore these packets
                if keyword_set(NOTHM) then continue
 
+               tag='thmevent'
                wset,WTHMDATA
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
@@ -513,20 +539,30 @@ while 1 do begin
                if dosave then save,pkthed,thmevent,$
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(thmevent_count,format='(I8.8)')+'.idl'
                
+               ;;write log
+               end_time = systime(1)
+               printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
+                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
                thmevent_count++
             endif
             
             if pkthed.type eq BUFFER_MTREVENT then begin
-               tag='mtrevent'
                readu,IMUNIT,mtrevent
+               read_time = systime(1)
 
                ;;Check if we should ignore these packets
                if keyword_set(NOMTR) then continue
+
+               tag='mtrevent'
 
                ;;save packet
                if dosave then save,pkthed,mtrevent,$
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(thmevent_count,format='(I8.8)')+'.idl'
                
+               ;;write log
+               end_time = systime(1)
+               printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
+                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
                mtrevent_count++
             endif
             
@@ -576,6 +612,7 @@ while 1 do begin
             if IMUNIT gt 0 then free_lun,IMUNIT
          endif
          if tty gt 0 then free_lun,tty
+         if log gt 0 then free_lun,log
          while !D.WINDOW ne -1 do wdelete
          ;;print status
          print,'**********Packets received**********'
