@@ -1,4 +1,4 @@
-pro tmtest, mode
+pro tmtest, mode, nocheck=nocheck
 ;;Settings
 ntmtest       = 2048
 tmtestmax     = 65536UL
@@ -69,26 +69,32 @@ while(1) do begin
          statusline,'Empty data stream...     '
          continue
       endelse
-      ;;Check data
-      if tmtest_count++ eq 0 then checkword = tmarray[0] else checkword = (tmcheck_last + 1) mod tmtestmax
-      for i=0,n_elements(tmarray)-1 do begin
-         if checkword eq empty_code then checkword++
-         checkword = checkword mod tmtestmax
-         if tmarray[i] ne checkword then begin
-            ;;Error messages
-            print,''
-            print,'TM Test: ERROR after '+n2s(tmtest_count)+' transfers'
-            stop,'First ERROR occured at index '+n2s(i)+' --> Read: '+n2s(tmarray[i],format='(I)')+' Expected: '+n2s(checkword,format='(I)')
-            free_lun,TMUNIT
-         endif
-         checkword++
-      endfor
+
+      if NOT keyword_set(NOCHECK) then begin
+         ;;Check data
+         if tmtest_count++ eq 0 then checkword = tmarray[0] else checkword = (tmcheck_last + 1) mod tmtestmax
+         for i=0,n_elements(tmarray)-1 do begin
+            if checkword eq empty_code then checkword++
+            checkword = checkword mod tmtestmax
+            if tmarray[i] ne checkword then begin
+               ;;Error messages
+               print,''
+               print,'TM Test: ERROR after '+n2s(tmtest_count)+' transfers'
+               stop,'First ERROR occured at index '+n2s(i)+' --> Read: '+n2s(tmarray[i],format='(I)')+' Expected: '+n2s(checkword,format='(I)')
+               free_lun,TMUNIT
+            endif
+            checkword++
+         endfor
       
-      ;;Print status
-      statusline,'TM Test: Checked '+n2s(tmtest_count)+' transfers with no errors...'
-      
-      ;;Set last word for next iteration
-      tmcheck_last = tmarray[-1]
+         ;;Print status
+         statusline,'TM Test: Checked '+n2s(tmtest_count)+' transfers with no errors...'
+         
+         ;;Set last word for next iteration
+         tmcheck_last = tmarray[-1]
+      endif else begin
+         ;;Print status
+         statusline,'TM Test: Received '+n2s(tmtest_count++)+' transfers...'
+      endelse
    endif else begin
       IOERROR_START:
       flush_count = 0
