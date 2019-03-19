@@ -10,21 +10,27 @@ flush_count   = 0UL
 tmarray       = uintarr(ntmtest)
 nflush        = 150
 
+if mode eq 'picture_eth' then begin
+   ;;Get data directly from flight computer over ethernet
+   tmserver_addr = 'picture'
+   tmserver_port = 1337
+   cmd_senddata  = '0ABACABB'XUL
+endif
 if mode eq 'picture_gdp' then begin
    ;;Get data from tmserver connected to GDP
-   tmserver_addr = '192.168.0.13'
+   tmserver_addr = 'tmserver'
    tmserver_port = 14443
    cmd_senddata  = '11110001'XUL
 endif
 if mode eq 'picture_exp' then begin
    ;;Get data from tmserver connected directly to experiment
-   tmserver_addr = '192.168.0.13'
+   tmserver_addr = 'tmserver'
    tmserver_port = 14443
    cmd_senddata  = '22220001'XUL
 endif
 if mode eq 'picture_tmrecv' then begin
    ;;Get data from tmrecv program
-   tmserver_addr = '192.168.0.4'
+   tmserver_addr = 'localhost'
    tmserver_port = 14443
    cmd_senddata  = '0ABACABB'XUL
 endif
@@ -52,7 +58,7 @@ while(1) do begin
 
       ;;Clear old data from socket
       if flush_count++ lt nflush then begin
-         statusline,'Flushing socket...                                                                 '
+         statusline,'Flushing socket...                                             '
          continue
       endif
      
@@ -60,7 +66,7 @@ while(1) do begin
       ;;Strip out empty codes
       sel = where(tmarray ne empty_code,nsel)
       if nsel gt 0 then tmarray=tmarray[sel] else begin
-         statusline,'Empty data stream...                                                               '
+         statusline,'Empty data stream...     '
          continue
       endelse
       ;;Check data
@@ -87,7 +93,7 @@ while(1) do begin
       IOERROR_START:
       flush_count = 0
       tmtest_count = 0
-      statusline,'No data...                                                                    '
+      statusline,'No data...                                                        '
       wait,1
    endelse
 endwhile
