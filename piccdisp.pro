@@ -37,6 +37,8 @@ struct_delete_field,mtrevent,'hed'
 ;;Get states & calmodes
 states = read_c_enum(header,'states')
 for i=0, n_elements(states)-1 do void=execute(states[i]+'='+n2s(i))
+procids = read_c_enum(header,'procids')
+for i=0, n_elements(procids)-1 do void=execute(procids[i]+'='+n2s(i))
 alpcalmodes = read_c_enum(header,'alpcalmodes')
 for i=0, n_elements(calmodes)-1 do void=execute(alpcalmodes[i]+'='+n2s(i))
 hexcalmodes = read_c_enum(header,'hexcalmodes')
@@ -130,10 +132,10 @@ if not keyword_set(NOSAVE) then begin
 endif
 
 ;;Load temperature sensor database
-t = load_tempdb()
-adc1 = t[where(t.adc eq 1)]
-adc2 = t[where(t.adc eq 2)]
-adc3 = t[where(t.adc eq 3)]
+temp = load_tempdb()
+adc1 = temp[where(temp.adc eq 1)]
+adc2 = temp[where(temp.adc eq 2)]
+adc3 = temp[where(temp.adc eq 3)]
 
 ;;File saving
 dosave=1
@@ -211,7 +213,7 @@ while 1 do begin
                ;;write log
                end_time = systime(1)
                printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
-                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
+                      n2s((end_time-read_time)*1000,format='(F10.3)')+'ms'
                scievent_count++
             endif
             
@@ -225,16 +227,16 @@ while 1 do begin
                tag='shkfull'
                shkevent = shkfull.shkevent
 
-               ;;scale image
-               simage = shkfull.image.data
-               greyrscale,simage,4092
-               
                ;;****** DISPLAY IMAGE ******
                wset,WSHKIMAGE
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
                wset,WPIXMAP
-               imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'+$
+               ;;scale image
+               simage = shkfull.image.data
+               greyrscale,simage,4092
+               ;;display
+               imdisp,simage,/noscale,/axis,title='Exp: '+n2s(pkthed.ontime*1000,format='(F10.1)')+' ms'+$
                       ' CCD: '+n2s(shkevent.ccd_temp,format='(F10.1)')+' C'
                for i=0,n_elements(shkevent.cells)-1 do begin
                   if NOT keyword_set(NOBOX) then begin
@@ -260,7 +262,6 @@ while 1 do begin
                      oplot,[xcentroid],[ycentroid],color=254,psym=2
                   endif
                endfor
-               
                ;;take snapshot
                snap = TVRD()
                ;;delete pixmap window
@@ -273,7 +274,8 @@ while 1 do begin
                tv,snap
                loadct,0
                
-               ;;display zernikes
+
+               ;;****** DISPLAY ZERNIKES ******
                wset,WSHKZERN
                linecolor
                yrange=[-2,2]
@@ -285,28 +287,33 @@ while 1 do begin
                loadct,0
                
                ;;****** DISPLAY ALP DM ******
-               wset,WALPMAP
-               ;;create pixmap window
-               window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-               wset,WPIXMAP
-               ;;fill out image
-               alpimage[alpsel] = shkevent.alp.acmd
-               ;;display image
-               implot,alpimage,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
-                      cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command'
-               ;;take snapshot
-               snap = TVRD()
-               ;;delete pixmap window
-               wdelete,WPIXMAP
-               ;;switch back to real window
-               wset,WALPMAP
-               ;;set color table
-               loadct,39
-               ;;display image
-               tv,snap
-               loadct,0
-
+               if pkthed.alp_commander eq SHKID OR pkthed.alp_commander eq WATID then begin
+                  wset,WALPMAP
+                  ;;create pixmap window
+                  window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+                  wset,WPIXMAP
+                  ;;fill out image
+                  alpimage[alpsel] = shkevent.alp.acmd
+                  ;;get commander tag
+                  ctag='SHK'
+                  if pkthed.alp_commander eq WATID then ctag='WAT'
+                  ;;display image
+                  implot,alpimage,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
+                         cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')'
+                  ;;take snapshot
+                  snap = TVRD()
+                  ;;delete pixmap window
+                  wdelete,WPIXMAP
+                  ;;switch back to real window
+                  wset,WALPMAP
+                  ;;set color table
+                  loadct,39
+                  ;;display image
+                  tv,snap
+                  loadct,0
+               endif
                
+
                ;;****** WRITE TO DATA WINDOW ******
                wset,WSHKDATA
                ;;create pixmap window
@@ -347,6 +354,7 @@ while 1 do begin
                ;;switch back to real window
                wset,WSHKDATA
                tv,snap
+               
                ;;save packet
                if dosave then save,pkthed,shkfull,$
                                    filename=path+tag+'.'+gettimestamp('.')+'.'+n2s(shkfull_count,format='(I8.8)')+'.idl'
@@ -354,7 +362,7 @@ while 1 do begin
                ;;write log
                end_time = systime(1)
                printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
-                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
+                      n2s((end_time-read_time)*1000,format='(F10.3)')+'ms'
                shkfull_count++
             endif
             
@@ -389,6 +397,30 @@ while 1 do begin
                tv,snap
                loadct,0
                
+               ;;****** DISPLAY ALP DM ******
+               if pkthed.alp_commander eq LYTID then begin
+                  wset,WALPMAP
+                  ;;create pixmap window
+                  window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+                  wset,WPIXMAP
+                  ;;fill out image
+                  alpimage[alpsel] = lytevent.alp.acmd
+                  ;;display image
+                  implot,alpimage,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
+                         cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command (LYT)'
+                  ;;take snapshot
+                  snap = TVRD()
+                  ;;delete pixmap window
+                  wdelete,WPIXMAP
+                  ;;switch back to real window
+                  wset,WALPMAP
+                  ;;set color table
+                  loadct,39
+                  ;;display image
+                  tv,snap
+                  loadct,0
+               endif
+
                ;;****** DISPLAY DATA ******
                wset,WLYTZERN
                linecolor
@@ -435,7 +467,7 @@ while 1 do begin
                ;;write log
                end_time = systime(1)
                printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
-                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
+                      n2s((end_time-read_time)*1000,format='(F10.3)')+'ms'
                lytevent_count++
             endif
             
@@ -477,7 +509,7 @@ while 1 do begin
                ;;write log
                end_time = systime(1)
                printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
-                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
+                      n2s((end_time-read_time)*1000,format='(F10.3)')+'ms'
                acqfull_count++
             endif
             
@@ -542,7 +574,7 @@ while 1 do begin
                ;;write log
                end_time = systime(1)
                printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
-                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
+                      n2s((end_time-read_time)*1000,format='(F10.3)')+'ms'
                thmevent_count++
             endif
             
@@ -562,7 +594,7 @@ while 1 do begin
                ;;write log
                end_time = systime(1)
                printf,log,tag+' '+n2s((read_time-start_time)*1000,format='(F10.3)')+'ms  '+$
-                      n2s((end_time-start_time)*1000,format='(F10.3)')+'ms'
+                      n2s((end_time-read_time)*1000,format='(F10.3)')+'ms'
                mtrevent_count++
             endif
             

@@ -34,7 +34,7 @@ pro command_event, ev
      if shm_uplink then begin
         uplink,upfd,cmd
      endif else begin
-        printf,upfd,cmd
+        writeu,upfd,[byte(cmd),10B]
      endelse
   endif
   
@@ -213,7 +213,7 @@ pro piccgse_uplink_console
   
   ;;configure serial port
   if upfd ge 0 then begin
-     spawn,'stty -F '+dev+' '+baud+' cs8 -cstopb -parenb'
+     spawn,'stty -F '+dev+' '+baud+' cs8 -cstopb -parenb -echo'
      print,'UPLINK: Opened '+dev
   endif
 

@@ -20,7 +20,7 @@ while 1 do begin
       ;;read data from console
       readf,tty,line
       ;;write unformatted data to serial port
-      writeu,unit,line
+      writeu,unit,[byte(line),10B]
    endif
 endwhile
 

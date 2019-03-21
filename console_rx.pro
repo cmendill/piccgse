@@ -3,13 +3,13 @@
 ;;device settings
 dev  = '/dev/ttyUSB0'
 baud = '115200'
-data = bytarr(128)
+word = 0B
 
 ;;output device (stdout)
 stdout = -1
 
 ;;open port to read
-openr,unit,dev,/get_lun,error=error,/rawio
+openr,unit,dev,/get_lun,error=error
 if error ne 0 then begin
    stop,'Could not open '+dev
 endif
@@ -21,10 +21,9 @@ spawn,'stty -F '+dev+' '+baud+' cs8 -cstopb -parenb'
 while 1 do begin
    if file_poll_input(unit) then begin
       ;;read unformatted data
-      readu,unit,data,transfer_count=num
-      print,'Got '+n2s(num)+' characters'
-      ;;write unformmated data to stdout
-      ;writeu,stdout,data[0:num-1]
+      readu,unit,word
+      ;;write data to stdout
+      writeu,stdout,word
    endif
 endwhile
 

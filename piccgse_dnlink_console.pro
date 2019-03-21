@@ -4,27 +4,27 @@ pro console_event, ev
   
   ;;console event
   newline=''
-  tag = 0B
+  word = 0B
   bytesread=0L
-
   if dnfd ge 0 then begin
      ;;read data until we reach a line feed
      ;;NOTE: we could use readf here, but that may reach EOF before
      ;;finding a linefeed. readf would be much more efficient.
-     while FILE_POLL_INPUT(dnfd,TIMEOUT=0.01) do begin
-        readu,dnfd,tag
+     while FILE_POLL_INPUT(dnfd,timeout=0.01) do begin
+        readu,dnfd,word
+        print,'Got data '+string(word)
         bytesread++
-        if tag ne  7B and $ ;;Bell
-           tag ne  8B and $ ;;Backspace
-          ;tag ne  9B and $ ;;Horizontal Tab
-           tag ne 10B and $ ;;Linefeed
-           tag ne 11B and $ ;;Vertical Tab
-           tag ne 12B and $ ;;Formfeed
-           tag ne 13B and $ ;;Carriage Return
-           tag ne 27B and $ ;;Escape
+        if word ne  7B and $          ;;Bell
+           word ne  8B and $          ;;Backspace
+           word ne  9B and $          ;;Horizontal Tab
+           word ne 10B and $          ;;Linefeed
+           word ne 11B and $          ;;Vertical Tab
+           word ne 12B and $          ;;Formfeed
+           word ne 13B and $          ;;Carriage Return
+           word ne 27B and $          ;;Escape
            strlen(newline) lt nchar $ ;;Truncate lines to nchar
-        then newline+=string(byte(tag))
-        if tag eq 10B then break ;;Linefeed
+        then newline+=string(word)
+        if word eq 10B then break ;;Linefeed
      endwhile
      
      ;;If we are here, the serial port is empty or we reached a linefeed
