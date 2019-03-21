@@ -1,7 +1,7 @@
 pro console
 openu,tty,'/dev/tty',/get_lun
 openu,ser,'/dev/ttyUSB0',/get_lun,/rawio
-spawn,'stty -F /dev/ttyUSB0 115200 cs8 -cstopb -parenb -echo'
+spawn,'stty -F /dev/ttyUSB0 115200 cs8 cread clocal ignpar brkint'
 out  = -1
 word = 0B
 data = bytarr(128)
