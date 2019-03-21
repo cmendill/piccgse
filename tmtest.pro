@@ -1,4 +1,4 @@
-pro tmtest, mode
+pro tmtest, mode, nocheck=nocheck
 ;;Settings
 ntmtest       = 2048
 tmtestmax     = 65536UL
@@ -10,21 +10,27 @@ flush_count   = 0UL
 tmarray       = uintarr(ntmtest)
 nflush        = 150
 
+if mode eq 'picture_eth' then begin
+   ;;Get data directly from flight computer over ethernet
+   tmserver_addr = 'picture'
+   tmserver_port = 1337
+   cmd_senddata  = '0ABACABB'XUL
+endif
 if mode eq 'picture_gdp' then begin
    ;;Get data from tmserver connected to GDP
-   tmserver_addr = '192.168.0.13'
+   tmserver_addr = 'tmserver'
    tmserver_port = 14443
    cmd_senddata  = '11110001'XUL
 endif
 if mode eq 'picture_exp' then begin
    ;;Get data from tmserver connected directly to experiment
-   tmserver_addr = '192.168.0.13'
+   tmserver_addr = 'tmserver'
    tmserver_port = 14443
    cmd_senddata  = '22220001'XUL
 endif
 if mode eq 'picture_tmrecv' then begin
    ;;Get data from tmrecv program
-   tmserver_addr = '192.168.0.4'
+   tmserver_addr = 'localhost'
    tmserver_port = 14443
    cmd_senddata  = '0ABACABB'XUL
 endif
@@ -52,7 +58,7 @@ while(1) do begin
 
       ;;Clear old data from socket
       if flush_count++ lt nflush then begin
-         statusline,'Flushing socket...                                                                 '
+         statusline,'Flushing socket...                                             '
          continue
       endif
      
@@ -60,34 +66,40 @@ while(1) do begin
       ;;Strip out empty codes
       sel = where(tmarray ne empty_code,nsel)
       if nsel gt 0 then tmarray=tmarray[sel] else begin
-         statusline,'Empty data stream...                                                               '
+         statusline,'Empty data stream...     '
          continue
       endelse
-      ;;Check data
-      if tmtest_count++ eq 0 then checkword = tmarray[0] else checkword = (tmcheck_last + 1) mod tmtestmax
-      for i=0,n_elements(tmarray)-1 do begin
-         if checkword eq empty_code then checkword++
-         checkword = checkword mod tmtestmax
-         if tmarray[i] ne checkword then begin
-            ;;Error messages
-            print,''
-            print,'TM Test: ERROR after '+n2s(tmtest_count)+' transfers'
-            stop,'First ERROR occured at index '+n2s(i)+' --> Read: '+n2s(tmarray[i],format='(I)')+' Expected: '+n2s(checkword,format='(I)')
-            free_lun,TMUNIT
-         endif
-         checkword++
-      endfor
+
+      if NOT keyword_set(NOCHECK) then begin
+         ;;Check data
+         if tmtest_count++ eq 0 then checkword = tmarray[0] else checkword = (tmcheck_last + 1) mod tmtestmax
+         for i=0,n_elements(tmarray)-1 do begin
+            if checkword eq empty_code then checkword++
+            checkword = checkword mod tmtestmax
+            if tmarray[i] ne checkword then begin
+               ;;Error messages
+               print,''
+               print,'TM Test: ERROR after '+n2s(tmtest_count)+' transfers'
+               stop,'First ERROR occured at index '+n2s(i)+' --> Read: '+n2s(tmarray[i],format='(I)')+' Expected: '+n2s(checkword,format='(I)')
+               free_lun,TMUNIT
+            endif
+            checkword++
+         endfor
       
-      ;;Print status
-      statusline,'TM Test: Checked '+n2s(tmtest_count)+' transfers with no errors...'
-      
-      ;;Set last word for next iteration
-      tmcheck_last = tmarray[-1]
+         ;;Print status
+         statusline,'TM Test: Checked '+n2s(tmtest_count)+' transfers with no errors...'
+         
+         ;;Set last word for next iteration
+         tmcheck_last = tmarray[-1]
+      endif else begin
+         ;;Print status
+         statusline,'TM Test: Received '+n2s(tmtest_count++)+' transfers...'
+      endelse
    endif else begin
       IOERROR_START:
       flush_count = 0
       tmtest_count = 0
-      statusline,'No data...                                                                    '
+      statusline,'No data...                                                        '
       wait,1
    endelse
 endwhile
