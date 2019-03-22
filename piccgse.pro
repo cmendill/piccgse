@@ -13,7 +13,8 @@ pro piccgse_loadConfig, path
   wsci = where(set.w.id eq 'sci')
   walp = where(set.w.id eq 'alp')
   wbmc = where(set.w.id eq 'bmc')
-  wzer = where(set.w.id eq 'zer')
+  wshz = where(set.w.id eq 'shz')
+  wlyz = where(set.w.id eq 'lyz')
   wthm = where(set.w.id eq 'thm')
   wsda = where(set.w.id eq 'sda')
   wlda = where(set.w.id eq 'lda')
@@ -101,14 +102,23 @@ pro piccgse_loadConfig, path
            'SCI_YPOS'        : set.w[wsci].ypos  = value
            'SCI_FONT'        : set.w[wsci].font  = value
            
-           ;;ZER Window
-           'ZER_SHOW'        : set.w[wzer].show  = value
-           'ZER_NAME'        : set.w[wzer].name  = value
-           'ZER_XSIZE'       : set.w[wzer].xsize = value
-           'ZER_YSIZE'       : set.w[wzer].ysize = value
-           'ZER_XPOS'        : set.w[wzer].xpos  = value
-           'ZER_YPOS'        : set.w[wzer].ypos  = value
-           'ZER_FONT'        : set.w[wzer].font  = value
+           ;;SHZ Window
+           'SHZ_SHOW'        : set.w[wshz].show  = value
+           'SHZ_NAME'        : set.w[wshz].name  = value
+           'SHZ_XSIZE'       : set.w[wshz].xsize = value
+           'SHZ_YSIZE'       : set.w[wshz].ysize = value
+           'SHZ_XPOS'        : set.w[wshz].xpos  = value
+           'SHZ_YPOS'        : set.w[wshz].ypos  = value
+           'SHZ_FONT'        : set.w[wshz].font  = value
+           
+           ;;LYZ Window
+           'LYZ_SHOW'        : set.w[wlyz].show  = value
+           'LYZ_NAME'        : set.w[wlyz].name  = value
+           'LYZ_XSIZE'       : set.w[wlyz].xsize = value
+           'LYZ_YSIZE'       : set.w[wlyz].ysize = value
+           'LYZ_XPOS'        : set.w[wlyz].xpos  = value
+           'LYZ_YPOS'        : set.w[wlyz].ypos  = value
+           'LYZ_FONT'        : set.w[wlyz].font  = value
            
            ;;THM Window
            'THM_SHOW'        : set.w[wthm].show  = value
@@ -186,6 +196,7 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_createWindows
   common piccgse_block, set
+  while !D.WINDOW ne -1 do wdelete
   for i=0, n_elements(set.w)-1 do begin
      if set.w[i].show then window, i, XSIZE=set.w[i].xsize, YSIZE=set.w[i].ysize,$
                                    XPOS=set.w[i].xpos, YPOS=set.w[i].ypos, TITLE=set.w[i].name, RETAIN=2
@@ -217,7 +228,7 @@ pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
   common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
-  common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wzer, wthm, wsda, wlda, wsys, wpix
+  common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wsys, wpix
 
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -285,7 +296,8 @@ pro piccgse_processData, hed, pkt, tag
      wsci = where(set.w.id eq 'sci')
      walp = where(set.w.id eq 'alp')
      wbmc = where(set.w.id eq 'bmc')
-     wzer = where(set.w.id eq 'zer')
+     wshz = where(set.w.id eq 'shz')
+     wlyz = where(set.w.id eq 'lyz')
      wthm = where(set.w.id eq 'thm')
      wsda = where(set.w.id eq 'sda')
      wlda = where(set.w.id eq 'lda')
@@ -346,11 +358,11 @@ pro piccgse_processData, hed, pkt, tag
      endif
      
      ;;Display Zernikes
-     if set.w[wzer].show then begin
+     if set.w[wshz].show then begin
         ;;set window
-        wset,wzer
+        wset,wshz
         ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
         ;;set text origin and spacing
         dy = 16
@@ -363,7 +375,6 @@ pro piccgse_processData, hed, pkt, tag
         zstd = stddev(pkt.zernike_measured,dimension=2)
         ztar = pkt.zernike_target
         ;;print header
-        xyouts,sx,sy-dy*c++,string('--- SHK ZERNIKES ---',format='(A20)'),/device,charsize=charsize
         xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device,charsize=charsize
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
@@ -374,7 +385,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;delete pixmap window
         wdelete,wpix
         ;;switch back to real window
-        wset,wzer
+        wset,wshz
         ;;set color table
         loadct,0
         ;;display data
@@ -436,11 +447,11 @@ pro piccgse_processData, hed, pkt, tag
      endif
 
      ;;Display Zernikes
-     if set.w[wzer].show then begin
+     if set.w[wlyz].show then begin
         ;;set window
-        wset,wzer
+        wset,wlyz
         ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE/2,ysize=!D.Y_SIZE
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
         ;;set text origin and spacing
         dy = 16
@@ -453,7 +464,6 @@ pro piccgse_processData, hed, pkt, tag
         zstd = stddev(pkt.zernike_measured,dimension=2)*1000
         ztar = pkt.zernike_target*1000
         ;;print header
-        xyouts,sx,sy-dy*c++,string('--- LYT ZERNIKES ---',format='(A20)'),/device,charsize=charsize
         xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device,charsize=charsize
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
@@ -464,11 +474,11 @@ pro piccgse_processData, hed, pkt, tag
         ;;delete pixmap window
         wdelete,wpix
         ;;switch back to real window
-        wset,wzer
+        wset,wlyz
         ;;set color table
         loadct,0
         ;;display data
-        tv,snap,!D.X_SIZE/2,0
+        tv,snap,0,0
         loadct,0
      endif
   endif
@@ -729,20 +739,22 @@ restore,'settings.idl'
 
   ;;Settings
   set = {tmserver_type:'',tmserver_addr:'',tmserver_port:0U,tmserver_tmfile:'',tmserver_idlfile:'',$
-         datapath:'',pktlogunit:0,savedata:(NOT keyword_set(NOSAVE)),w:replicate(win,11)}
+         datapath:'',pktlogunit:0,savedata:(NOT keyword_set(NOSAVE)),w:replicate(win,12)}
   
   ;;Assign window ID tags
-  set.w[0].id  = 'shk'
-  set.w[1].id  = 'lyt'
-  set.w[2].id  = 'alp'
-  set.w[3].id  = 'bmc'
-  set.w[4].id  = 'sci'
-  set.w[5].id  = 'acq'
-  set.w[6].id  = 'zer'
-  set.w[7].id  = 'thm'
-  set.w[8].id  = 'sda'
-  set.w[9].id  = 'lda'
-  set.w[10].id = 'sys'
+  i=0
+  set.w[i++].id = 'shk'
+  set.w[i++].id = 'lyt'
+  set.w[i++].id = 'alp'
+  set.w[i++].id = 'bmc'
+  set.w[i++].id = 'sci'
+  set.w[i++].id = 'acq'
+  set.w[i++].id = 'shz'
+  set.w[i++].id = 'lyz'
+  set.w[i++].id = 'thm'
+  set.w[i++].id = 'sda'
+  set.w[i++].id = 'lda'
+  set.w[i++].id = 'sys'
 
 ;*************************************************
 ;* GET INFORMATION FROM FLIGHT SOFTWARE
@@ -783,7 +795,7 @@ restore,'settings.idl'
   struct_delete_field,acqevent,'hed'
   struct_delete_field,thmevent,'hed'
   struct_delete_field,mtrevent,'hed'
-
+  
 ;*************************************************
 ;* LOAD CONFIGURATION FILE
 ;*************************************************
@@ -792,6 +804,7 @@ restore,'settings.idl'
   if config_props.exists EQ 0 then stop, 'ERROR: Config file '+config_file+' not found'
   cfg_mod_sec = config_props.mtime
   piccgse_loadConfig, config_file
+ 
   
 ;*************************************************
 ;* INIT CONNECTIONS

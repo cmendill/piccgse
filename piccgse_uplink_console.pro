@@ -28,20 +28,20 @@ pro command_event, ev
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
   ;;command line event
   widget_control,ev.id,GET_VALUE=cmd
-  
   ;;send command
   if upfd ge 0 then begin
-     if shm_uplink then begin
-        uplink,upfd,cmd
+     if shm_var[shm_uplink] then begin
+        if strlen(cmd) eq 0 then uplink,upfd,string(10B) else uplink,upfd,cmd
      endif else begin
-        writeu,upfd,[byte(cmd),10B]
+        if strlen(cmd) eq 0 then writeu,upfd,10B else writeu,upfd,[byte(cmd),10B]
      endelse
   endif
   
   ;;print command to screen
   ts=gettimestamp('.')
+  if strlen(cmd) eq 0 then cmd='CR'
   cmdstr=ts+': '+cmd
-  widget_control,log_text,SET_VALUE=cmdstr,/APPEND
+  widget_control,log_text,SET_VALUE=cmd,/APPEND
   widget_control,ev.id,set_value=''
   
   ;;log command
@@ -81,10 +81,10 @@ pro serial_command_buttons_event, ev
      
      ;;send command
      if upfd ge 0 then begin
-        if shm_uplink then begin
+        if shm_var[shm_uplink] then begin
            uplink,upfd,cmd
         endif else begin
-           printf,upfd,cmd
+           if strlen(cmd) eq 0 then writeu,upfd,10B else writeu,upfd,[byte(cmd),10B]
         endelse
      endif
     
@@ -203,7 +203,7 @@ pro piccgse_uplink_console
      dev  = dnlink_dev
      baud = dnlink_baud
   endelse
-  
+
   ;;open serial connection
   openw,upfd,dev,/get_lun,error=error
   if error ne 0 then begin
@@ -213,14 +213,16 @@ pro piccgse_uplink_console
   
   ;;configure serial port
   if upfd ge 0 then begin
-     spawn,'stty -F '+dev+' '+baud+' cs8 -cstopb -parenb -echo'
+     cmd = 'stty -F '+dev+' '+baud+' cs8 cread clocal ignpar brkint'
+     spawn, cmd
      print,'UPLINK: Opened '+dev
+     print,'UPLINK: Configured with: '+cmd
   endif
 
   ;;setup base widget
-  wxs = 818
-  wys = 268
-  wxp = 688+35
+  wxs = 814
+  wys = 291
+  wxp = 35+324+6+200
   wyp = 2000
   title = 'PICTURE Uplink Command Console'
   base = WIDGET_BASE(xsize=wxs,ysize=wys,xoffset=wxp,yoffset=wyp,/row,title=title)
@@ -236,12 +238,68 @@ pro piccgse_uplink_console
   cmd_label = widget_label(sub2,value='Command Line:',/align_left)
   cmd_text  = widget_text(sub2,xsize=size,ysize=1,/editable)
   xmanager,'command',sub2,/no_block
-    
+
+  ;;Column 1
+  col1 = widget_base(base,/column,/align_top)
+
+  ;;State buttons
+  state_sub1 = widget_base(col1,/row,/align_center)            
+  state_sub2 = widget_base(col1,column=1,/frame,/align_center) 
+  button_label = widget_label(state_sub1,value='States',/align_center)
+  ;;--make buttons
+  sel = where(buttondb.type1 eq 'state' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(state_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+     endfor
+  endif
+  ;;install event handler
+  xmanager,'serial_command_buttons',state_sub2,/no_block
+
+  ;;Column 2
+  col2 = widget_base(base,/column,/align_top)
+
+  ;;Hex buttons
+  hex_sub1 = widget_base(col2,/row,/align_center)            
+  hex_sub2 = widget_base(col2,column=1,/frame,/align_center) 
+  button_label = widget_label(hex_sub1,value='Hexapod',/align_center)
+  ;;--make buttons
+  sel = where(buttondb.type1 eq 'hex' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(hex_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+     endfor
+  endif
+  ;;install event handler
+  xmanager,'serial_command_buttons',hex_sub2,/no_block
+
+  ;;Column 3
+  col3 = widget_base(base,/column,/align_top)
+
+  ;;Other buttons
+  other_sub1 = widget_base(col3,/row,/align_center)            
+  other_sub2 = widget_base(col3,column=1,/frame,/align_center) 
+  button_label = widget_label(other_sub1,value='Other',/align_center)
+  ;;--make buttons
+  sel = where(buttondb.type1 eq 'other' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(other_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+     endfor
+  endif
+  ;;install event handler
+  xmanager,'serial_command_buttons',other_sub2,/no_block
+
+  ;;Column 4
+  col4 = widget_base(base,/column,/align_top)
+  
   ;;Camera buttons
-  cam      = widget_base(base,/column,/align_center)
-  cam_sub1 = widget_base(cam,/row,/align_center)            
-  cam_sub2 = widget_base(cam,column=1,/frame,/align_center) 
-  button_label = widget_label(cam_sub1,value='Camera Commands',/align_center)
+  cam_sub1 = widget_base(col4,/row,/align_center)            
+  cam_sub2 = widget_base(col4,column=1,/frame,/align_center) 
+  button_label = widget_label(cam_sub1,value='Camera',/align_center)
   ;;--make buttons
   sel = where(buttondb.type1 eq 'camera' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
@@ -253,10 +311,71 @@ pro piccgse_uplink_console
   ;;install event handler
   xmanager,'serial_command_buttons',cam_sub2,/no_block
 
+  ;;Column 5
+  col5 = widget_base(base,/column,/align_top)
+ 
+  ;;LYT arrows
+  lyt_arrow_sub1 = widget_base(col5,/row)
+  button_label = widget_label(lyt_arrow_sub1,value='LYT:',/align_left)
+  sel = where(buttondb.type1 eq 'lyt' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(lyt_arrow_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
+     endfor
+  endif
+  ;;install event handler
+  xmanager,'serial_command_buttons',lyt_arrow_sub1,/no_block
+
+  ;;HEX arrows
+  hex_arrow_sub1 = widget_base(col5,/row)
+  button_label = widget_label(hex_arrow_sub1,value='HEX:',/align_left)
+  sel = where(buttondb.type1 eq 'hex' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(hex_arrow_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
+     endfor
+  endif
+  ;;install event handler
+  xmanager,'serial_command_buttons',hex_arrow_sub1,/no_block
+
+  ;;HEX Z
+  hex_z_sub1 = widget_base(col5,/row)
+  button_label = widget_label(hex_z_sub1,value='HEX:',/align_left)
+  sel = where(buttondb.type1 eq 'hex' and buttondb.type2 eq 'z' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(hex_z_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
+     endfor
+  endif
+  ;;install event handler
+  xmanager,'serial_command_buttons',hex_z_sub1,/no_block
+
+  ;;GSE buttons
+  gse_sub1 = widget_base(col5,/row)
+  button_label = widget_label(gse_sub1,value='GSE Commands:',/align_left)
+  ;;--make buttons
+  sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(gse_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+     endfor
+  endif
+  xmanager,'gse_command_buttons',gse_sub1,/no_block
+  
+  ;;GSE path display
+  gsepath = widget_base(col5,/row)
+  gsepath_text = widget_text(gsepath,xsize=22,ysize=1)
+  ;;install event handler
+  xmanager,'gsepath',gsepath_text,/no_block
+
   ;;Status icons
   red_light   = read_bmp('bmp/red.bmp',/rgb)
   red_light   = transpose(red_light,[1,2,0])
-  connstat       = widget_base(cam,/row)
+  connstat       = widget_base(col5,/row)
   connstat_sub1  = widget_base(connstat,column=2,/frame)
   button_label = widget_label(connstat_sub1,value=' LINK ',/align_center)
   link_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light,/align_center)
@@ -264,53 +383,6 @@ pro piccgse_uplink_console
   data_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light,/align_center)
   ;;install event handler
   xmanager,'connstat',connstat,/no_block
-  
-  ;;LYT commands
-  lyt = widget_base(base,/column)
-  ;;--make arrow buttons
-  lyt_sub1 = widget_base(lyt,/row)
-  button_label = widget_label(lyt_sub1,value='LYT Offset: ',/align_left)
-  sel = where(buttondb.type1 eq 'lyt' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
-  if nsel gt 0 then begin
-     buttons = buttondb[sel]
-     for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(lyt_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
-     endfor
-  endif
-  ;;install event handler
-  xmanager,'serial_command_buttons',lyt_sub1,/no_block
-
-  ;;GSE path display
-  gsepath = widget_base(lyt,/row)
-  gsepath_label = widget_label(gsepath,value='GSE Path: ',/align_left)
-  gsepath_text = widget_text(gsepath,xsize=22,ysize=1)
-  ;;install event handler
-  xmanager,'gsepath',gsepath_text,/no_block
-
- 
-  ;;GSE buttons
-  gse  = widget_base(base,/column)
-  gse_sub1 = widget_base(gse,/row)
-  gse_sub2 = widget_base(gse,column=1,/frame)
-  button_label = widget_label(gse_sub1,value='GSE Commands',/align_left)
-  ;;--make buttons
-  sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
-  if nsel gt 0 then begin
-     buttons = buttondb[sel]
-     for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(gse_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
-     endfor
-  endif
-  ;;--make toggles
-  sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq 'toggle' and buttondb.show eq 1,nsel)
-  if nsel gt 0 then begin
-     buttons = buttondb[sel]
-     for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(gse_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
-     endfor
-  endif
-  xmanager,'gse_command_buttons',gse_sub2,/no_block
-  
  
   ;;create widgets
   widget_control,base,/realize

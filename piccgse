@@ -1,5 +1,5 @@
 #!/bin/bash
 cd /home/cmendill/code/piccgse/
-idl -e "piccgse"
+idl -e "piccgse, /nouplink"
 
 

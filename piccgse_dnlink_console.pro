@@ -12,26 +12,18 @@ pro console_event, ev
      ;;finding a linefeed. readf would be much more efficient.
      while FILE_POLL_INPUT(dnfd,timeout=0.01) do begin
         readu,dnfd,word
-        print,'Got data '+string(word)
         bytesread++
-        if word ne  7B and $          ;;Bell
-           word ne  8B and $          ;;Backspace
-           word ne  9B and $          ;;Horizontal Tab
-           word ne 10B and $          ;;Linefeed
-           word ne 11B and $          ;;Vertical Tab
-           word ne 12B and $          ;;Formfeed
-           word ne 13B and $          ;;Carriage Return
-           word ne 27B and $          ;;Escape
-           strlen(newline) lt nchar $ ;;Truncate lines to nchar
-        then newline+=string(word)
-        if word eq 10B then break ;;Linefeed
+        ;;use only standard ASCII characters
+        if word ge 32B AND word le 126 then newline+=string(word)
+        if word eq 9B then newline+='  ' ;;Replace horizontal tab with double space
+        if word eq 10B then break        ;;Linefeed
      endwhile
      
      ;;If we are here, the serial port is empty or we reached a linefeed
      
      if bytesread gt 0 then begin
         ;;print console text to screen
-        widget_control,ev.id,set_value=newline,/append
+        widget_control,ev.id,set_value=strmid(newline,0,nchar),/append
         ;;print console text to log file
         gsets=strcompress(string(shm_var[SHM_TIMESTAMP:n_elements(shm_var)-1]),/REMOVE_ALL)
         logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.conlog.txt'
@@ -58,7 +50,7 @@ pro piccgse_dnlink_console
 
   ;;restore settings
   restore,'settings.idl'
- 
+  
   ;;open serial connection
   openr,dnfd,dnlink_dev,/get_lun,error=error
   if error ne 0 then begin
@@ -68,8 +60,10 @@ pro piccgse_dnlink_console
 
   ;;configure serial port
   if dnfd ge 0 then begin
-     spawn,'stty -F '+dnlink_dev+' '+dnlink_baud+' cs8 -cstopb -parenb'
+     cmd = 'stty -F '+dnlink_dev+' '+dnlink_baud+' cs8 cread clocal ignpar brkint'
+     spawn, cmd
      print,'DNLINK: Opened '+dnlink_dev
+     print,'DNLINK: Configured with: '+cmd
   endif
   
   ;;setup shared memory
@@ -78,9 +72,9 @@ pro piccgse_dnlink_console
   print,'Shared memory mapped'
 
   ;;setup base widget
-  wxs = 500
-  wys = 268
-  wxp = 0
+  wxs = 504
+  wys = 291
+  wxp = 35  ;;dock ends at x=35
   wyp = 2000
   title = 'PICTURE Downlink Console'
   base = widget_base(xsize=wxs,ysize=wys,xoffset=wxp,yoffset=wyp,/row,title=title)

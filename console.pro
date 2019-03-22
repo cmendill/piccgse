@@ -1,6 +1,6 @@
 pro console
 openu,tty,'/dev/tty',/get_lun
-openu,ser,'/dev/ttyUSB0',/get_lun,/rawio
+openu,ser,'/dev/ttyUSB0',/get_lun
 spawn,'stty -F /dev/ttyUSB0 115200 cs8 cread clocal ignpar brkint'
 out  = -1
 word = 0B
