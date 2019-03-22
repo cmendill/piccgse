@@ -122,14 +122,15 @@ alpimage = mask * 0d
 ;;Open console
 openr,tty,'/dev/tty',/get_lun
 
-;;Open output log
-openw,log,'piccdisp.log',/get_lun
 
 ;;Create output path
 if not keyword_set(NOSAVE) then begin
    path = 'data/piccdisp/piccdisp.'+gettimestamp('.')+'/'
    check_and_mkdir,path
 endif
+
+;;Open output log
+openw,log,path+'piccdisp.log',/get_lun
 
 ;;Load temperature sensor database
 temp = load_tempdb()
