@@ -226,7 +226,7 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
-  common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg
+  common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg, shkid, watid, lytid
   common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wsys, wpix
 
@@ -253,6 +253,10 @@ pro piccgse_processData, hed, pkt, tag
      SHKYS  = read_c_define(header,"SHKYS")
      LOWFS_N_ZERNIKE = read_c_define(header,"LOWFS_N_ZERNIKE")
      LOWFS_N_PID = read_c_define(header,"LOWFS_N_PID")
+
+     ;;Get process IDs
+     procids = read_c_enum(header,'procids')
+     for i=0, n_elements(procids)-1 do void=execute(procids[i]+'='+n2s(i))
 
      ;;Blank SHK image
      shkimg = intarr(shkxs,shkys)
@@ -394,28 +398,33 @@ pro piccgse_processData, hed, pkt, tag
      endif
      
      ;;Display ALPAO Command
-     if set.w[walp].show then begin
-        ;;set window
-        wset,walp
-        ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,wpix
-        ;;fill out image
-        alpimg[alpsel] = pkt.alp_acmd[*,0]
-        ;;display image
-        implot,alpimg,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
-               cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command'
-        ;;take snapshot
-        snap = TVRD()
-        ;;delete pixmap window
-        wdelete,wpix
-        ;;switch back to real window
-        wset,walp
-        ;;set color table
-        loadct,39
-        ;;display image
-        tv,snap
-        loadct,0
+     if hed.alp_commander eq SHKID OR hed.alp_commander eq WATID then begin
+        if set.w[walp].show then begin
+           ;;set window
+           wset,walp
+           ;;create pixmap window
+           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+           wset,wpix
+           ;;fill out image
+           alpimg[alpsel] = pkt.alp_acmd[*,0]
+           ;;get commander tag
+           ctag='SHK'
+           if hed.alp_commander eq WATID then ctag='WAT'
+           ;;display image
+           implot,alpimg,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
+                  cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')'
+           ;;take snapshot
+           snap = TVRD()
+           ;;delete pixmap window
+           wdelete,wpix
+           ;;switch back to real window
+           wset,walp
+           ;;set color table
+           loadct,39
+           ;;display image
+           tv,snap
+           loadct,0
+        endif
      endif
   endif
   
@@ -445,6 +454,33 @@ pro piccgse_processData, hed, pkt, tag
         tv,snap
         loadct,0
      endif
+
+     ;;Display ALPAO Command
+     ;if hed.alp_commander eq LYTID then begin
+     ;   if set.w[walp].show then begin
+     ;      ;;set window
+     ;      wset,walp
+     ;      ;;create pixmap window
+     ;      window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+     ;      wset,wpix
+     ;      ;;fill out image
+     ;      alpimg[alpsel] = pkt.alp_acmd[*,0]
+     ;      ;;display image
+     ;      implot,alpimg,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
+     ;             cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command (LYT)'
+     ;      ;;take snapshot
+     ;      snap = TVRD()
+     ;      ;;delete pixmap window
+     ;      wdelete,wpix
+     ;      ;;switch back to real window
+     ;      wset,walp
+     ;      ;;set color table
+     ;      loadct,39
+     ;      ;;display image
+     ;      tv,snap
+     ;      loadct,0
+     ;   endif
+     ;endif
 
      ;;Display Zernikes
      if set.w[wlyz].show then begin

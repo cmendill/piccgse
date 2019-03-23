@@ -10,7 +10,7 @@ pro console_event, ev
      ;;read data until we reach a line feed
      ;;NOTE: we could use readf here, but that may reach EOF before
      ;;finding a linefeed. readf would be much more efficient.
-     while FILE_POLL_INPUT(dnfd,timeout=0.01) do begin
+     while FILE_POLL_INPUT(dnfd,timeout=0.1) do begin
         readu,dnfd,word
         bytesread++
         ;;use only standard ASCII characters
@@ -39,8 +39,8 @@ pro console_event, ev
      endif
   endif
     
-  ;;re-trigger this loop after a timer
-  widget_control,ev.id,timer=0.1
+  ;;re-trigger this loop immidiately
+  widget_control,ev.id,timer=0
   
 end
 

@@ -91,7 +91,7 @@ pro serial_command_buttons_event, ev
      ;;print command to screen
      ts=gettimestamp('.')
      cmdstr=ts+': '+cmd
-     widget_control,log_text,SET_VALUE=cmdstr,/APPEND
+     widget_control,log_text,SET_VALUE=cmd,/APPEND
 
      ;;log command
      gsets=strcompress(string(shm_var[SHM_TIMESTAMP:n_elements(shm_var)-1]),/REMOVE_ALL)
