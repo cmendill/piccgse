@@ -60,7 +60,7 @@ pro piccgse_dnlink_console
 
   ;;configure serial port
   if dnfd ge 0 then begin
-     cmd = 'stty -F '+dnlink_dev+' '+dnlink_baud+' cs8 cread clocal ignpar brkint'
+     cmd = 'serial/serial_setup'
      spawn, cmd
      print,'DNLINK: Opened '+dnlink_dev
      print,'DNLINK: Configured with: '+cmd

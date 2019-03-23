@@ -130,7 +130,7 @@ if not keyword_set(NOSAVE) then begin
 endif
 
 ;;Open output log
-openw,log,path+'piccdisp.log',/get_lun
+openw,log,'piccdisp.log',/get_lun
 
 ;;Load temperature sensor database
 temp = load_tempdb()

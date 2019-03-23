@@ -213,7 +213,7 @@ pro piccgse_uplink_console
   
   ;;configure serial port
   if upfd ge 0 then begin
-     cmd = 'stty -F '+dev+' '+baud+' cs8 cread clocal ignpar brkint'
+     cmd = 'serial/serial_setup'
      spawn, cmd
      print,'UPLINK: Opened '+dev
      print,'UPLINK: Configured with: '+cmd
@@ -347,7 +347,7 @@ pro piccgse_uplink_console
   if nsel gt 0 then begin
      buttons = buttondb[sel]
      for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(hex_z_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
+        bid = WIDGET_BUTTON(hex_z_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
      endfor
   endif
   ;;install event handler

@@ -406,7 +406,7 @@ pro piccgse_processData, hed, pkt, tag
            window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
            wset,wpix
            ;;fill out image
-           alpimg[alpsel] = pkt.alp_acmd[*,0]
+           alpimg[alpsel] = pkt.alp_acmd
            ;;get commander tag
            ctag='SHK'
            if hed.alp_commander eq WATID then ctag='WAT'
@@ -456,31 +456,31 @@ pro piccgse_processData, hed, pkt, tag
      endif
 
      ;;Display ALPAO Command
-     ;if hed.alp_commander eq LYTID then begin
-     ;   if set.w[walp].show then begin
-     ;      ;;set window
-     ;      wset,walp
-     ;      ;;create pixmap window
-     ;      window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-     ;      wset,wpix
-     ;      ;;fill out image
-     ;      alpimg[alpsel] = pkt.alp_acmd[*,0]
-     ;      ;;display image
-     ;      implot,alpimg,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
-     ;             cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command (LYT)'
-     ;      ;;take snapshot
-     ;      snap = TVRD()
-     ;      ;;delete pixmap window
-     ;      wdelete,wpix
-     ;      ;;switch back to real window
-     ;      wset,walp
-     ;      ;;set color table
-     ;      loadct,39
-     ;      ;;display image
-     ;      tv,snap
-     ;      loadct,0
-     ;   endif
-     ;endif
+     if hed.alp_commander eq LYTID then begin
+        if set.w[walp].show then begin
+           ;;set window
+           wset,walp
+           ;;create pixmap window
+           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+           wset,wpix
+           ;;fill out image
+           alpimg[alpsel] = pkt.alp_acmd
+           ;;display image
+           implot,alpimg,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
+                  cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command (LYT)'
+           ;;take snapshot
+           snap = TVRD()
+           ;;delete pixmap window
+           wdelete,wpix
+           ;;switch back to real window
+           wset,walp
+           ;;set color table
+           loadct,39
+           ;;display image
+           tv,snap
+           loadct,0
+        endif
+     endif
 
      ;;Display Zernikes
      if set.w[wlyz].show then begin
@@ -596,21 +596,15 @@ pro piccgse_processData, hed, pkt, tag
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
-        ;;save gif
-        openw,unit,'acq.gif',/get_lun
-        data = pkt.gif[0:pkt.gif_nbytes-1]
-        writeu,unit,data
-        free_lun,unit
-        ;;read gif
-        read_gif,'acq.gif',image
         ;;scale image
+        image = pkt.image.data
         simage = image
         greyrscale,simage,255
         ;;calculate event time
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d3 + (double(hed.end_nsec) - double(hed.start_nsec))/1d6)
         ;;display image
         imdisp,simage,/noscale,/axis,/erase,title=n2s(hed.ontime*1000,format='(F10.1)')+' ms '+n2s(uint(min(image)))+$
-                      ' - '+n2s(uint(max(image)))+' ET: '+n2s(dt)+' ms'
+               ' - '+n2s(uint(max(image)))+' ET: '+n2s(dt)+' ms'
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
