@@ -199,7 +199,7 @@ pro piccgse_createWindows
   while !D.WINDOW ne -1 do wdelete
   for i=0, n_elements(set.w)-1 do begin
      if set.w[i].show then window, i, XSIZE=set.w[i].xsize, YSIZE=set.w[i].ysize,$
-                                   XPOS=set.w[i].xpos, YPOS=set.w[i].ypos, TITLE=set.w[i].name, RETAIN=2
+                                   XPOS=set.w[i].xpos, YPOS=set.w[i].ypos, TITLE=set.w[i].name, RETAIN=1
   endfor
 end
 
@@ -673,8 +673,9 @@ pro piccgse_processData, hed, pkt, tag
            c++
         endfor
         ;;humidity sensors
+        hum_name=['IN','M2','M1']
         for i=0,n_elements(pkt.hum)-1 do begin
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(i,pkt.hum[i].temp,pkt.hum[i].humidity,format='(I2,F6.1,F6.1)'),/device,charsize=charsize,color=white
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(hum_name[i],pkt.hum[i].temp,pkt.hum[i].humidity,format='(A5,F7.1,F7.1)'),/device,charsize=charsize,color=white
            c++
         endfor
          ;;take snapshot
@@ -1035,8 +1036,10 @@ restore,'settings.idl'
                           readu, TMUNIT, sync
                           if(sync eq mss(TLM_POSTSYNC))then begin
                              ;;process packet
+                             start_time = systime(1)
                              piccgse_processData,pkthed,pkt,tag
-                             msg2 = gettimestamp('.')+': '+'packet.'+tag+'.'+sfn
+                             end_time = systime(1)
+                             msg2 = gettimestamp('.')+': '+'packet.'+tag+'.'+sfn+'.'+n2s((end_time-start_time)*1000,format='(I)')+'ms'
                           endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps2.'+n2s(sync,format='(Z4.4)')
                        endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps1.'+n2s(sync,format='(Z4.4)')
                        printf,set.pktlogunit,msg2
