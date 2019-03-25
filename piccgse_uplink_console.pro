@@ -228,13 +228,13 @@ pro piccgse_uplink_console
   base = WIDGET_BASE(xsize=wxs,ysize=wys,xoffset=wxp,yoffset=wyp,/row,title=title)
     
   ;;setup command log
-  size = 50
+  size = 32
   sub2 = widget_base(base,/column)
   log_label = widget_label(sub2,value='Command Log',/align_left)
   log_text  = widget_text(sub2,xsize=size,ysize=13)
 
   ;;setup command line
-  size = 50
+  size = 32
   cmd_label = widget_label(sub2,value='Command Line:',/align_left)
   cmd_text  = widget_text(sub2,xsize=size,ysize=1,/editable)
   xmanager,'command',sub2,/no_block
@@ -299,7 +299,7 @@ pro piccgse_uplink_console
   ;;Camera buttons
   cam_sub1 = widget_base(col4,/row,/align_center)            
   cam_sub2 = widget_base(col4,column=1,/frame,/align_center) 
-  button_label = widget_label(cam_sub1,value='Camera',/align_center)
+  button_label = widget_label(cam_sub1,value='Cameras',/align_center)
   ;;--make buttons
   sel = where(buttondb.type1 eq 'camera' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
@@ -313,9 +313,27 @@ pro piccgse_uplink_console
 
   ;;Column 5
   col5 = widget_base(base,/column,/align_top)
+
+  ;;Door buttons
+  door_sub1 = widget_base(col5,/row,/align_center)            
+  door_sub2 = widget_base(col5,column=1,/frame,/align_center) 
+  button_label = widget_label(door_sub1,value='Doors',/align_center)
+  ;;--make buttons
+  sel = where(buttondb.type1 eq 'door' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(door_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+     endfor
+  endif
+  ;;install event handler
+  xmanager,'serial_command_buttons',door_sub2,/no_block
  
+  ;;Column 6
+  col6 = widget_base(base,/column,/align_top)
+
   ;;LYT arrows
-  lyt_arrow_sub1 = widget_base(col5,/row)
+  lyt_arrow_sub1 = widget_base(col6,/row)
   button_label = widget_label(lyt_arrow_sub1,value='LYT:',/align_left)
   sel = where(buttondb.type1 eq 'lyt' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
@@ -328,7 +346,7 @@ pro piccgse_uplink_console
   xmanager,'serial_command_buttons',lyt_arrow_sub1,/no_block
 
   ;;HEX arrows
-  hex_arrow_sub1 = widget_base(col5,/row)
+  hex_arrow_sub1 = widget_base(col6,/row)
   button_label = widget_label(hex_arrow_sub1,value='HEX:',/align_left)
   sel = where(buttondb.type1 eq 'hex' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
@@ -341,7 +359,7 @@ pro piccgse_uplink_console
   xmanager,'serial_command_buttons',hex_arrow_sub1,/no_block
 
   ;;HEX Z
-  hex_z_sub1 = widget_base(col5,/row)
+  hex_z_sub1 = widget_base(col6,/row)
   button_label = widget_label(hex_z_sub1,value='HEX:',/align_left)
   sel = where(buttondb.type1 eq 'hex' and buttondb.type2 eq 'z' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
@@ -354,7 +372,7 @@ pro piccgse_uplink_console
   xmanager,'serial_command_buttons',hex_z_sub1,/no_block
 
   ;;GSE buttons
-  gse_sub1 = widget_base(col5,/row)
+  gse_sub1 = widget_base(col6,/row)
   button_label = widget_label(gse_sub1,value='GSE Commands:',/align_left)
   ;;--make buttons
   sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
@@ -367,7 +385,7 @@ pro piccgse_uplink_console
   xmanager,'gse_command_buttons',gse_sub1,/no_block
   
   ;;GSE path display
-  gsepath = widget_base(col5,/row)
+  gsepath = widget_base(col6,/row)
   gsepath_text = widget_text(gsepath,xsize=22,ysize=1)
   ;;install event handler
   xmanager,'gsepath',gsepath_text,/no_block
@@ -375,7 +393,7 @@ pro piccgse_uplink_console
   ;;Status icons
   red_light   = read_bmp('bmp/red.bmp',/rgb)
   red_light   = transpose(red_light,[1,2,0])
-  connstat       = widget_base(col5,/row)
+  connstat       = widget_base(col6,/row)
   connstat_sub1  = widget_base(connstat,column=2,/frame)
   button_label = widget_label(connstat_sub1,value=' LINK ',/align_center)
   link_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light,/align_center)
