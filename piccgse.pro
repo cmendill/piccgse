@@ -326,6 +326,9 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wshk].show then begin
         ;;set window
         wset,wshk
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wshk].font
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
@@ -376,6 +379,9 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wsda].show then begin
         ;;set window
         wset,wsda
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wsda].font
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
@@ -384,21 +390,20 @@ pro piccgse_processData, hed, pkt, tag
         sx = 5
         sy = !D.Y_SIZE - dy
         c=0
-        charsize = 1.6
         ;;print data
-        xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device,charsize=charsize
-        xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
+        xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
-        xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device,charsize=charsize
-        xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device,charsize=charsize
-        xyouts,sx,sy-dy*c++,'ALP Cell PID: '+string(pkt.gain_alp_cell,format='(3F10.3)'),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
+        xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
+        xyouts,sx,sy-dy*c++,'ALP Cell PID: '+string(pkt.gain_alp_cell,format='(3F7.3)'),/device
         xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
-               string(pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F10.3)'),$
-               /device,charsize=charsize
-        xyouts,sx,sy-dy*c++,'HEX Zern PID: '+string(pkt.gain_hex_zern,format='(3F10.3)'),/device,charsize=charsize
-        xyouts,sx,sy-dy*c++,'MAX Max Pixel: '+n2s(long(max(pkt.cells.maxval)))+' counts',/device,charsize=charsize
-        xyouts,sx,sy-dy*c++,'AVG Max Pixel: '+n2s(long(mean(pkt.cells.maxval)))+' counts',/device,charsize=charsize
-        xyouts,sx,sy-dy*c++,'BKG Intensity: '+n2s(mean(pkt.cells.background),format='(F10.2)')+' counts/px',/device,charsize=charsize
+               string(pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
+               /device
+        xyouts,sx,sy-dy*c++,'HEX Zern PID: '+string(pkt.gain_hex_zern,format='(3F7.3)'),/device
+        xyouts,sx,sy-dy*c++,'MAX Max Pixel: '+n2s(long(max(pkt.cells.maxval)))+' counts',/device
+        xyouts,sx,sy-dy*c++,'AVG Max Pixel: '+n2s(long(mean(pkt.cells.maxval)))+' counts',/device
+        xyouts,sx,sy-dy*c++,'BKG Intensity: '+n2s(mean(pkt.cells.background),format='(F10.2)')+' counts/px',/device
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
@@ -414,6 +419,9 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wshz].show then begin
         ;;set window
         wset,wshz
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wshz].font
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
@@ -422,16 +430,15 @@ pro piccgse_processData, hed, pkt, tag
         sx = 5            
         sy = !D.Y_SIZE - dy
         c  = 0
-        charsize = 1.6
         ;;calc zernike values
         zavg = mean(pkt.zernike_measured,dimension=2)
         zstd = stddev(pkt.zernike_measured,dimension=2)
         ztar = pkt.zernike_target
         ;;print header
-        xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
-           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.2,F+6.2,F+6.2)'),/device,charsize=charsize
+           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.2,F+6.2,F+6.2)'),/device
         endfor
         ;;take snapshot
         snap = TVRD()
@@ -451,6 +458,9 @@ pro piccgse_processData, hed, pkt, tag
         if set.w[walp].show then begin
            ;;set window
            wset,walp
+           ;;set font
+           !P.FONT = 0
+           device,set_font=set.w[walp].font
            ;;fill out image
            alpimg[alpsel] = pkt.alp_acmd
            ;;get commander tag
@@ -469,6 +479,9 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wlyt].show then begin
         ;;set window
         wset,wlyt
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wlyt].font
         ;;scale image
         simage = rebin(pkt.image.data,lytrebin,lytrebin,/sample)
         greyrscale,simage,4092
@@ -483,6 +496,9 @@ pro piccgse_processData, hed, pkt, tag
         if set.w[walp].show then begin
            ;;set window
            wset,walp
+           ;;set font
+           !P.FONT = 0
+           device,set_font=set.w[walp].font
            ;;fill out image
            alpimg[alpsel] = pkt.alp_acmd
            ;;display image
@@ -495,6 +511,9 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wlda].show then begin
         ;;set window
         wset,wlda
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wlda].font
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
@@ -505,15 +524,15 @@ pro piccgse_processData, hed, pkt, tag
         c=0
         charsize = 1.6
         ;;print data
-        xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device,charsize=charsize
-        xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
+        xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
-        xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device,charsize=charsize
-        xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device,charsize=charsize
-        xyouts,sx,sy-dy*c++,'Origin: '+string(pkt.xorigin,pkt.yorigin,format='(2I5)'),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
+        xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
+        xyouts,sx,sy-dy*c++,'Origin: '+string(pkt.xorigin,pkt.yorigin,format='(2I5)'),/device
         xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
-               string(pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F10.3)'),$
-               /device,charsize=charsize
+               string(pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
+               /device
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
@@ -529,6 +548,9 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wlyz].show then begin
         ;;set window
         wset,wlyz
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wlyz].font
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
@@ -543,10 +565,10 @@ pro piccgse_processData, hed, pkt, tag
         zstd = stddev(pkt.zernike_measured,dimension=2)*1000
         ztar = pkt.zernike_target*1000
         ;;print header
-        xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
-           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.1,F+6.1,F+6.1)'),/device,charsize=charsize
+           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.1,F+6.1,F+6.1)'),/device
         endfor
         ;;take snapshot
         snap = TVRD()
@@ -568,6 +590,9 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wsci].show then begin
         ;;set window
         wset,wsci
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wsci].font
         for i=0,n_elements(pkt.image)-1 do begin
            image  = reform(pkt.image[i].data)
            simage = rebin(reform(pkt.image[i].data),scirebin,scirebin,/sample)
@@ -585,6 +610,9 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wbmc].show then begin
         ;;set window
         wset,wbmc
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wbmc].font
         ;;fill out image
         bmcimg[bmcsel] = pkt.bmc.acmd
         ;;display image
@@ -599,6 +627,9 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wacq].show then begin
         ;;set window
         wset,wacq
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wacq].font
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
@@ -617,10 +648,10 @@ pro piccgse_processData, hed, pkt, tag
         c=0
         charsize = 1.6
         ;;print data
-        xyouts,sx,sy-dy*c++,'Frame: '+n2s(hed.ontime,format='(F10.1)')+' s',/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'Frame: '+n2s(hed.ontime,format='(F10.1)')+' s',/device
         ;;calculate event time
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d3 + (double(hed.end_nsec) - double(hed.start_nsec))/1d6)
-        xyouts,sx,sy-dy*c++,'Event: '+n2s(dt)+' us',/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'Event: '+n2s(dt)+' us',/device
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
@@ -641,6 +672,9 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wthm].show then begin
         ;;set window
         wset,wthm
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wthm].font
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
@@ -663,7 +697,7 @@ pro piccgse_processData, hed, pkt, tag
            if pkt.adc1_temp[i] gt adc1[i].max then color = red
            fmt='F-+6.1'
            if adc1[i].abbr eq 'VREF' then fmt='F-+6.2'
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc1[i].abbr+':',pkt.adc1_temp[i],format='(A-7,'+fmt+')'),/device,charsize=charsize,color=color
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc1[i].abbr+':',pkt.adc1_temp[i],format='(A-7,'+fmt+')'),/device,color=color
            c++
         endfor
         ;;adc2 data
@@ -671,7 +705,7 @@ pro piccgse_processData, hed, pkt, tag
            color = green
            if pkt.adc2_temp[i] lt adc2[i].min then color = blue
            if pkt.adc2_temp[i] gt adc2[i].max then color = red
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc2[i].abbr+':',pkt.adc2_temp[i],format='(A-7,F-+6.1)'),/device,charsize=charsize,color=color
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc2[i].abbr+':',pkt.adc2_temp[i],format='(A-7,F-+6.1)'),/device,color=color
            c++
         endfor
         ;;adc3 data
@@ -679,7 +713,7 @@ pro piccgse_processData, hed, pkt, tag
            color = green
            if pkt.adc3_temp[i] lt adc3[i].min then color = blue
            if pkt.adc3_temp[i] gt adc3[i].max then color = red
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc3[i].abbr+':',pkt.adc3_temp[i],format='(A-7,F-+6.1)'),/device,charsize=charsize,color=color
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc3[i].abbr+':',pkt.adc3_temp[i],format='(A-7,F-+6.1)'),/device,color=color
            c++
         endfor
         ;;heater data
@@ -687,13 +721,13 @@ pro piccgse_processData, hed, pkt, tag
            str=string(string(pkt.htr[i].name)+':',pkt.htr[i].power,' ',$
                       pkt.htr[i].temp,' ',$
                       pkt.htr[i].setpoint,format='(A-7,I-4,A,F-+6.1,A,F-+6.1)')
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),str,/device,charsize=charsize,color=white
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),str,/device,color=white
            c++
         endfor
         ;;humidity sensors
         hum_name=['IN','M2','M1']
         for i=0,n_elements(pkt.hum)-1 do begin
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(hum_name[i],pkt.hum[i].temp,pkt.hum[i].humidity,format='(A5,F7.1,F7.1)'),/device,charsize=charsize,color=white
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(hum_name[i],pkt.hum[i].temp,pkt.hum[i].humidity,format='(A5,F7.1,F7.1)'),/device,color=white
            c++
         endfor
         ;;print state
@@ -706,7 +740,7 @@ pro piccgse_processData, hed, pkt, tag
         box[*,0:bth-1]=255    ;;bottom
         box[*,bys-bth:-1]=255 ;;top
         tv,box,!D.X_SIZE-bxs,0
-        xyouts,!D.X_SIZE-200,sy-dy*(nl-1),states[hed.state],/device,charsize=charsize,color=white
+        xyouts,!D.X_SIZE-200,sy-dy*(nl-1),states[hed.state],/device,color=white
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
