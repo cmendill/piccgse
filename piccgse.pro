@@ -661,7 +661,9 @@ pro piccgse_processData, hed, pkt, tag
            color = green
            if pkt.adc1_temp[i] lt adc1[i].min then color = blue
            if pkt.adc1_temp[i] gt adc1[i].max then color = red
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc1[i].abbr+':',pkt.adc1_temp[i],format='(A-7,F-+6.1)'),/device,charsize=charsize,color=color
+           fmt='F-+6.1'
+           if adc1[i].abbr eq 'VREF' then fmt='F-+6.2'
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc1[i].abbr+':',pkt.adc1_temp[i],format='(A-7,'+fmt+')'),/device,charsize=charsize,color=color
            c++
         endfor
         ;;adc2 data
