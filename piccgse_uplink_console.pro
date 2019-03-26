@@ -132,16 +132,18 @@ pro gse_command_buttons_event, ev
      ;;trigger update
      shm_var[SHM_CMD]=1
      
-     ;;check for exit
-     if buttondb[sel].igse eq 0 and buttondb[sel].vgse eq 0 then begin
-        ;;unmap shared memory
-        shmunmap,'shm'
-        ;;close files
-        close,/all
-        ;;exit
-        widget_control,base,/destroy
-     endif
   endif else print,'GSE Command ['+n2s(uval)+'] Not Recognized'
+
+  ;;check for exit
+  if NOT shm_var[SHM_RUN] then begin
+     ;;unmap shared memory
+     shmunmap,'shm'
+     ;;close files
+     close,/all
+     ;;exit
+     widget_control,base,/destroy
+     return
+  endif
 end
 
 pro gsepath_event, ev

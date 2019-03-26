@@ -1,15 +1,25 @@
 pro console_event, ev
   common dnlink_block,dnfd,conlogfd,base,con_text,shm_var,nchar
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
-  
+
+  ;;check for exit
+  if NOT shm_var[SHM_RUN] then begin
+     print,'exit'
+     ;;unmap shared memory
+     shmunmap,'shm'
+     ;;close files
+     close,/all
+     ;;exit
+     widget_control,base,/destroy
+     return
+  endif
+
   ;;console event
   newline=''
   word = 0B
   bytesread=0L
   if dnfd ge 0 then begin
      ;;read data until we reach a line feed
-     ;;NOTE: we could use readf here, but that may reach EOF before
-     ;;finding a linefeed. readf would be much more efficient.
      while FILE_POLL_INPUT(dnfd,timeout=0.1) do begin
         readu,dnfd,word
         bytesread++

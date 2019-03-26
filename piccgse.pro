@@ -18,7 +18,7 @@ pro piccgse_loadConfig, path
   wthm = where(set.w.id eq 'thm')
   wsda = where(set.w.id eq 'sda')
   wlda = where(set.w.id eq 'lda')
-  wsys = where(set.w.id eq 'sys')
+  wbmd = where(set.w.id eq 'bmd')
   
   ;;Open the config file
   openr, unit, path, /get_lun
@@ -147,14 +147,14 @@ pro piccgse_loadConfig, path
            'LDA_YPOS'        : set.w[wlda].ypos  = value
            'LDA_FONT'        : set.w[wlda].font  = value
 
-           ;;SYS Window
-           'SYS_SHOW'        : set.w[wsys].show  = value
-           'SYS_NAME'        : set.w[wsys].name  = value
-           'SYS_XSIZE'       : set.w[wsys].xsize = value
-           'SYS_YSIZE'       : set.w[wsys].ysize = value
-           'SYS_XPOS'        : set.w[wsys].xpos  = value
-           'SYS_YPOS'        : set.w[wsys].ypos  = value
-           'SYS_FONT'        : set.w[wsys].font  = value
+           ;;BMD Window
+           'BMD_SHOW'        : set.w[wbmd].show  = value
+           'BMD_NAME'        : set.w[wbmd].name  = value
+           'BMD_XSIZE'       : set.w[wbmd].xsize = value
+           'BMD_YSIZE'       : set.w[wbmd].ysize = value
+           'BMD_XPOS'        : set.w[wbmd].xpos  = value
+           'BMD_YPOS'        : set.w[wbmd].ypos  = value
+           'BMD_FONT'        : set.w[wbmd].font  = value
           else: ;;do nothing
         endcase
      endif
@@ -226,9 +226,10 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
-  common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkimg, shkid, watid, lytid
-  common processdata_block2, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
-  common processdata_block3, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wsys, wpix
+  common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,lytxs_rebin,lytys_rebin
+  common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
+  common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
 
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -251,15 +252,16 @@ pro piccgse_processData, hed, pkt, tag
      SHKBIN = read_c_define(header,"SHKBIN")
      SHKXS  = read_c_define(header,"SHKXS")
      SHKYS  = read_c_define(header,"SHKYS")
+     LYTXS  = read_c_define(header,"LYTXS")
+     LYTYS  = read_c_define(header,"LYTYS")
+     SCIXS  = read_c_define(header,"SCIXS")
+     SCIYS  = read_c_define(header,"SCIYS")
      LOWFS_N_ZERNIKE = read_c_define(header,"LOWFS_N_ZERNIKE")
      LOWFS_N_PID = read_c_define(header,"LOWFS_N_PID")
 
      ;;Get process IDs
      procids = read_c_enum(header,'procids')
      for i=0, n_elements(procids)-1 do void=execute(procids[i]+'='+n2s(i))
-
-     ;;Blank SHK image
-     shkimg = intarr(shkxs,shkys)
 
      ;;ALPAO DM Display
      os = 64
@@ -286,7 +288,7 @@ pro piccgse_processData, hed, pkt, tag
      bmcsel = where(mask gt 0.005,complement=bmcnotsel)
      bmcsel = reverse(bmcsel)
      bmcimg = mask * 0d
-     
+
      ;;Temperature database
      t = load_tempdb()
      adc1 = t[where(t.adc eq 1)]
@@ -305,8 +307,14 @@ pro piccgse_processData, hed, pkt, tag
      wthm = where(set.w.id eq 'thm')
      wsda = where(set.w.id eq 'sda')
      wlda = where(set.w.id eq 'lda')
-     wsys = where(set.w.id eq 'sys')
+     wbmd = where(set.w.id eq 'bmd')
      wpix = n_elements(set.w)+1
+
+     ;;Image sizes and locations
+     minsize  = min([set.w[wlyt].xsize,set.w[wlyt].ysize])
+     lytrebin = (minsize/lytxs) * lytxs
+     minsize  = min([set.w[wsci].xsize,set.w[wsci].ysize])
+     scirebin = (minsize/scixs) * scixs
   endif
   
   ;;Swap column/row major for 2D arrays
@@ -321,10 +329,13 @@ pro piccgse_processData, hed, pkt, tag
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
-        ;;display blank image
-        imdisp,shkimg,/axis,/erase,title='Frame: '+n2s(hed.ontime*1000,format='(F10.1)')+' ms'+' CCD: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C'
         ;;setup plotting
         plotsym,0,/fill
+        ;;plot image axes
+        zoom=40
+        xoff=-5
+        yoff=-7
+        plot,[0],[0],xrange=[zoom+xoff,shkxs-zoom+xoff],yrange=[zoom+yoff,shkys-zoom+yoff],xstyle=5,ystyle=5,/nodata,position=[0,0,1,1]
         ;;loop over cells
         for i=0,n_elements(pkt.cells)-1 do begin
            ;;draw centroid box
@@ -356,6 +367,44 @@ pro piccgse_processData, hed, pkt, tag
         wset,wshk
         ;;set color table
         linecolor
+        ;;display image
+        tv,snap
+        loadct,0
+     endif
+
+     ;;Display text data
+     if set.w[wsda].show then begin
+        ;;set window
+        wset,wsda
+        ;;create pixmap window
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
+        ;;set text origin
+        dy  = 16
+        sx = 5
+        sy = !D.Y_SIZE - dy
+        c=0
+        charsize = 1.6
+        ;;print data
+        xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device,charsize=charsize
+        dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
+        xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'ALP Cell PID: '+string(pkt.gain_alp_cell,format='(3F10.3)'),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
+               string(pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F10.3)'),$
+               /device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'HEX Zern PID: '+string(pkt.gain_hex_zern,format='(3F10.3)'),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'MAX Max Pixel: '+n2s(long(max(pkt.cells.maxval)))+' counts',/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'AVG Max Pixel: '+n2s(long(mean(pkt.cells.maxval)))+' counts',/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'BKG Intensity: '+n2s(mean(pkt.cells.background),format='(F10.2)')+' counts/px',/device,charsize=charsize
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,wpix
+        ;;switch back to real window
+        wset,wsda
         ;;display image
         tv,snap
         loadct,0
@@ -402,27 +451,13 @@ pro piccgse_processData, hed, pkt, tag
         if set.w[walp].show then begin
            ;;set window
            wset,walp
-           ;;create pixmap window
-           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-           wset,wpix
            ;;fill out image
            alpimg[alpsel] = pkt.alp_acmd
            ;;get commander tag
            ctag='SHK'
            if hed.alp_commander eq WATID then ctag='WAT'
            ;;display image
-           implot,alpimg,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
-                  cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')'
-           ;;take snapshot
-           snap = TVRD()
-           ;;delete pixmap window
-           wdelete,wpix
-           ;;switch back to real window
-           wset,walp
-           ;;set color table
-           loadct,39
-           ;;display image
-           tv,snap
+           implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')'
            loadct,0
         endif
      endif
@@ -434,24 +469,12 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wlyt].show then begin
         ;;set window
         wset,wlyt
-        ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,wpix
         ;;scale image
-        simage = pkt.image.data
+        simage = rebin(pkt.image.data,lytrebin,lytrebin,/sample)
         greyrscale,simage,4092
         ;;display image
-        imdisp,simage,/noscale,/axis,/erase,title='Exp: '+n2s(hed.ontime*1000,format='(F10.1)')+' ms'+' CCD: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C'
-        ;;take snapshot
-        snap = TVRD()
-        ;;delete pixmap window
-        wdelete,wpix
-        ;;switch back to real window
-        wset,wlyt
-        ;;set color table
         greyr
-        ;;display image
-        tv,snap
+        tv,simage,(!D.X_SIZE-lytrebin)/2,(!D.Y_SIZE-lytrebin)/2
         loadct,0
      endif
 
@@ -460,26 +483,46 @@ pro piccgse_processData, hed, pkt, tag
         if set.w[walp].show then begin
            ;;set window
            wset,walp
-           ;;create pixmap window
-           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-           wset,wpix
            ;;fill out image
            alpimg[alpsel] = pkt.alp_acmd
            ;;display image
-           implot,alpimg,ctable=0,blackout=alpnotsel,range=[-1,1],/erase,$
-                  cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command (LYT)'
-           ;;take snapshot
-           snap = TVRD()
-           ;;delete pixmap window
-           wdelete,wpix
-           ;;switch back to real window
-           wset,walp
-           ;;set color table
-           loadct,39
-           ;;display image
-           tv,snap
+           implot,alpimg,ctable=0,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command (LYT)'
            loadct,0
         endif
+     endif
+
+     ;;Display text data
+     if set.w[wlda].show then begin
+        ;;set window
+        wset,wlda
+        ;;create pixmap window
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
+        ;;set text origin
+        dy  = 16
+        sx = 5
+        sy = !D.Y_SIZE - dy
+        c=0
+        charsize = 1.6
+        ;;print data
+        xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device,charsize=charsize
+        dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
+        xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'Origin: '+string(pkt.xorigin,pkt.yorigin,format='(2I5)'),/device,charsize=charsize
+        xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
+               string(pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F10.3)'),$
+               /device,charsize=charsize
+        ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,wpix
+        ;;switch back to real window
+        wset,wlda
+        ;;display image
+        tv,snap
+        loadct,0
      endif
 
      ;;Display Zernikes
@@ -525,39 +568,16 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wsci].show then begin
         ;;set window
         wset,wsci
-        ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,wpix
-        !P.Multi = [0, n_elements(pkt.image)]
         for i=0,n_elements(pkt.image)-1 do begin
            image  = reform(pkt.image[i].data)
-           simage = reform(pkt.image[i].data)
-           ;;do photometry
-           m=max(simage,imax)
-           xy=array_indices(simage,imax)
-           bgr=mean(simage[10:50,10:50])
-           xmin = xy[0]-3 > 0
-           xmax = xy[0]+3 < n_elements(simage[*,0])-1
-           ymin = xy[1]-3 > 0
-           ymax = xy[1]+3 < n_elements(simage[0,*])-1
-           avg=mean(double(simage[xmin:xmax,ymin:ymax]))-bgr
-           wset,wpix
+           simage = rebin(reform(pkt.image[i].data),scirebin,scirebin,/sample)
            ;;scale image
            greyrscale,simage,65535
            ;;display
-           imdisp,simage,margin=0.01,charsize=1.8,/noscale,/axis,title='Band '+n2s(i)+' Exp: '+n2s(hed.exptime,format='(F10.3)')+' Max: '+n2s(max(image))+' Avg: '+n2s(avg,format='(I)')
+           greyr
+           xsize = !D.X_SIZE/n_elements(pkt.image)
+           tv,simage,i*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
         endfor
-        !P.Multi = 0
-        ;;take snapshot
-        snap = TVRD()
-        ;;delete pixmap window
-        wdelete,wpix
-        ;;switch back to real window
-        wset,wsci
-        ;;set color table
-        greyr
-        ;;display image
-        tv,snap
         loadct,0
      endif
      
@@ -565,24 +585,10 @@ pro piccgse_processData, hed, pkt, tag
      if set.w[wbmc].show then begin
         ;;set window
         wset,wbmc
-        ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,wpix
         ;;fill out image
         bmcimg[bmcsel] = pkt.bmc.acmd
         ;;display image
-        implot,bmcimg,ctable=0,blackout=bmcnotsel,range=[-1,1],/erase,$
-               cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='BMC DM Command'
-        ;;take snapshot
-        snap = TVRD()
-        ;;delete pixmap window
-        wdelete,wpix
-        ;;switch back to real window
-        wset,wbmc
-        ;;set color table
-        loadct,39
-        ;;display image
-        tv,snap
+        implot,bmcimg,blackout=bmcnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='BMC DM Command'
         loadct,0
      endif
   endif
@@ -598,13 +604,23 @@ pro piccgse_processData, hed, pkt, tag
         wset,wpix
         ;;scale image
         image = pkt.image.data
-        simage = image
+        ss=size(image)
+        xsize =!D.Y_SIZE * float(ss[1]) / float(ss[2])
+        simage = congrid(image,xsize,!D.Y_SIZE)
         greyrscale,simage,255
+        ;;display image
+        tv,simage,!D.X_SIZE-xsize,0
+        ;;set text origin
+        dy  = 16
+        sx = 5
+        sy = !D.Y_SIZE - dy
+        c=0
+        charsize = 1.6
+        ;;print data
+        xyouts,sx,sy-dy*c++,'Frame: '+n2s(hed.ontime,format='(F10.1)')+' s',/device,charsize=charsize
         ;;calculate event time
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d3 + (double(hed.end_nsec) - double(hed.start_nsec))/1d6)
-        ;;display image
-        imdisp,simage,/noscale,/axis,/erase,title=n2s(hed.ontime*1000,format='(F10.1)')+' ms '+n2s(uint(min(image)))+$
-               ' - '+n2s(uint(max(image)))+' ET: '+n2s(dt)+' ms'
+        xyouts,sx,sy-dy*c++,'Event: '+n2s(dt)+' us',/device,charsize=charsize
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
@@ -664,7 +680,7 @@ pro piccgse_processData, hed, pkt, tag
            xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc3[i].abbr+':',pkt.adc3_temp[i],format='(A-7,F-+6.1)'),/device,charsize=charsize,color=color
            c++
         endfor
-       ;;heater data
+        ;;heater data
         for i=0,n_elements(pkt.htr)-1 do begin
            str=string(string(pkt.htr[i].name)+':',pkt.htr[i].power,' ',$
                       pkt.htr[i].temp,' ',$
@@ -678,7 +694,18 @@ pro piccgse_processData, hed, pkt, tag
            xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(hum_name[i],pkt.hum[i].temp,pkt.hum[i].humidity,format='(A5,F7.1,F7.1)'),/device,charsize=charsize,color=white
            c++
         endfor
-         ;;take snapshot
+        ;;print state
+        bxs=204
+        bys=24
+        bth=2
+        box=bytarr(bxs,bys)
+        box[0:bth-1,*]=255    ;;left
+        box[bxs-bth:-1,*]=255 ;;right
+        box[*,0:bth-1]=255    ;;bottom
+        box[*,bys-bth:-1]=255 ;;top
+        tv,box,!D.X_SIZE-bxs,0
+        xyouts,!D.X_SIZE-200,sy-dy*(nl-1),states[hed.state],/device,charsize=charsize,color=white
+        ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
         wdelete,wpix
@@ -785,7 +812,7 @@ restore,'settings.idl'
   set.w[i++].id = 'thm'
   set.w[i++].id = 'sda'
   set.w[i++].id = 'lda'
-  set.w[i++].id = 'sys'
+  set.w[i++].id = 'bmd'
 
 ;*************************************************
 ;* GET INFORMATION FROM FLIGHT SOFTWARE
