@@ -475,7 +475,7 @@ while 1 do begin
             if pkthed.type eq BUFFER_ACQFULL then begin
                readu,IMUNIT,acqfull
                read_time = systime(1)
-
+               struct_swap_majority,acqfull
                ;;Check if we should ignore these packets
                if keyword_set(NOACQ) then continue
 

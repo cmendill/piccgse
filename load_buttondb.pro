@@ -41,12 +41,15 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'hex',type2:'',name:'STEP RST' ,cmd:'hex rst step',tooltip:'Reset hexapod step size',igse:0,vgse:0}
 
   ;;Door commands
-  b[i++]={id:i,show:1,type1:'door',type2:'',name:'Open M1' ,cmd:'open door 1',tooltip:'Open M1 door',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'door',type2:'',name:'Close M1' ,cmd:'close door 1',tooltip:'Close M1 door',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'door',type2:'',name:'Open M2' ,cmd:'open door 2',tooltip:'Open M2 door',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'door',type2:'',name:'Close M2' ,cmd:'close door 2',tooltip:'Close M2 door',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'door',type2:'',name:'Open INST' ,cmd:'open door 3',tooltip:'Open instrument door',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'door',type2:'',name:'Close INST' ,cmd:'close door 3',tooltip:'Close instrument door',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'door',type2:'d1',name:'O1' ,cmd:'open door 1',tooltip:'Open M1 door',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'door',type2:'d1',name:'C1' ,cmd:'close door 1',tooltip:'Close M1 door',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'door',type2:'d1',name:'S1' ,cmd:'stop door 1',tooltip:'Stop M1 door',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'door',type2:'d2',name:'O2' ,cmd:'open door 2',tooltip:'Open M2 door',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'door',type2:'d2',name:'C2' ,cmd:'close door 2',tooltip:'Close M2 door',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'door',type2:'d2',name:'S2' ,cmd:'stop door 2',tooltip:'Stop M2 door',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'door',type2:'d3',name:'O3' ,cmd:'open door 3',tooltip:'Open instrument door',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'door',type2:'d3',name:'C3' ,cmd:'close door 3',tooltip:'Close instrument door',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'door',type2:'d3',name:'S3' ,cmd:'stop door 3',tooltip:'Stop instrument door',igse:0,vgse:0}
  
   ;;HEX tilt commands
   b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/left.bmp',cmd:'hex move -v',tooltip:'Move spot left on ACQ',igse:0,vgse:0}

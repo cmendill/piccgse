@@ -318,18 +318,34 @@ pro piccgse_uplink_console
 
   ;;Door buttons
   door_sub1 = widget_base(col5,/row,/align_center)            
-  door_sub2 = widget_base(col5,column=1,/frame,/align_center) 
+  door_but1 = widget_base(col5,row=1,/frame,/align_center) 
+  door_but2 = widget_base(col5,row=1,/frame,/align_center) 
+  door_but3 = widget_base(col5,row=1,/frame,/align_center) 
   button_label = widget_label(door_sub1,value='Doors',/align_center)
   ;;--make buttons
-  sel = where(buttondb.type1 eq 'door' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
+  sel = where(buttondb.type1 eq 'door' and buttondb.type2 eq 'd1' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
      buttons = buttondb[sel]
      for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(door_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+        bid = WIDGET_BUTTON(door_but1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+     endfor
+  endif
+  sel = where(buttondb.type1 eq 'door' and buttondb.type2 eq 'd2' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(door_but2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+     endfor
+  endif
+  sel = where(buttondb.type1 eq 'door' and buttondb.type2 eq 'd3' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(door_but3, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
      endfor
   endif
   ;;install event handler
-  xmanager,'serial_command_buttons',door_sub2,/no_block
+  xmanager,'serial_command_buttons',col5,/no_block
  
   ;;Column 6
   col6 = widget_base(base,/column,/align_top)

@@ -522,7 +522,6 @@ pro piccgse_processData, hed, pkt, tag
         sx = 5
         sy = !D.Y_SIZE - dy
         c=0
-        charsize = 1.6
         ;;print data
         xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
         xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device
@@ -559,7 +558,6 @@ pro piccgse_processData, hed, pkt, tag
         sx = 5            
         sy = !D.Y_SIZE - dy
         c  = 0
-        charsize = 1.6
         ;;calc zernike values
         zavg = mean(pkt.zernike_measured,dimension=2)*1000
         zstd = stddev(pkt.zernike_measured,dimension=2)*1000
@@ -646,12 +644,12 @@ pro piccgse_processData, hed, pkt, tag
         sx = 5
         sy = !D.Y_SIZE - dy
         c=0
-        charsize = 1.6
         ;;print data
         xyouts,sx,sy-dy*c++,'Frame: '+n2s(hed.ontime,format='(F10.1)')+' s',/device
         ;;calculate event time
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d3 + (double(hed.end_nsec) - double(hed.start_nsec))/1d6)
         xyouts,sx,sy-dy*c++,'Event: '+n2s(dt)+' us',/device
+        xyouts,sx,sy-dy*c++,'Max: '+n2s(long(max(image)))+' ADU',/device
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
@@ -685,7 +683,6 @@ pro piccgse_processData, hed, pkt, tag
         sy = !D.Y_SIZE - dy
         nl = 24
         c  = 0
-        charsize = 1.6
         red=1
         green=2
         blue=3
