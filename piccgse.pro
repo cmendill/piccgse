@@ -276,18 +276,28 @@ pro piccgse_processData, hed, pkt, tag
      alpsel = reverse(alpsel)
      alpimg = mask * 0d
      
-     ;;BMC DM Display
-     os = 64
-     bmcsize = 34
-     xyimage,bmcsize*os,bmcsize*os,xim,yim,rim,/quadrant
-     rim /= os
-     sel = where(rim lt 17)
-     mask = rim*0
-     mask[sel]=1
-     mask = rebin(mask,bmcsize,bmcsize)
-     bmcsel = where(mask gt 0.005,complement=bmcnotsel)
-     bmcsel = reverse(bmcsel)
-     bmcimg = mask * 0d
+     ;;BMC DM Display (ROUND)
+     ;;os = 64
+     ;;bmcsize = 34
+     ;;xyimage,bmcsize*os,bmcsize*os,xim,yim,rim,/quadrant
+     ;;rim /= os
+     ;;sel = where(rim lt 17)
+     ;;mask = rim*0
+     ;;mask[sel]=1
+     ;;mask = rebin(mask,bmcsize,bmcsize)
+     ;;bmcsel = where(mask gt 0.005,complement=bmcnotsel)
+     ;;bmcsel = reverse(bmcsel)
+     ;;bmcimg = fltarr(bmcsize,bmcsize)
+
+     ;;BMC DM Display (SQUARE)
+     bmcsize = 32
+     mask = intarr(bmcsize,bmcsize)+1
+     mask[0,0]=0
+     mask[0,31]=0
+     mask[31,0]=0
+     mask[31,31]=0
+     bmcsel = where(mask,complement=bmcnotsel)
+     bmcimg = fltarr(bmcsize,bmcsize)
 
      ;;Temperature database
      t = load_tempdb()
@@ -614,7 +624,69 @@ pro piccgse_processData, hed, pkt, tag
         ;;fill out image
         bmcimg[bmcsel] = pkt.bmc.acmd
         ;;display image
-        implot,bmcimg,blackout=bmcnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='BMC DM Command'
+        implot,bmcimg,blackout=bmcnotsel,range=[0,150],cbtitle='V',cbformat='(I)',ncolors=254,title='BMC DM Command'
+        loadct,0
+     endif
+     
+     ;;Display BMC telemetry
+     if set.w[wbmd].show then begin
+        ;;set window
+        wset,wbmd
+        ;;set font
+        !P.FONT = 0
+        device,set_font=set.w[wsda].font
+        ;;create pixmap window
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
+        ;;set text origin
+        dy  = 16
+        sx = 5
+        sy = !D.Y_SIZE - dy
+        c=0
+        ;;text formatting
+        str_power = ['OFF','RAMP UP 01','RAMP UP 02','RAMP UP 03','RAMP UP 04','RAMP UP 05','ON','UNKNOWN 07','UNKNOWN 08','RAMP DOWN']
+        str_range = ['100 V','150 V','200 V','225 V']
+        str_voltstat = ['ERROR','GOOD']
+        str_onoff = ['OFF','ON']
+        str_overtemp = ['NORM','OVER']
+        ;;testpoints
+        str_testpoint_set = strmid(strcompress(string(pkt.bmc.tcmd,format='(11I4)')),1)
+        str_testpoint_val = strmid(strcompress(string(pkt.bmc_status.testpoint_v,format='(11I4)')),1)
+        ;;print data
+        xyouts,sx,sy-dy*c++,' Power: '+str_power[pkt.bmc_status.power],/device
+        xyouts,sx,sy-dy*c++,' Range: '+str_range[pkt.bmc_status.range],/device
+        xyouts,sx,sy-dy*c++,'    HV: '+str_onoff[pkt.bmc_status.supply_hv],/device
+        xyouts,sx,sy-dy*c++,'  3.3V: '+str_voltstat[pkt.bmc_status.volt_3v3],/device
+        xyouts,sx,sy-dy*c++,'  5.0V: '+str_voltstat[pkt.bmc_status.volt_5],/device
+        xyouts,sx,sy-dy*c++,' Input: '+n2s(pkt.bmc_status.voltage_input_v,format='(F10.1)'),/device
+        xyouts,sx,sy-dy*c++,' mAmps: '+n2s(pkt.bmc_status.current_ma,format='(F10.1)'),/device
+        xyouts,sx,sy-dy*c++,'3V Sup: '+n2s(pkt.bmc_status.rail_3v1_v,format='(F10.1)')+' '+n2s(pkt.bmc_status.rail_3v2_v,format='(F10.1)'),/device
+        xyouts,sx,sy-dy*c++,'5V Sup: '+n2s(pkt.bmc_status.rail_5v1_v,format='(F10.1)')+' '+n2s(pkt.bmc_status.rail_5v2_v,format='(F10.1)'),/device
+        xyouts,sx,sy-dy*c++,'HV Sup: '+n2s(pkt.bmc_status.hv_supp_v[0],format='(F10.1)')+' '+n2s(pkt.bmc_status.hv_supp_v[1],format='(F10.1)'),/device
+        xyouts,sx,sy-dy*c++,'TP Set: '+str_testpoint_set,/device
+        xyouts,sx,sy-dy*c++,'TP Val: '+str_testpoint_val,/device
+        ;;second column
+        c=0
+        dx=180
+        xyouts,sx+dx,sy-dy*c++,'  LEDS: '+str_onoff[pkt.bmc_status.leds],/device
+        xyouts,sx+dx,sy-dy*c++,'  TEMP: '+str_overtemp[pkt.bmc_status.over_temp],/device
+        xyouts,sx+dx,sy-dy*c++,'Main B: '+n2s(pkt.bmc_status.main_brd_temp_c,format='(F10.1)')+' C',/device
+        xyouts,sx+dx,sy-dy*c++,' Top B: '+n2s(pkt.bmc_status.top_brd_temp_c,format='(F10.1)')+' C',/device
+        xyouts,sx+dx,sy-dy*c++,' Mid B: '+n2s(pkt.bmc_status.mid_brd_temp_c,format='(F10.1)')+' C',/device
+        xyouts,sx+dx,sy-dy*c++,' Bot B: '+n2s(pkt.bmc_status.bot_brd_temp_c,format='(F10.1)')+' C',/device
+        xyouts,sx+dx,sy-dy*c++,'Heat S: '+n2s(pkt.bmc_status.heatsink_temp_c,format='(F10.1)')+' C',/device
+        xyouts,sx+dx,sy-dy*c++,'Sock 1: '+n2s(pkt.bmc_status.sock1_temp_c,format='(F10.1)')+' C',/device
+        xyouts,sx+dx,sy-dy*c++,'Sock 2: '+n2s(pkt.bmc_status.sock2_temp_c,format='(F10.1)')+' C',/device
+
+
+       ;;take snapshot
+        snap = TVRD()
+        ;;delete pixmap window
+        wdelete,wpix
+        ;;switch back to real window
+        wset,wbmd
+        ;;display image
+        tv,snap
         loadct,0
      endif
   endif
