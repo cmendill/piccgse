@@ -77,7 +77,7 @@ while(1) do begin
          endif else begin
             checkword = (tmcheck_last + 1) mod tmtestmax
             if keyword_set(pattern2) then begin
-               if tmcheck_last eq 43690 then checkword = 21845 else checkword = 43690
+               if tmcheck_last eq 0 then checkword = 65535 else checkword = 0
             endif
          endelse
          for i=0,n_elements(tmarray)-1 do begin
@@ -91,7 +91,7 @@ while(1) do begin
                free_lun,TMUNIT
             endif
             if keyword_set(pattern2) then begin
-               if checkword eq 43690 then checkword = 21845 else checkword = 43690
+               if checkword eq 0 then checkword = 65535 else checkword = 0
             endif else begin
                checkword++
             endelse
