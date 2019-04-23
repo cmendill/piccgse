@@ -20,6 +20,9 @@ pro uplink, fd, cmd
      pkt[4:258] = barr
      ;;Send packet
      writeu,fd,pkt
+     ;;Print packet
+     ;;print,'Sent: '+string(pkt[0:25],format='(65Z3.2)')
+     ;;for i=1,9 do print,'      '+string(pkt[26*i:26*i+25],format='(65Z3.2)')
   endelse
 end
 
