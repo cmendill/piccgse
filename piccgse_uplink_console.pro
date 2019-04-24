@@ -27,19 +27,23 @@ pro uplink, fd, cmd
 end
 
 pro command_event, ev
-  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
   ;;command line event
   widget_control,ev.id,GET_VALUE=cmd
   ;;send command
-  if upfd ge 0 then begin
-     if shm_var[shm_uplink] then begin
+  if shm_var[shm_uplink] then begin
+     if upfd ge 0 then begin
+        ;;use uplink port
         if strlen(cmd) eq 0 then uplink,upfd,string(10B) else uplink,upfd,cmd
-     endif else begin
-        if strlen(cmd) eq 0 then writeu,upfd,10B else writeu,upfd,[byte(cmd),10B]
-     endelse
-  endif
-  
+     endif
+  endif else begin
+     if dnfd ge 0 then begin
+        ;;use downlink port
+        if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
+     endif
+  endelse
+    
   ;;print command to screen
   ts=gettimestamp('.')
   if strlen(cmd) eq 0 then cmd='CR'
@@ -63,7 +67,7 @@ end
 
 
 pro serial_command_buttons_event, ev
-  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
  
   ;;get command
@@ -83,14 +87,18 @@ pro serial_command_buttons_event, ev
      cmd = buttondb[sel].cmd
      
      ;;send command
-     if upfd ge 0 then begin
-        if shm_var[shm_uplink] then begin
+     if shm_var[shm_uplink] then begin
+        ;;use uplink port
+        if upfd ge 0 then begin
            uplink,upfd,cmd
-        endif else begin
-           if strlen(cmd) eq 0 then writeu,upfd,10B else writeu,upfd,[byte(cmd),10B]
-        endelse
-     endif
-    
+        endif
+     endif else begin
+        ;;use downlink port
+        if dnfd ge 0 then begin
+           if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
+        endif
+     endelse
+     
      ;;print command to screen
      ts=gettimestamp('.')
      cmdstr=ts+': '+cmd
@@ -112,7 +120,7 @@ pro serial_command_buttons_event, ev
 end
 
 pro gse_command_buttons_event, ev 
-  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
 
   event_type = TAG_NAMES(ev, /STRUCTURE_NAME) 
@@ -150,7 +158,7 @@ pro gse_command_buttons_event, ev
 end
 
 pro gsepath_event, ev
-  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
   common gsepath_block, path
  
@@ -168,7 +176,7 @@ pro gsepath_event, ev
 end
 
 pro connstat_event, ev
-  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
 
   ;;get light bitmaps
@@ -177,16 +185,28 @@ pro connstat_event, ev
   green_light = read_bmp('bmp/green.bmp',/rgb)
   green_light = transpose(green_light,[1,2,0])
   
+  ;;get command
+  widget_control,ev.id,GET_UVALUE=uval
+  
+  if uval eq 'uplink' then begin
+     ;;Toggle uplink command
+     if shm_var[SHM_UPLINK] then shm_var[SHM_UPLINK] = 0 else shm_var[SHM_UPLINK] = 1
+  endif
+  
   ;;set lights
   if shm_var[SHM_LINK] then widget_control,link_connstat,set_value=green_light else widget_control,link_connstat,set_value=red_light
   if shm_var[SHM_DATA] then widget_control,data_connstat,set_value=green_light else widget_control,data_connstat,set_value=red_light
+  if shm_var[SHM_UPLINK] then widget_control,uplk_connstat,set_value=green_light else widget_control,uplk_connstat,set_value=red_light
+
+  ;;return if triggered by command
+  if uval ne 'timer' then return
   
   ;;trigger self
   widget_control,ev.id,timer=0.5
 end
 
 pro piccgse_uplink_console
-  common uplink_block,upfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat
+  common uplink_block,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
   common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
 
   ;;restore settings
@@ -200,30 +220,25 @@ pro piccgse_uplink_console
   shm_var = shmvar('shm')
   print,'Shared memory mapped'
 
-  ;;choose serial device
-  if(shm_var[shm_uplink]) then begin
-     dev  = uplink_dev
-     baud = uplink_baud
-  endif else begin
-     dev  = dnlink_dev
-     baud = dnlink_baud
-  endelse
-
-  ;;open serial connection
-  openw,upfd,dev,/get_lun,error=error
+  ;;open serial connections
+  openw,upfd,uplink_dev,/get_lun,error=error
   if error ne 0 then begin
-     print,'ERROR (piccgse_uplink_console): Could not open '+dev
+     print,'ERROR (piccgse_uplink_console): Could not open '+uplink_dev
      upfd = -1
-  endif
+  endif else print,'UPLINK: Opened '+uplink_dev
   
-  ;;configure serial port
-  if upfd ge 0 then begin
+  openw,dnfd,dnlink_dev,/get_lun,error=error
+  if error ne 0 then begin
+     print,'ERROR (piccgse_uplink_console): Could not open '+dnlink_dev
+     dnfd = -1
+  endif else print,'UPLINK: Opened '+uplink_dev
+  
+  ;;configure serial ports
+  if (upfd ge 0) OR (dnfd ge 0) then begin
      cmd = 'serial/serial_setup'
      spawn, cmd
-     print,'UPLINK: Opened '+dev
-     print,'UPLINK: Configured with: '+cmd
   endif
-
+  
   ;;setup base widget
   wxs = 814
   wys = 291
@@ -415,11 +430,13 @@ pro piccgse_uplink_console
   red_light   = read_bmp('bmp/red.bmp',/rgb)
   red_light   = transpose(red_light,[1,2,0])
   connstat       = widget_base(col6,/row)
-  connstat_sub1  = widget_base(connstat,column=2,/frame)
+  connstat_sub1  = widget_base(connstat,column=3,/frame)
   button_label = widget_label(connstat_sub1,value=' LINK ',/align_center)
-  link_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light,/align_center)
+  link_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light, UVALUE='link', TOOLTIP='TM Link Status',/align_center)
   button_label = widget_label(connstat_sub1,value=' DATA ',/align_center)
-  data_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light,/align_center)
+  data_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light, UVALUE='data', TOOLTIP='TM Data Status',/align_center)
+  button_label = widget_label(connstat_sub1,value=' UPLK ',/align_center)
+  uplk_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light, UVALUE='uplink', TOOLTIP='Toggle Uplink Command',/align_center)
   ;;install event handler
   xmanager,'connstat',connstat,/no_block
  
@@ -430,6 +447,6 @@ pro piccgse_uplink_console
   widget_control,gsepath_text,timer=0
 
   ;;start status icons
-  widget_control,connstat,timer=0
+  widget_control,connstat,timer=0,set_uval='timer'
   
 end
