@@ -53,7 +53,7 @@ print,'Press: CTRL-C to stop'
 while(1) do begin
    if FILE_POLL_INPUT(TMUNIT,TIMEOUT=0.01) then begin
       ;;Read data into tmarray
-      ON_IOERROR, IOERROR_START
+      ;ON_IOERROR, IOERROR_START
       readu,TMUNIT,tmarray
 
       ;;Clear old data from socket
@@ -107,7 +107,7 @@ while(1) do begin
          if tmtest_count MOD 100 eq 0 then statusline,'TM Test: Received '+n2s(tmtest_count++)+' transfers...'
       endelse
    endif else begin
-      IOERROR_START:
+      ;IOERROR_START:
       flush_count = 0
       tmtest_count = 0
       statusline,'No data...                                                        '
