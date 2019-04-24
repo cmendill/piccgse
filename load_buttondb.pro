@@ -54,8 +54,8 @@ function load_buttondb
   ;;HEX tilt commands
   b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/left.bmp',cmd:'hex move -v',tooltip:'Move spot left on ACQ',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/right.bmp',cmd:'hex move +v',tooltip:'Move spot right on ACQ',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/up.bmp',cmd:'hex move +u',tooltip:'Move spot up on ACQ',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/down.bmp',cmd:'hex move -u',tooltip:'Move spot down on ACQ',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/up.bmp',cmd:'hex move -u',tooltip:'Move spot up on ACQ',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/down.bmp',cmd:'hex move +u',tooltip:'Move spot down on ACQ',igse:0,vgse:0}
 
   ;;HEX Z commands
   b[i++]={id:i,show:1,type1:'hex',type2:'z',name:'+Z',cmd:'hex move +Z',tooltip:'Move HEX +Z',igse:0,vgse:0}
