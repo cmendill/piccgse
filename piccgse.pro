@@ -1191,10 +1191,10 @@ restore,'settings.idl'
               ;;here if FILE_POLL_INPUT timed out
               ;;if no data, check for timeout
               ;;if timed out, reconnect
-              if ((t_now-tm_last_data) GT 20) then begin
+              if ((t_now-tm_last_data) GT 5) then begin
+                 print,'IMAGE SERVER TIMEOUT!'
                  RESET_CONNECTION: PRINT, !ERR_STRING ;;Jump here if an IO error occured
-                 print,"IMAGE SERVER TIMEOUT!"
-                 print,''
+                 print,'RESETTING CONNECTION'
                  ON_IOERROR,FREE_LUN_ERROR
                  free_lun,TMUNIT
                  FREE_LUN_ERROR: ;PRINT, !ERR_STRING
