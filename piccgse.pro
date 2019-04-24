@@ -512,7 +512,7 @@ pro piccgse_processData, hed, pkt, tag
            ;;fill out image
            alpimg[alpsel] = pkt.alp_acmd
            ;;display image
-           implot,alpimg,ctable=0,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command (LYT)'
+           implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command (LYT)'
            loadct,0
         endif
      endif
@@ -717,7 +717,8 @@ pro piccgse_processData, hed, pkt, tag
         sy = !D.Y_SIZE - dy
         c=0
         ;;print data
-        xyouts,sx,sy-dy*c++,'Frame: '+n2s(hed.ontime,format='(F10.1)')+' s',/device
+        xyouts,sx,sy-dy*c++,'Frame: '+n2s(hed.frame_number,format='(I)'),/device
+        xyouts,sx,sy-dy*c++,'Time: '+n2s(hed.ontime,format='(F10.1)')+' s',/device
         ;;calculate event time
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d3 + (double(hed.end_nsec) - double(hed.start_nsec))/1d6)
         xyouts,sx,sy-dy*c++,'Event: '+n2s(dt)+' us',/device
