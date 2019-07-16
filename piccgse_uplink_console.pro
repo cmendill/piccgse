@@ -220,18 +220,19 @@ pro piccgse_uplink_console
   shm_var = shmvar('shm')
   print,'Shared memory mapped'
 
-  ;;open serial connections
+  ;;Open uplink console (write-only)
   openw,upfd,uplink_dev,/get_lun,error=error
   if error ne 0 then begin
      print,'ERROR (piccgse_uplink_console): Could not open '+uplink_dev
      upfd = -1
-  endif else print,'UPLINK: Opened '+uplink_dev
-  
+  endif else print,'UPLINK: Opened '+uplink_dev+' for writing'
+
+  ;;Open dnlink console (write-only)
   openw,dnfd,dnlink_dev,/get_lun,error=error
   if error ne 0 then begin
      print,'ERROR (piccgse_uplink_console): Could not open '+dnlink_dev
      dnfd = -1
-  endif else print,'UPLINK: Opened '+uplink_dev
+  endif else print,'UPLINK: Opened '+dnlink_dev+' for writing'
   
   ;;configure serial ports
   if (upfd ge 0) OR (dnfd ge 0) then begin

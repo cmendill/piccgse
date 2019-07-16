@@ -66,14 +66,12 @@ pro piccgse_dnlink_console
   if error ne 0 then begin
      print,'ERROR (piccgse_dnlink_console): Could not open '+dnlink_dev
      dnfd = -1
-  endif
+  endif else print,'DNLINK: Opened '+dnlink_dev+' for reading'
 
   ;;configure serial port
   if dnfd ge 0 then begin
      cmd = 'serial/serial_setup'
      spawn, cmd
-     print,'DNLINK: Opened '+dnlink_dev
-     print,'DNLINK: Configured with: '+cmd
   endif
   
   ;;setup shared memory
