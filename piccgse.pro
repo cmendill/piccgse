@@ -867,7 +867,7 @@ function piccgse_tmConnect
      endif else begin
         MESSAGE, !ERR_STRING, /INFORM
      endelse
-     WRITE_ERROR:PRINT, !ERR_STRING  ;;jump here on writeu error
+     WRITE_ERROR:PRINT, 'WRITE_ERROR: '+!ERR_STRING  ;;jump here on writeu error
      return,-1
   endif
   
@@ -1193,14 +1193,17 @@ restore,'settings.idl'
               ;;if timed out, reconnect
               if ((t_now-tm_last_data) GT 5) then begin
                  print,'IMAGE SERVER TIMEOUT!'
-                 RESET_CONNECTION: PRINT, !ERR_STRING ;;Jump here if an IO error occured
+                 RESET_CONNECTION: PRINT, 'IO ERROR: '+!ERR_STRING ;;Jump here if an IO error occured
                  print,'RESETTING CONNECTION'
                  ON_IOERROR,FREE_LUN_ERROR
                  free_lun,TMUNIT
-                 FREE_LUN_ERROR: ;PRINT, !ERR_STRING
+                 if 0 then begin
+                    FREE_LUN_ERROR: PRINT, 'FREE_LUN_ERROR: '+!ERR_STRING
+                 endif
                  tm_connected = 0
                  shm_var[SHM_LINK] = 0
                  shm_var[SHM_DATA] = 0
+                 wait,1
               endif
            endelse
         endif else begin
