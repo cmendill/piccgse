@@ -788,9 +788,15 @@ pro piccgse_processData, hed, pkt, tag
         endfor
         ;;heater data
         for i=0,n_elements(pkt.htr)-1 do begin
-           str=string(string(pkt.htr[i].name)+':',pkt.htr[i].power,' ',$
+           sta='DIS'
+           ovr='AUTO'
+           if pkt.htr[i].enable then sta='ENA'
+           if pkt.htr[i].override then ovr='OVER'
+           str=string(string(pkt.htr[i].name)+':',$
+                      sta,ovr,$
+                      pkt.htr[i].power,' ',$
                       pkt.htr[i].temp,' ',$
-                      pkt.htr[i].setpoint,format='(A-7,I-4,A,F-+6.1,A,F-+6.1)')
+                      pkt.htr[i].setpoint,format='(A-7,A-4,A-5,I-4,A,F-+6.1,A,F-+6.1)')
            xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),str,/device,color=white
            c++
         endfor
