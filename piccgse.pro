@@ -805,9 +805,15 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string('Sens','Temp','RH %',format='(A5,A7,A7)'),/device,color=white
         c++
         for i=0,n_elements(pkt.hum)-1 do begin
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(hum_name[i],pkt.hum[i].temp,pkt.hum[i].humidity,format='(A5,F7.1,F7.1)'),/device,color=white
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(hum_name[i],pkt.hum[i].temp,pkt.hum[i].humidity,format='(A5,F7.1,F7.1)'),$
+                  /device,color=white
            c++
         endfor
+        ;;print CPU temps
+        xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string('CPU1',pkt.cpu1_temp,format='(A5,F7.1)'),/device,color=white
+        c++
+        xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string('CPU2',pkt.cpu2_temp,format='(A5,F7.1)'),/device,color=white
+        c++
         ;;print state
         bxs=204
         bys=24
