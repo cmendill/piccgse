@@ -954,8 +954,12 @@ restore,'settings.idl'
   mtrevent = read_c_struct(header,'mtrevent')
 
   ;;Get #defines
-  TLM_PRESYNC  =    '12345678'XUL
-  TLM_POSTSYNC =    'DEADBEEF'XUL
+  TLM_PRESYNC   = '12345678'XUL
+  TLM_POSTSYNC  = 'DEADBEEF'XUL
+  TLM_LPRE      = lss(TLM_PRESYNC)
+  TLM_MPRE      = mss(TLM_PRESYNC)
+  TLM_LPOST     = lss(TLM_POSTSYNC)
+  TLM_MPOST     = mss(TLM_POSTSYNC)
 
   ;;Check for padding
   if check_padding(pkthed)   then stop,'pkthed contains padding'
@@ -1133,9 +1137,9 @@ restore,'settings.idl'
               tm_last_data = systime(1)
               ;;Check presync words
               readu, TMUNIT, sync
-              if sync eq lss(TLM_PRESYNC) then begin
+              if sync eq TLM_LPRE then begin
                  readu, TMUNIT, sync
-                 if sync eq mss(TLM_PRESYNC) then begin
+                 if sync eq TLM_MPRE then begin
                     ;;Read header
                     readu, TMUNIT, pkthed
                     ;;Get frame number
@@ -1179,16 +1183,18 @@ restore,'settings.idl'
                        readu, TMUNIT, pkt
                        ;;check postsync words 
                        readu, TMUNIT, sync
-                       if(sync eq lss(TLM_POSTSYNC)) then begin
+                       if sync eq TLM_LPOST then begin
                           readu, TMUNIT, sync
-                          if(sync eq mss(TLM_POSTSYNC))then begin
+                          if sync eq TLM_MPOST then begin
                              ;;process packet
                              start_time = systime(1)
                              piccgse_processData,pkthed,pkt,tag
                              end_time = systime(1)
                              msg2 = gettimestamp('.')+': '+'packet.'+tag+'.'+sfn+'.'+n2s((end_time-start_time)*1000,format='(I)')+'ms'
-                          endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps2.'+n2s(sync,format='(Z4.4)')
-                       endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps1.'+n2s(sync,format='(Z4.4)')
+                          endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps2.' + $
+                                            n2s(sync,format='(Z4.4)')+'['+n2s(TLM_MPOST,format='(Z4.4)')+']'
+                       endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps1.' + $
+                                         n2s(sync,format='(Z4.4)')+'['+n2s(TLM_LPOST,format='(Z4.4)')+']'
                        printf,set.pktlogunit,msg2
                        first = strpos(msg2,'dropped')
                        if(first ge 0) then print,msg2

@@ -51,9 +51,9 @@ print,'Press: CTRL-C to stop'
 
 ;;Read and check data
 while(1) do begin
-   if FILE_POLL_INPUT(TMUNIT,TIMEOUT=0.01) then begin
+   if FILE_POLL_INPUT(TMUNIT,TIMEOUT=5) then begin
       ;;Read data into tmarray
-      ;ON_IOERROR, IOERROR_START
+      ON_IOERROR, IOERROR_START
       readu,TMUNIT,tmarray
 
       ;;Clear old data from socket
@@ -61,7 +61,7 @@ while(1) do begin
          statusline,'Flushing socket...                                             '
          continue
       endif
-     
+      
       
       ;;Strip out empty codes
       sel = where(tmarray ne empty_code,nsel)
@@ -69,7 +69,7 @@ while(1) do begin
          statusline,'Empty data stream...     '
          continue
       endelse
-
+      
       if NOT keyword_set(NOCHECK) then begin
          ;;Check data
          if tmtest_count++ eq 0 then begin
@@ -98,21 +98,27 @@ while(1) do begin
          endfor
       
          ;;Print status
-         if tmtest_count MOD 100 eq 0 then statusline,'TM Test: Checked '+n2s(tmtest_count)+' transfers with no errors...'
+         if tmtest_count MOD 100 eq 0 then print,'TM Test: Checked '+n2s(tmtest_count)+' transfers with no errors...'
          
          ;;Set last word for next iteration
          tmcheck_last = tmarray[-1]
       endif else begin
          ;;Print status
-         if tmtest_count MOD 100 eq 0 then statusline,'TM Test: Received '+n2s(tmtest_count++)+' transfers...'
+         if tmtest_count MOD 100 eq 0 then print,'TM Test: Received '+n2s(tmtest_count++)+' transfers...'
       endelse
    endif else begin
-      ;IOERROR_START:
+      ;;FILE_POLL_INPUT Timeout
       flush_count = 0
       tmtest_count = 0
-      statusline,'No data...                                                        '
+      print,'No data...'
       wait,1
    endelse
+   if 0 then begin
+      IOERROR_START:
+      flush_count = 0
+      tmtest_count = 0
+      print,'IOERROR'
+   endif
 endwhile
 
 
