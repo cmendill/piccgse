@@ -227,7 +227,7 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, set
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,lytxs_rebin,lytys_rebin
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,lytxs_rebin,lytys_rebin,sciring
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
 
@@ -325,6 +325,14 @@ pro piccgse_processData, hed, pkt, tag
      lytrebin = (minsize/lytxs) * lytxs
      minsize  = min([set.w[wsci].xsize,set.w[wsci].ysize])
      scirebin = (minsize/scixs) * scixs
+
+     ;;Sci IWA ring
+     xyimage,scixs,sciys,xim,yim,rim,/quadrant
+     sciring = where(fix(rim) eq 4)
+     image = intarr(scixs,sciys)
+     image[sciring] = 1
+     image = rebin(image,scirebin,scirebin,/sample)
+     sciring = where(round(image) eq 1)
   endif
   
   ;;Swap column/row major for 2D arrays
@@ -603,11 +611,13 @@ pro piccgse_processData, hed, pkt, tag
         device,set_font=set.w[wsci].font
         for i=0,n_elements(pkt.image)-1 do begin
            image  = reform(pkt.image[i].data)
-           simage = rebin(reform(pkt.image[i].data),scirebin,scirebin,/sample)
+           simage = rebin(image,scirebin,scirebin,/sample)
            ;;scale image
-           greyrscale,simage,65535
+           greygrscale,simage,65535
+           ;;add IWA ring
+           simage[sciring] = 253
            ;;display
-           greyr
+           greygr
            xsize = !D.X_SIZE/n_elements(pkt.image)
            tv,simage,i*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
         endfor
