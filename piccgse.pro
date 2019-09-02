@@ -327,7 +327,7 @@ pro piccgse_processData, hed, pkt, tag
      scirebin = (minsize/scixs) * scixs
 
      ;;Sci IWA ring
-     xyimage,scixs,sciys,xim,yim,rim,/quadrant
+     xyimage,scixs,sciys,xim,yim,rim,/quadrant,/index
      sciring = where(fix(rim) eq 4)
      image = intarr(scixs,sciys)
      image[sciring] = 1
