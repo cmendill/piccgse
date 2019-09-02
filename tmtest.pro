@@ -35,91 +35,94 @@ if mode eq 'picture_tmrecv' then begin
    cmd_senddata  = '0ABACABB'XUL
 endif
 
+while(1) do begin
 ;;Create Socket connection
-PRINT, 'Attempting to create Socket connection Image Server to >'+tmserver_addr+'< on port '+n2s(tmserver_port)
-SOCKET, TMUNIT, tmserver_addr, tmserver_port, /GET_LUN, CONNECT_TIMEOUT=3, ERROR=con_status, READ_TIMEOUT=2
-if con_status eq 0 then begin
-   PRINT, 'Socket created'
-   ;;Ask for images
-   WRITEU,TMUNIT,swap_endian(cmd_senddata)
-   print,'Asking for data with command: 0x'+n2s(cmd_senddata,format='(Z8.8)')
-endif else begin
-   stop,'Connection failed'
-endelse
-print,'Connection successful'
-print,'Press: CTRL-C to stop'
+   PRINT, 'Attempting to create Socket connection Image Server to >'+tmserver_addr+'< on port '+n2s(tmserver_port)
+   SOCKET, TMUNIT, tmserver_addr, tmserver_port, /GET_LUN, CONNECT_TIMEOUT=3, ERROR=con_status, READ_TIMEOUT=2
+   if con_status eq 0 then begin
+      PRINT, 'Socket created'
+      ;;Ask for images
+      WRITEU,TMUNIT,swap_endian(cmd_senddata)
+      print,'Asking for data with command: 0x'+n2s(cmd_senddata,format='(Z8.8)')
+   endif else begin
+      stop,'Connection failed'
+   endelse
+   print,'Connection successful'
+   print,'Press: CTRL-C to stop'
 
 ;;Read and check data
-while(1) do begin
-   if FILE_POLL_INPUT(TMUNIT,TIMEOUT=5) then begin
-      ;;Read data into tmarray
-      ON_IOERROR, IOERROR_START
-      readu,TMUNIT,tmarray
+   while(1) do begin
+      if FILE_POLL_INPUT(TMUNIT,TIMEOUT=5) then begin
+         ;;Read data into tmarray
+         ON_IOERROR, IOERROR_START
+         readu,TMUNIT,tmarray
 
-      ;;Clear old data from socket
-      if flush_count++ lt nflush then begin
-         statusline,'Flushing socket...                                             '
-         continue
-      endif
-      
-      
-      ;;Strip out empty codes
-      sel = where(tmarray ne empty_code,nsel)
-      if nsel gt 0 then tmarray=tmarray[sel] else begin
-         statusline,'Empty data stream...     '
-         continue
-      endelse
-      
-      if NOT keyword_set(NOCHECK) then begin
-         ;;Check data
-         if tmtest_count++ eq 0 then begin
-            checkword = tmarray[0]
-         endif else begin
-            checkword = (tmcheck_last + 1) mod tmtestmax
-            if keyword_set(pattern2) then begin
-               if tmcheck_last eq 0 then checkword = 65535 else checkword = 0
-            endif
-         endelse
-         for i=0,n_elements(tmarray)-1 do begin
-            if checkword eq empty_code then checkword++
-            checkword = checkword mod tmtestmax
-            if tmarray[i] ne checkword then begin
-               ;;Error messages
-               print,''
-               print,'TM Test: ERROR after '+n2s(tmtest_count)+' transfers'
-               stop,'First ERROR occured at index '+n2s(i)+' --> Read: '+n2s(tmarray[i],format='(I)')+' Expected: '+n2s(checkword,format='(I)')
-               free_lun,TMUNIT
-            endif
-            if keyword_set(pattern2) then begin
-               if checkword eq 0 then checkword = 65535 else checkword = 0
-            endif else begin
-               checkword++
-            endelse
-         endfor
-      
-         ;;Print status
-         if tmtest_count MOD 100 eq 0 then print,'TM Test: Checked '+n2s(tmtest_count)+' transfers with no errors...'
+         ;;Clear old data from socket
+         if flush_count++ lt nflush then begin
+            statusline,'Flushing socket...                                             '
+            continue
+         endif
          
-         ;;Set last word for next iteration
-         tmcheck_last = tmarray[-1]
+         
+         ;;Strip out empty codes
+         sel = where(tmarray ne empty_code,nsel)
+         if nsel gt 0 then tmarray=tmarray[sel] else begin
+            statusline,'Empty data stream...     '
+            continue
+         endelse
+         
+         if NOT keyword_set(NOCHECK) then begin
+            ;;Check data
+            if tmtest_count++ eq 0 then begin
+               checkword = tmarray[0]
+            endif else begin
+               checkword = (tmcheck_last + 1) mod tmtestmax
+               if keyword_set(pattern2) then begin
+                  if tmcheck_last eq 0 then checkword = 65535 else checkword = 0
+               endif
+            endelse
+            for i=0,n_elements(tmarray)-1 do begin
+               if checkword eq empty_code then checkword++
+               checkword = checkword mod tmtestmax
+               if tmarray[i] ne checkword then begin
+                  ;;Error messages
+                  print,''
+                  print,'TM Test: ERROR after '+n2s(tmtest_count)+' transfers'
+                  stop,'First ERROR occured at index '+n2s(i)+' --> Read: '+n2s(tmarray[i],format='(I)')+' Expected: '+n2s(checkword,format='(I)')
+                  free_lun,TMUNIT
+               endif
+               if keyword_set(pattern2) then begin
+                  if checkword eq 0 then checkword = 65535 else checkword = 0
+               endif else begin
+                  checkword++
+               endelse
+            endfor
+            
+            ;;Print status
+            if tmtest_count MOD 100 eq 0 then print,'TM Test: Checked '+n2s(tmtest_count)+' transfers with no errors...'
+            
+            ;;Set last word for next iteration
+            tmcheck_last = tmarray[-1]
+         endif else begin
+            ;;Print status
+            if tmtest_count MOD 100 eq 0 then print,'TM Test: Received '+n2s(tmtest_count++)+' transfers...'
+         endelse
       endif else begin
-         ;;Print status
-         if tmtest_count MOD 100 eq 0 then print,'TM Test: Received '+n2s(tmtest_count++)+' transfers...'
+         ;;FILE_POLL_INPUT Timeout
+         flush_count = 0
+         tmtest_count = 0
+         print,'No data...'
+         wait,1
       endelse
-   endif else begin
-      ;;FILE_POLL_INPUT Timeout
-      flush_count = 0
-      tmtest_count = 0
-      print,'No data...'
-      wait,1
-   endelse
-   if 0 then begin
-      IOERROR_START:
-      flush_count = 0
-      tmtest_count = 0
-      print,'IOERROR'
-   endif
+      if 0 then begin
+         IOERROR_START:
+         flush_count = 0
+         tmtest_count = 0
+         print,'IOERROR'
+         free_lun,TMUNIT
+         break
+      endif
+   endwhile
 endwhile
-
 
 end
