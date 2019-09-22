@@ -548,7 +548,7 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
         xyouts,sx,sy-dy*c++,'Origin: '+string(pkt.xorigin,pkt.yorigin,format='(2I5)'),/device
         xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
-               string(pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
+               string(pkt.gain_alp_zern[0,0],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
                /device
         ;;take snapshot
         snap = TVRD()
