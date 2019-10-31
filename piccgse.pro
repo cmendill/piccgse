@@ -550,7 +550,9 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
                string(pkt.gain_alp_zern[0,0],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
                /device
-        ;;take snapshot
+        xyouts,sx,sy-dy*c++,'Max Pixel: '+n2s(max(pkt.image.data),format='(I5)'),/device
+        xyouts,sx,sy-dy*c++,'Avg Pixel: '+n2s(mean(pkt.image.data),format='(I5)'),/device
+       ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
         wdelete,wpix
@@ -604,6 +606,7 @@ pro piccgse_processData, hed, pkt, tag
   if tag eq 'scievent' then begin
      ;;Display Image
      if set.w[wsci].show then begin
+        print,'SCI: TEMP: '+n2s(pkt.ccd_temp,format='(F10.1)')+'C | SETP: '+n2s(pkt.tec_setpoint)+'| TEC: '+n2s(pkt.tec_enable)
         ;;set window
         wset,wsci
         ;;set font
