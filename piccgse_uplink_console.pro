@@ -382,6 +382,19 @@ pro piccgse_uplink_console
   ;;install event handler
   xmanager,'serial_command_buttons',lyt_arrow_sub1,/no_block
 
+  ;;SHK arrows
+  shk_arrow_sub1 = widget_base(col6,/row)
+  button_label = widget_label(shk_arrow_sub1,value='SHK:',/align_left)
+  sel = where(buttondb.type1 eq 'shk' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(shk_arrow_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
+     endfor
+  endif
+  ;;install event handler
+  xmanager,'serial_command_buttons',shk_arrow_sub1,/no_block
+
   ;;HEX arrows
   hex_arrow_sub1 = widget_base(col6,/row)
   button_label = widget_label(hex_arrow_sub1,value='HEX:',/align_left)
