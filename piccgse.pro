@@ -230,7 +230,8 @@ pro piccgse_processData, hed, pkt, tag
   common processdata_block2, scirebin,lytrebin,scixs,sciys,lytxs_rebin,lytys_rebin,sciring
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
-
+  common processdata_block5, sci_temp, sci_set, sci_tec
+  
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
      ;;Flight software header file
@@ -326,13 +327,18 @@ pro piccgse_processData, hed, pkt, tag
      minsize  = min([set.w[wsci].xsize,set.w[wsci].ysize])
      scirebin = (minsize/scixs) * scixs
 
-     ;;Sci IWA ring
+     ;;SCI IWA ring
      xyimage,scixs,sciys,xim,yim,rim,/quadrant,/index
      sciring = where(fix(rim) eq 4)
      image = intarr(scixs,sciys)
      image[sciring] = 1
      image = rebin(image,scirebin,scirebin,/sample)
      sciring = where(round(image) eq 1)
+
+     ;;SCI Temperatures
+     sci_temp = 0d
+     sci_set  = 0d
+     sci_tec  = 0
   endif
   
   ;;Swap column/row major for 2D arrays
@@ -606,7 +612,11 @@ pro piccgse_processData, hed, pkt, tag
   if tag eq 'scievent' then begin
      ;;Display Image
      if set.w[wsci].show then begin
-        print,'SCI: TEMP: '+n2s(pkt.ccd_temp,format='(F10.1)')+'C | SETP: '+n2s(pkt.tec_setpoint)+'| TEC: '+n2s(pkt.tec_enable)
+        ;;save SCI temps to common block
+        sci_temp = pkt.ccd_temp
+        sci_set  = pkt.tec_setpoint
+        sci_tec  = pkt.tec_enable
+        
         ;;set window
         wset,wsci
         ;;set font
@@ -826,6 +836,10 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string('CPU1',pkt.cpu1_temp,format='(A5,F7.1)'),/device,color=white
         c++
         xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string('CPU2',pkt.cpu2_temp,format='(A5,F7.1)'),/device,color=white
+        c++
+        ;;print SCI temps
+        if sci_tec then tec=green else tec=red
+        xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string('SCI',sci_temp,'/',sci_set,format='(A5,F7.1,A,F-7.1)'),/device,color=tec
         c++
         ;;print state
         bxs=204
