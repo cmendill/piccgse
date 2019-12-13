@@ -18,10 +18,12 @@ function load_buttondb
 
   b = replicate({button},num_cmd)
   i=0
-
+  cr = string(10B)
+  
   ;;State commands
+  standby = 'state stb'+cr+'alp load flat'+cr+'lyt reset'+cr+'lyt zernike disable all'+cr+'lyt zernike enable 0 1'
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'LOW POW' ,cmd:'state lpw',tooltip:'STATE_LOW_POWER',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'STANDBY' ,cmd:'state stb',tooltip:'STATE_STANDBY',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state',type2:'',name:'STANDBY' ,cmd: standby   ,tooltip:'STATE_STANDBY',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'ACQUIRE' ,cmd:'state acq',tooltip:'STATE_ACQUIRE_TARGET',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'SPIRAL'  ,cmd:'state sps',tooltip:'STATE_SPIRAL_SEARCH',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'M2 ALIGN',cmd:'state m2a',tooltip:'STATE_M2_ALIGN',igse:0,vgse:0}
