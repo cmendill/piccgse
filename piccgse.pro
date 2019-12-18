@@ -3,7 +3,7 @@
 ;;  - procedure to load config file
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_loadConfig, path  
-  common piccgse_block, set
+  common piccgse_block, settings, set, shm_var
 
 
   ;;Get window indicies
@@ -172,7 +172,7 @@ end
 ;;  - procedure to setup paths and open logfiles
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_setupFiles,STARTUP_TIMESTAMP=STARTUP_TIMESTAMP
-  common piccgse_block, set
+  common piccgse_block, settings, set, shm_var
   
   ;;set paths and filenames
   STARTUP_TIMESTAMP = gettimestamp('.')
@@ -195,7 +195,7 @@ end
 ;;  - procedure to create all interface windows
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_createWindows
-  common piccgse_block, set
+  common piccgse_block, settings, set, shm_var
   while !D.WINDOW ne -1 do wdelete
   for i=0, n_elements(set.w)-1 do begin
      if set.w[i].show then window, i, XSIZE=set.w[i].xsize, YSIZE=set.w[i].ysize,$
@@ -209,7 +209,7 @@ end
 ;;  - function to decide if we need to restart any windows
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 FUNCTION piccgse_newWindows, old
-  common piccgse_block, set
+  common piccgse_block, settings, set, shm_var
   for i=0, n_elements(set.w)-1 do begin
      if (old.w[i].xsize NE set.w[i].xsize) OR  (old.w[i].ysize NE set.w[i].ysize) OR $ 
         (old.w[i].xpos NE set.w[i].xpos)   OR  (old.w[i].ypos NE set.w[i].ypos)   OR $
@@ -225,12 +225,12 @@ end
 ;;  - procedure to process and plot data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_processData, hed, pkt, tag
-  common piccgse_block, set
+  common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
   common processdata_block2, scirebin,lytrebin,scixs,sciys,lytxs_rebin,lytys_rebin,sciring
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
-  common processdata_block5, sci_temp, sci_set, sci_tec
+  common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole
   
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -339,6 +339,12 @@ pro piccgse_processData, hed, pkt, tag
      sci_temp = 0d
      sci_set  = 0d
      sci_tec  = 0
+
+     ;;ACQ positions
+     acq_xstar = 0
+     acq_ystar = 0
+     acq_xhole = 0
+     acq_yhole = 0
   endif
   
   ;;Swap column/row major for 2D arrays
@@ -729,11 +735,14 @@ pro piccgse_processData, hed, pkt, tag
         ;;scale image
         image = pkt.image.data
         ss=size(image)
-        xsize =!D.Y_SIZE * float(ss[1]) / float(ss[2])
-        simage = congrid(image,xsize,!D.Y_SIZE)
+        ysize = !D.Y_SIZE
+        xsize = ysize * float(ss[1]) / float(ss[2])
+        xpos  = !D.X_SIZE-xsize
+        ypos  = 0
+        simage = congrid(image,xsize,ysize)
         greyrscale,simage,255
         ;;display image
-        tv,simage,!D.X_SIZE-xsize,0
+        tv,simage,xpos,ypos
         ;;set text origin
         dy  = 16
         sx = 5
@@ -746,6 +755,8 @@ pro piccgse_processData, hed, pkt, tag
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d3 + (double(hed.end_nsec) - double(hed.start_nsec))/1d6)
         xyouts,sx,sy-dy*c++,'Event: '+n2s(dt)+' us',/device
         xyouts,sx,sy-dy*c++,'Max: '+n2s(long(max(image)))+' ADU',/device
+        xyouts,sx,sy-dy*c++,'Hole: '+n2s(acq_xhole)+','+n2s(acq_yhole),/device
+        xyouts,sx,sy-dy*c++,'Star: '+n2s(acq_xstar)+','+n2s(acq_ystar),/device
         ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
@@ -757,6 +768,36 @@ pro piccgse_processData, hed, pkt, tag
         ;;display image
         tv,snap
         loadct,0
+        ;;get mouse events
+        cursor,x,y,/nowait,/device
+        if x ge 0 and y ge 0 and !mouse.button ne 0 then begin
+           if !mouse.button eq 1 then begin
+              ;;Left click star position
+              x = fix(double(x-xpos)/xsize * ss[1])
+              y = fix(double(y-ypos)/ysize * ss[2])
+              if x ge 0 and x lt ss[1] and y ge 0 and y lt ss[2] then begin
+                 acq_xstar = x
+                 acq_ystar = y
+              endif
+           endif
+           if !mouse.button eq 4 then begin
+              ;;Right click hole position
+              x = fix(double(x-xpos)/xsize * ss[1])
+              y = fix(double(y-ypos)/ysize * ss[2])
+              if x ge 0 and x lt ss[1] and y ge 0 and y lt ss[2] then begin
+                 acq_xhole = x
+                 acq_yhole = y
+              endif
+           endif
+           ;;Put deltas into shared memory
+           dx = fix(acq_xstar - acq_xhole)
+           dy = fix(acq_ystar - acq_yhole)
+           shm_var[settings.shm_acq_dx+0] = byte(ishft(dx,-8)) 
+           shm_var[settings.shm_acq_dx+1] = byte(dx AND 255)
+           shm_var[settings.shm_acq_dy+0] = byte(ishft(dy,-8)) 
+           shm_var[settings.shm_acq_dy+1] = byte(dy AND 255)
+        endif
+           
      endif
   endif
    
@@ -874,7 +915,7 @@ end
 ;;  - function to connect to the image server
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 function piccgse_tmConnect
-  common piccgse_block, set
+  common piccgse_block, settings, set, shm_var
   
   ;;Check if we are reading from a file
   if set.tmserver_type eq 'tmfile' then begin
@@ -929,12 +970,12 @@ end
 ;;      Use bidirectional downlink for commands instead of uplink
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse, NOSAVE=NOSAVE, NOUPLINK=NOUPLINK
-  common piccgse_block, set
+  common piccgse_block, settings, set, shm_var
 
 ;*************************************************
 ;* LOAD SETTINGS
 ;*************************************************
-restore,'settings.idl'
+settings = load_settings()
   
 ;*************************************************
 ;* DEFINE SETTINGS STRUCTURES
@@ -1067,16 +1108,16 @@ restore,'settings.idl'
 ;*************************************************
 ;* SETUP SHARED MEMORY
 ;*************************************************
-  shmmap, 'shm', /byte, shm_size
+  shmmap, 'shm', /byte, settings.shm_size
   ;;NOTE: This creates a file /dev/shm/shm of size shm_size bytes
   ;;      The file does not get deleted when you quit IDL, so if
   ;;      shm_size changes, you must delete this file manualy. 
   
   shm_var = shmvar('shm')
-  shm_var[*] = bytarr(shm_size)
-  shm_var[SHM_RUN] = 1
-  shm_var[SHM_UPLINK] = NOT keyword_set(NOUPLINK)
-  shm_var[SHM_TIMESTAMP:SHM_TIMESTAMP+strlen(STARTUP_TIMESTAMP)-1]=byte(STARTUP_TIMESTAMP)
+  shm_var[*] = bytarr(settings.shm_size)
+  shm_var[settings.shm_run] = 1
+  shm_var[settings.shm_uplink] = NOT keyword_set(NOUPLINK)
+  shm_var[settings.shm_timestamp:settings.shm_timestamp+strlen(STARTUP_TIMESTAMP)-1]=byte(STARTUP_TIMESTAMP)
   print,'Shared memory mapped'
   
 ;*************************************************
@@ -1156,11 +1197,11 @@ restore,'settings.idl'
            ;;Install error handler
            ON_IOERROR, RESET_CONNECTION
            ;;Set link status
-           shm_var[SHM_LINK] = 1
+           shm_var[settings.shm_link] = 1
            ;;Wait for data
            if file_poll_input(TMUNIT,timeout=0.01) then begin
               ;;Set data status
-              shm_var[SHM_DATA] = 1
+              shm_var[settings.shm_data] = 1
               tm_last_data = systime(1)
               ;;Check presync words
               readu, TMUNIT, sync
@@ -1248,8 +1289,8 @@ restore,'settings.idl'
                     FREE_LUN_ERROR: PRINT, 'FREE_LUN_ERROR: '+!ERR_STRING
                  endif
                  tm_connected = 0
-                 shm_var[SHM_LINK] = 0
-                 shm_var[SHM_DATA] = 0
+                 shm_var[settings.shm_link] = 0
+                 shm_var[settings.shm_data] = 0
                  wait,1
               endif
            endelse
@@ -1299,12 +1340,12 @@ restore,'settings.idl'
      ;;----------------------------------------------------------
      ;; Check for commands
      ;;----------------------------------------------------------
-     if shm_var[SHM_CMD] then begin
+     if shm_var[settings.shm_cmd] then begin
         ;;reset command bit
-        shm_var[SHM_CMD]=0
+        shm_var[settings.shm_cmd]=0
         
         ;;exit
-        if NOT shm_var[SHM_RUN] then begin
+        if NOT shm_var[settings.shm_run] then begin
            if TMUNIT gt 0 then free_lun,TMUNIT
            if set.pktlogunit gt 0 then free_lun,set.pktlogunit
            obj_destroy,obridge_up
@@ -1317,12 +1358,12 @@ restore,'settings.idl'
         endif
         
         ;;reset
-        if shm_var[SHM_RESET] then begin
-           shm_var[SHM_RESET]=0
+        if shm_var[settings.shm_reset] then begin
+           shm_var[settings.shm_reset]=0
            print,'Resetting paths...'
            piccgse_setupFiles,STARTUP_TIMESTAMP=STARTUP_TIMESTAMP
            ;;set timestamp in shared memory
-           shm_var[SHM_TIMESTAMP:SHM_TIMESTAMP+strlen(STARTUP_TIMESTAMP)-1]=byte(STARTUP_TIMESTAMP)
+           shm_var[settings.shm_timestamp:settings.shm_timestamp+strlen(STARTUP_TIMESTAMP)-1]=byte(STARTUP_TIMESTAMP)
         endif
      endif
      

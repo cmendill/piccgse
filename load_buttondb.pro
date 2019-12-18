@@ -2,7 +2,7 @@
 ;;buttons appear in the order they are listed
 function load_buttondb
   ;;load settings
-  restore,'settings.idl'
+  settings = load_settings()
 
   num_cmd = 200
   button_s = {button,$
@@ -41,6 +41,7 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'hex',type2:'',name:'STEP +' ,cmd:'hex inc step',tooltip:'Increase hexapod step size',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'hex',type2:'',name:'STEP -' ,cmd:'hex dec step',tooltip:'Decrease hexapod step size',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'hex',type2:'',name:'STEP RST' ,cmd:'hex rst step',tooltip:'Reset hexapod step size',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'hex',type2:'',name:'ACQUIRE' ,cmd:'',tooltip:'Auto acquire star from ACQ camera',igse:0,vgse:0}
 
   ;;Door commands
   b[i++]={id:i,show:1,type1:'door',type2:'d1',name:'O1' ,cmd:'open door 1',tooltip:'Open M1 door',igse:0,vgse:0}
@@ -60,8 +61,8 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/down.bmp',cmd:'hex move +u',tooltip:'Move spot down on ACQ',igse:0,vgse:0}
 
   ;;HEX Z commands
-  b[i++]={id:i,show:1,type1:'hex',type2:'z',name:'+Z',cmd:'hex move +Z',tooltip:'Move HEX +Z',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'hex',type2:'z',name:'-Z',cmd:'hex move -Z',tooltip:'Move HEX -Z',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'hex',type2:'z',name:'+Z',cmd:'hex move +z',tooltip:'Move HEX +Z',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'hex',type2:'z',name:'-Z',cmd:'hex move -z',tooltip:'Move HEX -Z',igse:0,vgse:0}
 
   ;;Camera commands
   b[i++]={id:i,show:1,type1:'camera',type2:'',name:'SHK +',cmd:'shk frmtime +',tooltip:'Increase SHK frame time',igse:0,vgse:0}
@@ -95,8 +96,8 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/down.bmp',cmd:'shk inc target 0 -0.02',tooltip:'Move star down on VVC',igse:0,vgse:0}
 
   ;;GSE Commands
-  b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Exit',cmd:'',tooltip:'Close GSE',igse:SHM_RUN,vgse:0}
-  b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Reset',cmd:'',tooltip:'Reset GSE',igse:SHM_RESET,vgse:1}
+  b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Exit',cmd:'',tooltip:'Close GSE',igse:settings.shm_run,vgse:0}
+  b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Reset',cmd:'',tooltip:'Reset GSE',igse:settings.shm_reset,vgse:1}
 
   ;;Trim database
   buttondb = b[0:i-1]

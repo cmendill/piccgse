@@ -1,9 +1,8 @@
 pro console_event, ev
-  common dnlink_block,dnfd,conlogfd,base,con_text,shm_var,nchar
-  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
+  common dnlink_block,settings,dnfd,conlogfd,base,con_text,shm_var,nchar
 
   ;;check for exit
-  if NOT shm_var[SHM_RUN] then begin
+  if NOT shm_var[settings.shm_run] then begin
      print,'exit'
      ;;unmap shared memory
      shmunmap,'shm'
@@ -35,7 +34,7 @@ pro console_event, ev
         ;;print console text to screen
         widget_control,ev.id,set_value=strmid(newline,0,nchar),/append
         ;;print console text to log file
-        gsets=strcompress(string(shm_var[SHM_TIMESTAMP:n_elements(shm_var)-1]),/REMOVE_ALL)
+        gsets=strcompress(string(shm_var[settings.shm_timestamp:*]),/REMOVE_ALL)
         logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.conlog.txt'
         if not file_test(logfile) then begin
            ;;close logfile if it is open
@@ -55,18 +54,17 @@ pro console_event, ev
 end
 
 pro piccgse_dnlink_console
-  common dnlink_block,dnfd,conlogfd,base,con_text,shm_var,nchar
-  common shmem_block, SHM_SIZE, SHM_RUN, SHM_RESET, SHM_LINK, SHM_DATA, SHM_CMD, SHM_TIMESTAMP, SHM_UPLINK, SHM_ACQ
+  common dnlink_block,settings,dnfd,conlogfd,base,con_text,shm_var,nchar
 
-  ;;restore settings
-  restore,'settings.idl'
+  ;;load settings
+  settings = load_settings()
   
   ;;open serial connection
-  openr,dnfd,dnlink_dev,/get_lun,error=error
+  openr,dnfd,settings.dnlink_dev,/get_lun,error=error
   if error ne 0 then begin
-     print,'ERROR (piccgse_dnlink_console): Could not open '+dnlink_dev
+     print,'ERROR (piccgse_dnlink_console): Could not open '+settings.dnlink_dev
      dnfd = -1
-  endif else print,'DNLINK: Opened '+dnlink_dev+' for reading'
+  endif else print,'DNLINK: Opened '+settings.dnlink_dev+' for reading'
 
   ;;configure serial port
   if dnfd ge 0 then begin
@@ -75,7 +73,7 @@ pro piccgse_dnlink_console
   endif
   
   ;;setup shared memory
-  shmmap, 'shm', /byte, shm_size
+  shmmap, 'shm', /byte, settings.shm_size
   shm_var = shmvar('shm')
   print,'Shared memory mapped'
 
