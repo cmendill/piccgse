@@ -1,3 +1,4 @@
+pro livetemp, gsepath=gsepath
 path=''
 window,0
 ;;Temperature database
@@ -10,13 +11,20 @@ items = adc.abbr
 lines = intarr(n_elements(items))
 
 while 1 do begin
-   folders = file_search('data/piccgse/*',count=nfolders)
-   if path ne folders[-1] then begin
-      path = folders[-1]
+   if keyword_set(gsepath) then begin
+      path = 'data/piccgse/'+gsepath
       print,'Reading data from: '+path
       last = 0
       data = 0
-   endif
+   endif else begin
+      folders = file_search('data/piccgse/*',count=nfolders)
+      if path ne folders[-1] then begin
+         path = folders[-1]
+         print,'Reading data from: '+path
+         last = 0
+         data = 0
+      endif
+   endelse
    files = file_search(path+'/*thmevent*.idl',count=nfiles)
    for i=last,nfiles-1 do begin
       restore,files[i]
