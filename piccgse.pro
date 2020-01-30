@@ -422,6 +422,7 @@ pro piccgse_processData, hed, pkt, tag
         c=0
         ;;print data
         xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
+        xyouts,sx,sy-dy*c++,'# of Samples: '+n2s(pkt.nsamples),/device
         xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
         xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
@@ -554,6 +555,7 @@ pro piccgse_processData, hed, pkt, tag
         c=0
         ;;print data
         xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
+        xyouts,sx,sy-dy*c++,'# of Samples: '+n2s(pkt.nsamples),/device
         xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
         xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
