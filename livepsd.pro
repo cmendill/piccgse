@@ -1,10 +1,12 @@
 pro livepsd_event, ev
-  common event_block, zlyt1, zlyt2, zshk1, zshk2, ids
+  common event_block, zlyt1, zlyt2, zshk1, zshk2, ids, twin, start
   if n_elements(zlyt1) eq 0 then begin
      zlyt1 = 0
      zlyt2 = 1
      zshk1 = 0
      zshk2 = 1
+     twin  = 10 ;;seconds
+     start = systime(/seconds)
      widget_control,ev.top,get_uvalue=ids
   endif
 
@@ -14,8 +16,17 @@ pro livepsd_event, ev
   if ev.id eq ids.shk1 then zshk1 = ev.index
   if ev.id eq ids.shk2 then zshk2 = ev.index
 
+  ;;Number of packets to plot
+  if ev.id eq ids.twin then begin
+     widget_control,ev.id,get_value=temp
+     twin = long(temp[0])
+  endif
+
   ;;Reset button
-  if ev.id eq ids.rest then print,'reset'
+  if ev.id eq ids.rest then begin
+     print,'reset'
+     start = systime(/seconds)
+  endif
 
   ;;Exit button
   if ev.id eq ids.exit then begin
@@ -29,13 +40,15 @@ pro livepsd_event, ev
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   ;;Settings
-  nplot = 30
   logbin  = 0.01
   window  = 'hanning'
   renormalize = 1
   detrend = 1
   wpix=5
-  
+  charsize=1.5
+  ttyr = [1e-8,2e6]
+  ozyr = [1e-12,2e2]
+
   ;;Symbols
   sym_sq  = '!E2!N'
   sym_sig = greek('sigma')+'!N'
@@ -49,6 +62,15 @@ pro livepsd_event, ev
   shkfiles = file_search(path+'/*shkpkt*.idl',count=nshkfiles)
   lytfiles = file_search(path+'/*lytpkt*.idl',count=nlytfiles)
 
+  ;;Select files
+  tnow = systime(/seconds)
+  tmod = file_modtime(shkfiles)
+  sel = where((tmod ge start) AND (tmod ge tnow-twin),nshkfiles)
+  if nshkfiles gt 0 then shkfiles = shkfiles[sel]
+  tmod = file_modtime(lytfiles)
+  sel = where((tmod ge start) AND (tmod ge tnow-twin),nlytfiles)
+  if nlytfiles gt 0 then lytfiles = lytfiles[sel]
+  
   ;;Set widow
   wset,ids.wdraw
 
@@ -58,21 +80,21 @@ pro livepsd_event, ev
   !P.MULTI=[0,2,2]
 
   ;;Plot positions
-  xbuf = 0.02
-  ybuf = 0.05
-  shk1pos = [0.0,0.5,0.5,1.0]+[xbuf,ybuf,-xbuf,-ybuf]
-  shk2pos = [0.0,0.0,0.5,0.5]+[xbuf,ybuf,-xbuf,-ybuf]
-  lyt1pos = [0.5,0.5,1.0,1.0]+[xbuf,ybuf,-xbuf,-ybuf]
-  lyt2pos = [0.5,0.0,1.0,0.5]+[xbuf,ybuf,-xbuf,-ybuf]
+  xbuf = 0.03
+  ybuf = 0.045
+  xoff = 0.02
+  yoff = 0.005
+  shk1pos = [0.0,0.5,0.5,1.0]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
+  shk2pos = [0.0,0.0,0.5,0.5]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
+  lyt1pos = [0.5,0.5,1.0,1.0]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
+  lyt2pos = [0.5,0.0,1.0,0.5]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;SHK Plots
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   if nshkfiles gt 0 then begin
-     first = (nshkfiles - nplot) > 0
-     files = shkfiles[first:*]
-     for i=0,n_elements(files)-1 do begin
-        restore,files[i]
+     for i=0,nshkfiles-1 do begin
+        restore,shkfiles[i]
         m1 = double(pkt.zernike_measured[zshk1,0:pkt.nsamples-1])*1000
         m2 = double(pkt.zernike_measured[zshk2,0:pkt.nsamples-1])*1000
         c1 = m1*0
@@ -82,13 +104,22 @@ pro livepsd_event, ev
            mes2 = m2
            cmd1 = c1
            cmd2 = c2
-        endif else begin
+           start_sec  = double(hed.start_sec)
+           start_nsec = double(hed.start_nsec)
+           end_sec    = double(hed.start_sec)
+           end_nsec   = double(hed.start_nsec) + (hed.frmtime * pkt.nsamples * 1d9)
+         endif else begin
            mes1 = [mes1,m1]
            mes2 = [mes2,m2]
            cmd1 = [cmd1,c1]
            cmd2 = [cmd2,c2]
+           end_sec  = double(hed.start_sec)
+           end_nsec = double(hed.start_nsec) + (hed.frmtime * pkt.nsamples * 1d9)
         endelse
      endfor
+
+     ;;Calculate total time
+     total_time = round((end_sec - start_sec) + (end_nsec - start_nsec)/1d9)
 
      ;;Calc PSD
      period = hed.frmtime
@@ -98,49 +129,55 @@ pro livepsd_event, ev
      mkpsd,cmd2,cmd2_freq,cmd2_psd,cmd2_int,cmd2_df,period=period,detrend=detrend,logbin=logbin,window=window,renormalize=renormalize
 
      ;;Plot PSDs
-     if zshk1 le 1 then psdyr = [1e-6,2e8] else psdyr = [1e-12,2e2]
+     if zshk1 le 1 then psdyr = ttyr else psdyr = ozyr
      psdxr = [mes1_freq[1],mes1_freq[-1]] 
-     plot,indgen(100),position=shk1pos,title='shk1'
-     ;;plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=[0.0,0.5,0.5,1.0],$
-     ;;     title='SHK Z['+n2s(zshk1)+'] RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm',$
-     ;;     xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk1)+'] PSD [nm'+sym_sq+'/Hz]'
-     ;;oplot,cmd1_freq,cmd1_psd
      
-     if zshk2 le 1 then psdyr = [1e-6,2e8] else psdyr = [1e-12,2e2]
+     plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=shk1pos,$
+          title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Depth: '+n2s(total_time,format='(I)')+' sec',$
+          xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
+     oplot,cmd1_freq,cmd1_psd,color=3
+     
+     if zshk2 le 1 then psdyr = ttyr else psdyr = ozyr
      psdxr = [mes2_freq[1],mes2_freq[-1]] 
-     plot,indgen(100),shk2pos,title='shk2'
-     ;;plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=[0.0,0.0,0.5,0.5],$
-     ;;     title='SHK Z['+n2s(zshk2)+'] RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm',$
-     ;;     xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk2)+'] PSD [nm'+sym_sq+'/Hz]'
-     ;;oplot,cmd2_freq,cmd2_psd
+     plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=shk2pos,$
+          title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Depth: '+n2s(total_time,format='(I)')+' sec',$
+          xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
+     oplot,cmd2_freq,cmd2_psd,color=3
      
-  endif
+  endif else print,'Waiting for SHK files...'
   
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;LYT Plots
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   if nlytfiles gt 0 then begin
-     first = (nlytfiles - nplot) > 0
-     files = lytfiles[first:*]
-     for i=0,n_elements(files)-1 do begin
-        restore,files[i]
+     for i=0,nlytfiles-1 do begin
+        restore,lytfiles[i]
         m1 = double(pkt.zernike_measured[zlyt1,0:pkt.nsamples-1])*1000
         m2 = double(pkt.zernike_measured[zlyt2,0:pkt.nsamples-1])*1000
-        c1 = m1*0
-        c2 = m2*0
+        c1 = double(pkt.alp_zcmd[zlyt1,0:pkt.nsamples-1])*1000
+        c2 = double(pkt.alp_zcmd[zlyt2,0:pkt.nsamples-1])*1000
         if i eq 0 then begin
            mes1 = m1
            mes2 = m2
            cmd1 = c1
            cmd2 = c2
-        endif else begin
+           start_sec  = double(hed.start_sec)
+           start_nsec = double(hed.start_nsec)
+           end_sec    = double(hed.start_sec)
+           end_nsec   = double(hed.start_nsec) + (hed.frmtime * pkt.nsamples * 1d9)
+         endif else begin
            mes1 = [mes1,m1]
            mes2 = [mes2,m2]
            cmd1 = [cmd1,c1]
            cmd2 = [cmd2,c2]
+           end_sec  = double(hed.start_sec)
+           end_nsec = double(hed.start_nsec) + (hed.frmtime * pkt.nsamples * 1d9)
         endelse
      endfor
 
+     ;;Calculate total time
+     total_time = (end_sec - start_sec) + (end_nsec - start_nsec)/1d9
+     
      ;;Calc PSD
      period = hed.frmtime
      mkpsd,mes1,mes1_freq,mes1_psd,mes1_int,mes1_df,period=period,detrend=detrend,logbin=logbin,window=window,renormalize=renormalize
@@ -149,23 +186,21 @@ pro livepsd_event, ev
      mkpsd,cmd2,cmd2_freq,cmd2_psd,cmd2_int,cmd2_df,period=period,detrend=detrend,logbin=logbin,window=window,renormalize=renormalize
 
      ;;Plot PSDs
-     if zlyt1 le 1 then psdyr = [1e-6,2e8] else psdyr = [1e-12,2e2]
+     if zlyt1 le 1 then psdyr = ttyr else psdyr = ozyr
      psdxr = [mes1_freq[1],mes1_freq[-1]]
-     plot,indgen(100),position=lyt1pos,title='lyt1'
-     ;;plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=[0.5,0.5,0.5,1.0],$
-     ;;     title='LYT Z['+n2s(zlyt1)+'] RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm',$
-     ;;     xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt1)+'] PSD [nm'+sym_sq+'/Hz]'
-     ;;oplot,cmd1_freq,cmd1_psd
+     plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=lyt1pos,$
+          title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Depth: '+n2s(total_time,format='(I)')+' sec',$
+          xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
+     oplot,cmd1_freq,cmd1_psd,color=3
      
-     if zlyt2 le 1 then psdyr = [1e-6,2e8] else psdyr = [1e-12,2e2]
+     if zlyt2 le 1 then psdyr = ttyr else psdyr = ozyr
      psdxr = [mes2_freq[1],mes2_freq[-1]] 
-     plot,indgen(100),position=lyt2pos,title='lyt2'
-     ;;plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=[0.5,0.0,0.5,0.5],$
-     ;;     title='LYT Z['+n2s(zlyt2)+'] RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm',$
-     ;;     xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt2)+'] PSD [nm'+sym_sq+'/Hz]'
-     ;;oplot,cmd2_freq,cmd2_psd
+     plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=lyt2pos,$
+          title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Depth: '+n2s(total_time,format='(I)')+' sec',$
+          xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
+     oplot,cmd2_freq,cmd2_psd,color=3
      
-  endif
+  endif else print,'Waiting for LYT files...'
   
   ;;Take snapshot
   snap = TVRD()
@@ -192,17 +227,19 @@ pro livepsd
   ;;Fullscreen widget
   base = widget_base(title='PICTURE-C LIVE PSD',xsize=ss[0],ysize=ss[1],/column)
   brow = widget_base(base,/row)
-  lyt1 = widget_droplist(brow,value=zernikes,title='LYT1:')
-  lyt2 = widget_droplist(brow,value=zernikes,title='LYT2:')
   shk1 = widget_droplist(brow,value=zernikes,title='SHK1:')
   shk2 = widget_droplist(brow,value=zernikes,title='SHK2:')
+  lyt1 = widget_droplist(brow,value=zernikes,title='LYT1:')
+  lyt2 = widget_droplist(brow,value=zernikes,title='LYT2:')
   path = widget_text(brow,xsize=22,ysize=1)
   rest = widget_button(brow,value='Reset')
   exit = widget_button(brow,value='Exit')
+  lwin = widget_label(brow,value='Time Window:')
+  twin = widget_text(brow,xsize=10,ysize=1,/editable)
   draw = widget_draw(base,xsize=ss[0]-6,ysize=ss[1]-bsize)
   widget_control,base,/realize,timer=0
   widget_control,draw,get_value=wdraw
-  ids = {lyt1:lyt1,lyt2:lyt2,shk1:shk1,shk2:shk2,path:path,rest:rest,exit:exit,draw:draw,wdraw:wdraw}
+  ids = {lyt1:lyt1,lyt2:lyt2,shk1:shk1,shk2:shk2,path:path,rest:rest,exit:exit,draw:draw,wdraw:wdraw,twin:twin}
   widget_control,base,set_uvalue=ids
   xmanager,'livepsd',base,/no_block
 end
