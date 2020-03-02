@@ -1,5 +1,5 @@
 pro livepsd_event, ev
-  common event_block, zlyt1, zlyt2, zshk1, zshk2, ids, twin, start, type
+  common event_block, zlyt1, zlyt2, zshk1, zshk2, ids, twin, start, type, xlog
   if n_elements(zlyt1) eq 0 then begin
      zlyt1 = 0
      zlyt2 = 1
@@ -7,6 +7,7 @@ pro livepsd_event, ev
      zshk2 = 1
      twin  = 10 ;;seconds
      type  = 0  ;;0:PSD, 1:TIME
+     xlog  = 1
      start = systime(/seconds)
      widget_control,ev.top,get_uvalue=ids
   endif
@@ -39,6 +40,12 @@ pro livepsd_event, ev
   ;;PSD/Time toggle button
   if ev.id eq ids.togg then begin
      if type eq 0 then type=1 else type=0
+     return
+  endif
+  
+  ;;XLOG/LIN toggle
+  if ev.id eq ids.xlog then begin
+     if xlog eq 0 then xlog=1 else xlog=0
      return
   endif
   
@@ -175,7 +182,7 @@ pro livepsd_event, ev
         if zshk1 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes1_freq[1],mes1_freq[-1]] 
         
-        plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=shk1pos,$
+        plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=shk1pos,$
              title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd1_freq,cmd1_psd,color=3
@@ -183,18 +190,18 @@ pro livepsd_event, ev
         
         if zshk2 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes2_freq[1],mes2_freq[-1]] 
-        plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=shk2pos,$
+        plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=shk2pos,$
              title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd2_freq,cmd2_psd,color=3
         oplot,mes2_freq,mes2_int,linestyle=3
      endif else begin
         ;;Time series plots
-        plot,time,mes1,/xs,position=shk1pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk1)+'] nm',charsize=charsize,$
+        plot,time,mes1,/xs,/ys,position=shk1pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk1)+'] nm',charsize=charsize,$
              title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec'
         oplot,time,cmd1
         oplot,time,tar1,color=1
-        plot,time,mes2,/xs,position=shk2pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk2)+'] nm',charsize=charsize,$
+        plot,time,mes2,/xs,/ys,position=shk2pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk2)+'] nm',charsize=charsize,$
              title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec'
         oplot,time,cmd2
         oplot,time,tar2,color=1
@@ -282,7 +289,7 @@ pro livepsd_event, ev
         if zlyt1 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes1_freq[1],mes1_freq[-1]] 
         
-        plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=lyt1pos,$
+        plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=lyt1pos,$
              title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd1_freq,cmd1_psd,color=3
@@ -290,18 +297,18 @@ pro livepsd_event, ev
         
         if zlyt2 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes2_freq[1],mes2_freq[-1]] 
-        plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,/xlog,/ylog,position=lyt2pos,$
+        plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=lyt2pos,$
              title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd2_freq,cmd2_psd,color=3
         oplot,mes2_freq,mes2_int,linestyle=3
      endif else begin
         ;;Time series plots
-        plot,time,mes1,/xs,position=lyt1pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt1)+'] nm',charsize=charsize,$
+        plot,time,mes1,/xs,/ys,position=lyt1pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt1)+'] nm',charsize=charsize,$
              title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec'
         oplot,time,cmd1
         oplot,time,tar1,color=1
-        plot,time,mes2,/xs,position=lyt2pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt2)+'] nm',charsize=charsize,$
+        plot,time,mes2,/xs,/ys,position=lyt2pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt2)+'] nm',charsize=charsize,$
              title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec'
         oplot,time,cmd2
         oplot,time,tar2,color=1
@@ -344,12 +351,13 @@ pro livepsd
   rest = widget_button(brow,value='Reset')
   exit = widget_button(brow,value='Exit')
   togg = widget_button(brow,value='PSD/Time')
+  xlog = widget_button(brow,value='X-Scale')
   lwin = widget_label(brow,value='Time Window:')
   twin = widget_text(brow,xsize=10,ysize=1,/editable)
   draw = widget_draw(base,xsize=ss[0]-6,ysize=ss[1]-bsize)
   widget_control,base,/realize,timer=0
   widget_control,draw,get_value=wdraw
-  ids = {lyt1:lyt1,lyt2:lyt2,shk1:shk1,shk2:shk2,path:path,rest:rest,exit:exit,draw:draw,wdraw:wdraw,twin:twin,togg:togg}
+  ids = {lyt1:lyt1,lyt2:lyt2,shk1:shk1,shk2:shk2,path:path,rest:rest,exit:exit,draw:draw,wdraw:wdraw,twin:twin,togg:togg,xlog:xlog}
   widget_control,base,set_uvalue=ids
   xmanager,'livepsd',base,/no_block
 end
