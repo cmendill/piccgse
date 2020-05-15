@@ -566,7 +566,10 @@ pro piccgse_processData, hed, pkt, tag
                /device
         xyouts,sx,sy-dy*c++,'Max Pixel: '+n2s(max(pkt.image.data),format='(I5)'),/device
         xyouts,sx,sy-dy*c++,'Avg Pixel: '+n2s(mean(pkt.image.data),format='(I5)'),/device
-       ;;take snapshot
+        xyouts,sx,sy-dy*c++,'Centroid: '+n2s(mean(pkt.xcentroid),format='(F0.2)')+'  '+n2s(mean(pkt.ycentroid),format='(F0.2)'),/device
+        if pkt.locked then locked='YES' else locked='NO'
+        xyouts,sx,sy-dy*c++,'Locked: '+locked,/device
+        ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
         wdelete,wpix
@@ -624,7 +627,7 @@ pro piccgse_processData, hed, pkt, tag
         sci_temp = pkt.ccd_temp
         sci_set  = pkt.tec_setpoint
         sci_tec  = pkt.tec_enable
-        
+        print,max(pkt.image[0].data),max(pkt.image[1].data),max(pkt.image[2].data),max(pkt.image[3].data),max(pkt.image[4].data)
         ;;set window
         wset,wsci
         ;;set font
