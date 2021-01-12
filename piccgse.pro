@@ -227,8 +227,8 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,lytxs_rebin,lytys_rebin,sciring
-  common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,lytxs_rebin,lytys_rebin,sciring,lytmasksel
+  common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
   common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole
   
@@ -276,6 +276,7 @@ pro piccgse_processData, hed, pkt, tag
      alpsel = where(mask gt 0.005,complement=alpnotsel)
      alpsel = reverse(alpsel)
      alpimg = mask * 0d
+     alpctag = ''
      
      ;;BMC DM Display (ROUND)
      ;;os = 64
@@ -326,6 +327,10 @@ pro piccgse_processData, hed, pkt, tag
      lytrebin = (minsize/lytxs) * lytxs
      minsize  = min([set.w[wsci].xsize,set.w[wsci].ysize])
      scirebin = (minsize/scixs) * scixs
+
+     ;;LYT Mask (HACK FOR NOW)
+     xyimage,32,32,xim,yim,rim,/quad,/index
+     lytmasksel = where(rim gt 15)
 
      ;;SCI IWA ring
      xyimage,scixs,sciys,xim,yim,rim,/quadrant,/index
@@ -494,11 +499,12 @@ pro piccgse_processData, hed, pkt, tag
            device,set_font=set.w[walp].font
            ;;fill out image
            alpimg[alpsel] = pkt.alp_acmd
-           ;;get commander tag
+           ;;set commander tag
            ctag='SHK'
            if hed.alp_commander eq WATID then ctag='WAT'
            ;;display image
-           implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')'
+           implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')',erase=(ctag ne alpctag)
+           alpctag = ctag
            loadct,0
         endif
      endif
@@ -513,8 +519,11 @@ pro piccgse_processData, hed, pkt, tag
         ;;set font
         !P.FONT = 0
         device,set_font=set.w[wlyt].font
+        ;;mask image (make this switchable)
+        simage = pkt.image.data
+        simage[lytmasksel]=0
         ;;scale image
-        simage = rebin(pkt.image.data,lytrebin,lytrebin,/sample)
+        simage = rebin(simage,lytrebin,lytrebin,/sample)
         greyrscale,simage,4092
         ;;display image
         greyr
@@ -532,8 +541,11 @@ pro piccgse_processData, hed, pkt, tag
            device,set_font=set.w[walp].font
            ;;fill out image
            alpimg[alpsel] = pkt.alp_acmd
+           ;;set commander tag
+           ctag='LYT'
            ;;display image
-           implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command (LYT)'
+           implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')',erase=(ctag ne alpctag)
+           alpctag=ctag
            loadct,0
         endif
      endif
