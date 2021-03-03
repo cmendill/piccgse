@@ -263,7 +263,7 @@ pro piccgse_processData, hed, pkt, tag
      ;;Get process IDs
      procids = read_c_enum(header,'procids')
      for i=0, n_elements(procids)-1 do void=execute(procids[i]+'='+n2s(i))
-
+     
      ;;ALPAO DM Display
      os = 64
      alpsize = 11
@@ -278,29 +278,36 @@ pro piccgse_processData, hed, pkt, tag
      alpimg = mask * 0d
      alpctag = ''
      
-     ;;BMC DM Display (ROUND)
-     ;;os = 64
-     ;;bmcsize = 34
-     ;;xyimage,bmcsize*os,bmcsize*os,xim,yim,rim,/quadrant
-     ;;rim /= os
-     ;;sel = where(rim lt 17)
-     ;;mask = rim*0
-     ;;mask[sel]=1
-     ;;mask = rebin(mask,bmcsize,bmcsize)
-     ;;bmcsel = where(mask gt 0.005,complement=bmcnotsel)
-     ;;bmcsel = reverse(bmcsel)
-     ;;bmcimg = fltarr(bmcsize,bmcsize)
+     ;;BMC Type
+     bmctype = 'round'  ;;'round' or 'square'
 
-     ;;BMC DM Display (SQUARE)
-     bmcsize = 32
-     mask = intarr(bmcsize,bmcsize)+1
-     mask[0,0]=0
-     mask[0,31]=0
-     mask[31,0]=0
-     mask[31,31]=0
-     bmcsel = where(mask,complement=bmcnotsel)
-     bmcimg = fltarr(bmcsize,bmcsize)
+     if bmctype eq 'round' then begin
+        ;;BMC DM Display (ROUND)
+        os = 64
+        bmcsize = 34
+        xyimage,bmcsize*os,bmcsize*os,xim,yim,rim,/quadrant
+        rim /= os
+        sel = where(rim lt 17)
+        mask = rim*0
+        mask[sel]=1
+        mask = rebin(mask,bmcsize,bmcsize)
+        bmcsel = where(mask gt 0.005,complement=bmcnotsel)
+        bmcsel = reverse(bmcsel)
+        bmcimg = fltarr(bmcsize,bmcsize)
+     endif
 
+     if bmctype eq 'square' then begin
+        ;;BMC DM Display (SQUARE)
+        bmcsize = 32
+        mask = intarr(bmcsize,bmcsize)+1
+        mask[0,0]=0
+        mask[0,31]=0
+        mask[31,0]=0
+        mask[31,31]=0
+        bmcsel = where(mask,complement=bmcnotsel)
+        bmcimg = fltarr(bmcsize,bmcsize)
+     endif
+     
      ;;Temperature database
      t = load_tempdb()
      adc1 = t[where(t.adc eq 1)]
@@ -640,14 +647,14 @@ pro piccgse_processData, hed, pkt, tag
         sci_temp = pkt.ccd_temp
         sci_set  = pkt.tec_setpoint
         sci_tec  = pkt.tec_enable
-        print,max(pkt.image[0].data),max(pkt.image[1].data),max(pkt.image[2].data),max(pkt.image[3].data),max(pkt.image[4].data)
+        print,max(pkt.bands.band[0].data),max(pkt.bands.band[1].data),max(pkt.bands.band[2].data),max(pkt.bands.band[3].data),max(pkt.bands.band[4].data)
         ;;set window
         wset,wsci
         ;;set font
         !P.FONT = 0
         device,set_font=set.w[wsci].font
-        for i=0,n_elements(pkt.image)-1 do begin
-           image  = reform(pkt.image[i].data)
+        for i=0,n_elements(pkt.bands.band)-1 do begin
+           image  = reform(pkt.bands.band[i].data)
            simage = rebin(image,scirebin,scirebin,/sample)
            ;;scale image
            greygrscale,simage,65535
@@ -655,7 +662,7 @@ pro piccgse_processData, hed, pkt, tag
            simage[sciring] = 253
            ;;display
            greygr
-           xsize = !D.X_SIZE/n_elements(pkt.image)
+           xsize = !D.X_SIZE/n_elements(pkt.bands.band)
            tv,simage,i*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
         endfor
         loadct,0
