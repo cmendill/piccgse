@@ -134,7 +134,7 @@ pro gse_command_buttons_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   event_type = TAG_NAMES(ev, /STRUCTURE_NAME) 
-
+  
   ;;get command
   widget_control,ev.id,GET_UVALUE=uval
   sel = where(buttondb.id eq uval,nsel)
@@ -142,7 +142,6 @@ pro gse_command_buttons_event, ev
      index = widget_info(ev.id,/DROPLIST_SELECT)
      id = uval[index]
      sel = where(buttondb.id eq id,nsel)
-     
   endif
   if nsel gt 0 then begin
      ;;command was recognized 
@@ -343,10 +342,11 @@ pro piccgse_uplink_console
   col5 = widget_base(base,/column,/align_top)
 
   ;;Door buttons
-  door_sub1 = widget_base(col5,/row,/align_center)            
-  door_but1 = widget_base(col5,row=1,/frame,/align_center) 
-  door_but2 = widget_base(col5,row=1,/frame,/align_center) 
-  door_but3 = widget_base(col5,row=1,/frame,/align_center) 
+  door_sub1 = widget_base(col5,/row,/align_center)
+  door_sub2 = widget_base(col5,column=1,/align_center)
+  door_but1 = widget_base(door_sub2,row=1,/frame,/align_center) 
+  door_but2 = widget_base(door_sub2,row=1,/frame,/align_center) 
+  door_but3 = widget_base(door_sub2,row=1,/frame,/align_center) 
   button_label = widget_label(door_sub1,value='Doors',/align_center)
   ;;--make buttons
   sel = where(buttondb.type1 eq 'door' and buttondb.type2 eq 'd1' and buttondb.show eq 1,nsel)
@@ -370,8 +370,23 @@ pro piccgse_uplink_console
         bid = WIDGET_BUTTON(door_but3, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
      endfor
   endif
-  ;;install event handler
-  xmanager,'serial_command_buttons',col5,/no_block
+
+  ;;--install event handler
+  xmanager,'serial_command_buttons',door_sub2,/no_block
+
+  ;;SCI Display Type
+  scitype_sub1 = widget_base(col5,/row,/align_center)            
+  scitype_sub2 = widget_base(col5,column=1,/align_center)            
+  scitype_but1 = widget_base(scitype_sub2,row=1,/align_center)
+  button_label = widget_label(scitype_sub1,value='SCI Type',/align_center)
+  sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq 'scitype' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     dropid=widget_droplist(scitype_but1,VALUE=buttons.name,uvalue=buttons.id)
+  endif
+
+  ;;--install event handler
+  xmanager,'gse_command_buttons',scitype_sub2,/no_block
  
   ;;Column 6
   col6 = widget_base(base,/column,/align_top)

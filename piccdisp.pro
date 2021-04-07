@@ -175,10 +175,10 @@ while 1 do begin
                wset,WSCIIMAGE
                ;;create pixmap window
                window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-               if n_elements(scievent.image) gt 1 then !P.Multi = [0, 3, 2]
-               for i=0,n_elements(scievent.image)-1 do begin
-                  image  = reform(scievent.image[i].data)
-                  simage = reform(scievent.image[i].data)
+               if n_elements(scievent.bands.band) gt 1 then !P.Multi = [0, 3, 2]
+               for i=0,n_elements(scievent.bands.band)-1 do begin
+                  image  = reform(scievent.bands.band[i].data)
+                  simage = reform(scievent.bands.band[i].data)
                   ;;do photometry
                   m=max(simage,imax)
                   xy=array_indices(simage,imax)
@@ -288,7 +288,8 @@ while 1 do begin
                loadct,0
                
                ;;****** DISPLAY ALP DM ******
-               if pkthed.alp_commander eq SHKID OR pkthed.alp_commander eq WATID then begin
+               ;if pkthed.alp_commander eq SHKID OR pkthed.alp_commander eq WATID then begin
+               if 0 then begin
                   wset,WALPMAP
                   ;;create pixmap window
                   window,WPIXMAP,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE

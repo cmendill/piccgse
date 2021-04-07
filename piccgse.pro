@@ -227,7 +227,7 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,lytxs_rebin,lytys_rebin,sciring,lytmasksel
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,lytxs_rebin,lytys_rebin,sciring,lytmasksel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
   common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole
@@ -274,15 +274,15 @@ pro piccgse_processData, hed, pkt, tag
      mask[sel]=1
      mask = rebin(mask,alpsize,alpsize)
      alpsel = where(mask gt 0.005,complement=alpnotsel)
-     alpsel = reverse(alpsel)
+     alpsel = reverse(alpsel) ;;to match SHK display
      alpimg = mask * 0d
      alpctag = ''
      
-     ;;BMC Type
+     ;;BMC DM Type
      bmctype = 'round'  ;;'round' or 'square'
 
+     ;;BMC DM Display (ROUND)
      if bmctype eq 'round' then begin
-        ;;BMC DM Display (ROUND)
         os = 64
         bmcsize = 34
         xyimage,bmcsize*os,bmcsize*os,xim,yim,rim,/quadrant
@@ -292,12 +292,11 @@ pro piccgse_processData, hed, pkt, tag
         mask[sel]=1
         mask = rebin(mask,bmcsize,bmcsize)
         bmcsel = where(mask gt 0.005,complement=bmcnotsel)
-        bmcsel = reverse(bmcsel)
         bmcimg = fltarr(bmcsize,bmcsize)
      endif
 
+     ;;BMC DM Display (SQUARE)
      if bmctype eq 'square' then begin
-        ;;BMC DM Display (SQUARE)
         bmcsize = 32
         mask = intarr(bmcsize,bmcsize)+1
         mask[0,0]=0
@@ -307,6 +306,13 @@ pro piccgse_processData, hed, pkt, tag
         bmcsel = where(mask,complement=bmcnotsel)
         bmcimg = fltarr(bmcsize,bmcsize)
      endif
+
+     ;;SCI Image Pixel Selection
+     n=100
+     xyimage,n,n,xim,yim,rim,/quadrant,/index
+     scisel = where(rim le 26 and rim ge 7 and xim ge 7, nsel,complement=notsel)
+     scimask = uintarr(n,n)
+     scimask[scisel]=1
      
      ;;Temperature database
      t = load_tempdb()
@@ -341,7 +347,7 @@ pro piccgse_processData, hed, pkt, tag
 
      ;;SCI IWA ring
      xyimage,scixs,sciys,xim,yim,rim,/quadrant,/index
-     sciring = where(fix(rim) eq 4)
+     sciring = where(fix(rim) eq 6)
      image = intarr(scixs,sciys)
      image[sciring] = 1
      image = rebin(image,scirebin,scirebin,/sample)
@@ -647,25 +653,26 @@ pro piccgse_processData, hed, pkt, tag
         sci_temp = pkt.ccd_temp
         sci_set  = pkt.tec_setpoint
         sci_tec  = pkt.tec_enable
-        print,max(pkt.bands.band[0].data),max(pkt.bands.band[1].data),max(pkt.bands.band[2].data),max(pkt.bands.band[3].data),max(pkt.bands.band[4].data)
-        ;;set window
-        wset,wsci
-        ;;set font
-        !P.FONT = 0
-        device,set_font=set.w[wsci].font
-        for i=0,n_elements(pkt.bands.band)-1 do begin
-           image  = reform(pkt.bands.band[i].data)
-           simage = rebin(image,scirebin,scirebin,/sample)
-           ;;scale image
-           greygrscale,simage,65535
-           ;;add IWA ring
-           simage[sciring] = 253
-           ;;display
-           greygr
-           xsize = !D.X_SIZE/n_elements(pkt.bands.band)
-           tv,simage,i*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
-        endfor
-        loadct,0
+        if shm_var[settings.shm_scitype] eq settings.scitype_image then begin
+           ;;set window
+           wset,wsci
+           ;;set font
+           !P.FONT = 0
+           device,set_font=set.w[wsci].font
+           for i=0,n_elements(pkt.bands.band)-1 do begin
+              image  = reform(pkt.bands.band[i].data)
+              simage = rebin(image,scirebin,scirebin,/sample)
+              ;;scale image
+              greygrscale,simage,65535
+              ;;add IWA ring
+              simage[sciring] = 253
+              ;;display
+              greygr
+              xsize = !D.X_SIZE/n_elements(pkt.bands.band)
+              tv,simage,i*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
+           endfor
+           loadct,0
+        endif
      endif
      
      ;;Display BMC Command
@@ -733,7 +740,7 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx+dx,sy-dy*c++,'Sock 2: '+n2s(pkt.bmc_status.sock2_temp_c,format='(F10.1)')+' C',/device
 
 
-       ;;take snapshot
+        ;;take snapshot
         snap = TVRD()
         ;;delete pixmap window
         wdelete,wpix
@@ -742,6 +749,37 @@ pro piccgse_processData, hed, pkt, tag
         ;;display image
         tv,snap
         loadct,0
+     endif
+  endif
+
+  ;;WFSEVENT
+  if tag eq 'wfsevent' then begin
+     ;;Display Image
+     if set.w[wsci].show then begin
+        if shm_var[settings.shm_scitype] ne settings.scitype_image then begin
+           ;;set window
+           wset,wsci
+           ;;set font
+           !P.FONT = 0
+           device,set_font=set.w[wsci].font
+           for i=0,n_elements(pkt.field)-1 do begin
+              simage  = dlbarr(scixs,sciys)
+              if shm_var[settings.shm_scitype] eq settings.scitype_real      then simage[scisel] = pkt.field[i].r
+              if shm_var[settings.shm_scitype] eq settings.scitype_imaginary then simage[scisel] = pkt.field[i].i
+              if shm_var[settings.shm_scitype] eq settings.scitype_amplitude then simage[scisel] = pkt.field[i].r / cos(atan(pkt.field[i].i,pkt.field[i].r))
+              if shm_var[settings.shm_scitype] eq settings.scitype_phase     then simage[scisel] = atan(pkt.field[i].i,pkt.field[i].r)
+              simage = rebin(image,scirebin,scirebin,/sample)
+              ;;scale image
+              greygrscale,simage,1e9
+              ;;add IWA ring
+              simage[sciring] = 253
+              ;;display
+              greygr
+              xsize = !D.X_SIZE/n_elements(pkt.field)
+              tv,simage,i*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
+           endfor
+           loadct,0
+        endif
      endif
   endif
 
@@ -1042,6 +1080,7 @@ settings = load_settings()
   shkpkt   = read_c_struct(header,'shkpkt')
   lytpkt   = read_c_struct(header,'lytpkt')
   scievent = read_c_struct(header,'scievent')
+  wfsevent = read_c_struct(header,'wfsevent')
   acqevent = read_c_struct(header,'acqevent')
   thmevent = read_c_struct(header,'thmevent')
   mtrevent = read_c_struct(header,'mtrevent')
@@ -1059,6 +1098,7 @@ settings = load_settings()
   if check_padding(shkpkt)   then stop,'shkpkt contains padding'
   if check_padding(lytpkt)   then stop,'lytpkt contains padding'
   if check_padding(scievent) then stop,'scievent contains padding'
+  if check_padding(wfsevent) then stop,'wfsevent contains padding'
   if check_padding(acqevent) then stop,'acqevent contains padding'
   if check_padding(thmevent) then stop,'thmevent contains padding'
   if check_padding(mtrevent) then stop,'mtrevent contains padding'
@@ -1067,6 +1107,7 @@ settings = load_settings()
   struct_delete_field,shkpkt,'hed'
   struct_delete_field,lytpkt,'hed'
   struct_delete_field,scievent,'hed'
+  struct_delete_field,wfsevent,'hed'
   struct_delete_field,acqevent,'hed'
   struct_delete_field,thmevent,'hed'
   struct_delete_field,mtrevent,'hed'
@@ -1252,6 +1293,10 @@ settings = load_settings()
                        BUFFER_SCIEVENT: begin
                           tag = 'scievent'
                           pkt = scievent
+                       end
+                       BUFFER_WFSEVENT: begin
+                          tag = 'wfsevent'
+                          pkt = wfsevent
                        end
                        BUFFER_ACQEVENT: begin
                           tag = 'acqevent'
