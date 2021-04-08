@@ -763,7 +763,7 @@ pro piccgse_processData, hed, pkt, tag
            !P.FONT = 0
            device,set_font=set.w[wsci].font
            for i=0,n_elements(pkt.field)-1 do begin
-              simage  = dlbarr(scixs,sciys)
+              simage  = dblarr(scixs,sciys)
               if shm_var[settings.shm_scitype] eq settings.scitype_real      then simage[scisel] = pkt.field[i].r
               if shm_var[settings.shm_scitype] eq settings.scitype_imaginary then simage[scisel] = pkt.field[i].i
               if shm_var[settings.shm_scitype] eq settings.scitype_amplitude then simage[scisel] = pkt.field[i].r / cos(atan(pkt.field[i].i,pkt.field[i].r))
