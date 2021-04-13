@@ -768,7 +768,7 @@ pro piccgse_processData, hed, pkt, tag
               if shm_var[settings.shm_scitype] eq settings.scitype_imaginary then simage[scisel] = pkt.field[i].i
               if shm_var[settings.shm_scitype] eq settings.scitype_amplitude then simage[scisel] = pkt.field[i].r / cos(atan(pkt.field[i].i,pkt.field[i].r))
               if shm_var[settings.shm_scitype] eq settings.scitype_phase     then simage[scisel] = atan(pkt.field[i].i,pkt.field[i].r)
-              simage = rebin(image,scirebin,scirebin,/sample)
+              simage = rebin(simage,scirebin,scirebin,/sample)
               ;;scale image
               greygrscale,simage,1e9
               ;;add IWA ring
