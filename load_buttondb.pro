@@ -84,16 +84,16 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI REVERT',cmd:'sci revert origin',tooltip:'Revert SCI image origins',igse:0,vgse:0}
 
   ;;LYT image position
-  b[i++]={id:i,show:1,type1:'lyt',type2:'arrow',name:'bmp/left.bmp',cmd:'lyt shift origin +y',tooltip:'Move LYT window 1px left',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'lyt',type2:'arrow',name:'bmp/right.bmp',cmd:'lyt shift origin -y',tooltip:'Move LYT window 1px right',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'lyt',type2:'arrow',name:'bmp/up.bmp',cmd:'lyt shift origin -x',tooltip:'Move LYT window 1px up',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'lyt',type2:'arrow',name:'bmp/down.bmp',cmd:'lyt shift origin +x',tooltip:'Move LYT window 1px down',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'lyt',type2:'arrow',name:'bmp/left.bmp',cmd:'lyt shift origin +x',tooltip:'Move LYT window 1px left',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'lyt',type2:'arrow',name:'bmp/right.bmp',cmd:'lyt shift origin -x',tooltip:'Move LYT window 1px right',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'lyt',type2:'arrow',name:'bmp/up.bmp',cmd:'lyt shift origin -y',tooltip:'Move LYT window 1px up',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'lyt',type2:'arrow',name:'bmp/down.bmp',cmd:'lyt shift origin +y',tooltip:'Move LYT window 1px down',igse:0,vgse:0}
 
   ;;SHK zernike target
-  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/left.bmp',cmd:'shk inc target 1 0.02',tooltip:'Move star left on VVC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/right.bmp',cmd:'shk inc target 1 -0.02',tooltip:'Move star right on VVC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/up.bmp',cmd:'shk inc target 0 0.02',tooltip:'Move star up on VVC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/down.bmp',cmd:'shk inc target 0 -0.02',tooltip:'Move star down on VVC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/left.bmp',cmd:'shk inc target 0 -0.02',tooltip:'Move star left on VVC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/right.bmp',cmd:'shk inc target 0 +0.02',tooltip:'Move star right on VVC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/up.bmp',cmd:'shk inc target 1 -0.02',tooltip:'Move star up on VVC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/down.bmp',cmd:'shk inc target 1 +0.02',tooltip:'Move star down on VVC',igse:0,vgse:0}
 
   ;;GSE Commands
   b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Exit',cmd:'',tooltip:'Close GSE',igse:settings.shm_run,vgse:0}

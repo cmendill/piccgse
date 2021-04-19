@@ -274,7 +274,6 @@ pro piccgse_processData, hed, pkt, tag
      mask[sel]=1
      mask = rebin(mask,alpsize,alpsize)
      alpsel = where(mask gt 0.005,complement=alpnotsel)
-     alpsel = reverse(alpsel) ;;to match SHK display
      alpimg = mask * 0d
      alpctag = ''
      
@@ -533,7 +532,7 @@ pro piccgse_processData, hed, pkt, tag
         !P.FONT = 0
         device,set_font=set.w[wlyt].font
         ;;mask image (make this switchable)
-        simage = pkt.image.data
+        simage = transpose(pkt.image.data)
         simage[lytmasksel]=0
         ;;scale image
         simage = rebin(simage,lytrebin,lytrebin,/sample)
@@ -660,7 +659,7 @@ pro piccgse_processData, hed, pkt, tag
            !P.FONT = 0
            device,set_font=set.w[wsci].font
            for i=0,n_elements(pkt.bands.band)-1 do begin
-              image  = reform(pkt.bands.band[i].data)
+              image  = transpose(reform(pkt.bands.band[i].data))
               simage = rebin(image,scirebin,scirebin,/sample)
               ;;scale image
               greygrscale,simage,65535
