@@ -7,6 +7,7 @@ settings = {uplink_dev: '/dev/ttyUSB1',$
             scitype_imaginary:2,$
             scitype_amplitude:3,$
             scitype_phase:    4,$
+            scitype_log:      5,$
             SHM_SIZE:       128,$
             SHM_RUN:        0,$  ;;0      --> Run/Close GSE
             SHM_RESET:      1,$  ;;1      --> Reset

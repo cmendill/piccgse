@@ -99,6 +99,7 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Exit',cmd:'',tooltip:'Close GSE',igse:settings.shm_run,vgse:0}
   b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Reset',cmd:'',tooltip:'Reset GSE',igse:settings.shm_reset,vgse:1}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'Image',cmd:'',tooltip:'Display SCI Image',igse:settings.shm_scitype,vgse:settings.scitype_image}
+  b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'Log',cmd:'',tooltip:'Display Log SCI Image',igse:settings.shm_scitype,vgse:settings.scitype_log}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'R-Part',cmd:'',tooltip:'Display SCI Real part',igse:settings.shm_scitype,vgse:settings.scitype_real}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'I-Part',cmd:'',tooltip:'Display SCI Imaginary part',igse:settings.shm_scitype,vgse:settings.scitype_imaginary}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'Amp',cmd:'',tooltip:'Display SCI Amplitude',igse:settings.shm_scitype,vgse:settings.scitype_amplitude}

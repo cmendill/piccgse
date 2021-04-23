@@ -652,17 +652,23 @@ pro piccgse_processData, hed, pkt, tag
         sci_temp = pkt.ccd_temp
         sci_set  = pkt.tec_setpoint
         sci_tec  = pkt.tec_enable
-        if shm_var[settings.shm_scitype] eq settings.scitype_image then begin
+        if (shm_var[settings.shm_scitype] eq settings.scitype_image) OR (shm_var[settings.shm_scitype] eq settings.scitype_log) then begin
            ;;set window
            wset,wsci
            ;;set font
            !P.FONT = 0
            device,set_font=set.w[wsci].font
            for i=0,n_elements(pkt.bands.band)-1 do begin
-              image  = transpose(reform(pkt.bands.band[i].data))
+              image  = double(transpose(reform(pkt.bands.band[i].data)))
               simage = rebin(image,scirebin,scirebin,/sample)
+
+              if(shm_var[settings.shm_scitype] eq settings.scitype_log) then begin
+                 simage = alog10(simage/max(simage)) > (-5)
+              endif
+
               ;;scale image
               greygrscale,simage,65535
+                            
               ;;add IWA ring
               simage[sciring] = 253
               ;;display
@@ -755,7 +761,7 @@ pro piccgse_processData, hed, pkt, tag
   if tag eq 'wfsevent' then begin
      ;;Display Image
      if set.w[wsci].show then begin
-        if shm_var[settings.shm_scitype] ne settings.scitype_image then begin
+        if (shm_var[settings.shm_scitype] ne settings.scitype_image) AND (shm_var[settings.shm_scitype] ne settings.scitype_log) then begin
            ;;set window
            wset,wsci
            ;;set font
