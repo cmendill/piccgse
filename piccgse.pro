@@ -227,7 +227,7 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,lytxs_rebin,lytys_rebin,sciring,lytmasksel
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
   common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole
@@ -342,7 +342,7 @@ pro piccgse_processData, hed, pkt, tag
 
      ;;LYT Mask (HACK FOR NOW)
      xyimage,32,32,xim,yim,rim,/quad,/index
-     lytmasksel = where(rim gt 15)
+     lytmasksel = where(rim le 15,complement=lytmasknotsel)
 
      ;;SCI IWA ring
      xyimage,scixs,sciys,xim,yim,rim,/quadrant,/index
@@ -533,7 +533,7 @@ pro piccgse_processData, hed, pkt, tag
         device,set_font=set.w[wlyt].font
         ;;mask image (make this switchable)
         simage = transpose(pkt.image.data)
-        simage[lytmasksel]=0
+        simage[lytmasknotsel]=min(simage[lytmasksel])
         ;;scale image
         simage = rebin(simage,lytrebin,lytrebin,/sample)
         greyrscale,simage,4092
