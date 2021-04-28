@@ -660,6 +660,7 @@ pro piccgse_processData, hed, pkt, tag
            device,set_font=set.w[wsci].font
            for i=0,n_elements(pkt.bands.band)-1 do begin
               image  = double(transpose(reform(pkt.bands.band[i].data)))
+              print,'SCI '+n2s(i)+': ',min(image[scisel]),max(image[scisel]),mean(image[scisel])
               simage = rebin(image,scirebin,scirebin,/sample)
 
               if(shm_var[settings.shm_scitype] eq settings.scitype_log) then begin
@@ -773,6 +774,7 @@ pro piccgse_processData, hed, pkt, tag
               if shm_var[settings.shm_scitype] eq settings.scitype_imaginary then simage[scisel] = pkt.field[i].i
               if shm_var[settings.shm_scitype] eq settings.scitype_amplitude then simage[scisel] = pkt.field[i].r / cos(atan(pkt.field[i].i,pkt.field[i].r))
               if shm_var[settings.shm_scitype] eq settings.scitype_phase     then simage[scisel] = atan(pkt.field[i].i,pkt.field[i].r)
+              print,'SCI '+n2s(i)+': ',min(simage[scisel]),max(simage[scisel]),mean(simage[scisel])
               simage = rebin(simage,scirebin,scirebin,/sample)
               ;;scale image
               greygrscale,simage,1e9
