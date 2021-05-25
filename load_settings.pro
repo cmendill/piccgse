@@ -8,6 +8,8 @@ settings = {uplink_dev: '/dev/ttyUSB1',$
             scitype_amplitude:3,$
             scitype_phase:    4,$
             scitype_log:      5,$
+            bmctype_cmd:      0,$
+            bmctype_dif:      1,$
             SHM_SIZE:       128,$
             SHM_RUN:        0,$  ;;0      --> Run/Close GSE
             SHM_RESET:      1,$  ;;1      --> Reset
@@ -17,6 +19,7 @@ settings = {uplink_dev: '/dev/ttyUSB1',$
             SHM_ACQ_DX:     5,$  ;;5-6    --> ACQ camera star-hole delta x [px]
             SHM_ACQ_DY:     7,$  ;;7-8    --> ACQ camera star-hole delta x [px]
             SHM_SCITYPE:    9,$  ;;9      --> SCI camera display type [0:images, 1:real, 2:imaginary, 3:amplitude, 4:phase]
+            SHM_BMCTYPE:   10,$  ;;10     --> BMC display type [0:cmd, 1:difference]
             SHM_CMD:        27,$ ;;27     --> Command has been given
             SHM_TIMESTAMP:  28}  ;;28-127 --> File timestamp
 ;;Shared Memory

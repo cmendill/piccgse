@@ -227,10 +227,10 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
-  common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole
+  common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat
   
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -276,43 +276,16 @@ pro piccgse_processData, hed, pkt, tag
      alpsel = where(mask gt 0.005,complement=alpnotsel)
      alpimg = mask * 0d
      alpctag = ''
-     
-     ;;BMC DM Type
-     bmctype = 'round'  ;;'round' or 'square'
 
-     ;;BMC DM Display (ROUND)
-     if bmctype eq 'round' then begin
-        os = 64
-        bmcsize = 34
-        xyimage,bmcsize*os,bmcsize*os,xim,yim,rim,/quadrant
-        rim /= os
-        sel = where(rim lt 17)
-        mask = rim*0
-        mask[sel]=1
-        mask = rebin(mask,bmcsize,bmcsize)
-        bmcsel = where(mask gt 0.005,complement=bmcnotsel)
-        bmcimg = fltarr(bmcsize,bmcsize)
-     endif
-
-     ;;BMC DM Display (SQUARE)
-     if bmctype eq 'square' then begin
-        bmcsize = 32
-        mask = intarr(bmcsize,bmcsize)+1
-        mask[0,0]=0
-        mask[0,31]=0
-        mask[31,0]=0
-        mask[31,31]=0
-        bmcsel = where(mask,complement=bmcnotsel)
-        bmcimg = fltarr(bmcsize,bmcsize)
-     endif
+     ;;BMC Actuator Selection
+     restore,'config/howfs_bmcmask.idl' ;;built by picctest/export_howfc.pro
+     bmcsel = where(bmcmask,complement=bmcnotsel)
+     bmcimg = float(bmcmask*0)
 
      ;;SCI Image Pixel Selection
-     n=100
-     xyimage,n,n,xim,yim,rim,/quadrant,/index
-     scisel = where(rim le 26 and rim ge 7 and xim ge 7, nsel,complement=notsel)
-     scimask = uintarr(n,n)
-     scimask[scisel]=1
-     
+     restore,'config/howfs_scimask.idl' ;;built by picctest/export_howfc.pro
+     scisel = where(scimask,complement=scinotsel)
+          
      ;;Temperature database
      t = load_tempdb()
      adc1 = t[where(t.adc eq 1)]
@@ -660,15 +633,18 @@ pro piccgse_processData, hed, pkt, tag
            device,set_font=set.w[wsci].font
            for i=0,n_elements(pkt.bands.band)-1 do begin
               image  = double(transpose(reform(pkt.bands.band[i].data)))
-              print,'SCI '+n2s(i)+': ',min(image[scisel]),max(image[scisel]),mean(image[scisel])
+              print,'SCI '+n2s(i)+': ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),min(image),max(image),mean(image)
               simage = rebin(image,scirebin,scirebin,/sample)
-
+              sat = where(simage ge 65535,nsat)
+              
               if(shm_var[settings.shm_scitype] eq settings.scitype_log) then begin
                  simage = alog10(simage/max(simage)) > (-5)
-              endif
-
-              ;;scale image
-              greygrscale,simage,65535
+                 greygrscale,simage,65535
+                 if nsat gt 0 then simage[sat] = 254
+              endif else begin
+                 ;;scale image
+                 greygrscale,simage,65535
+              endelse
                             
               ;;add IWA ring
               simage[sciring] = 253
@@ -688,10 +664,29 @@ pro piccgse_processData, hed, pkt, tag
         ;;set font
         !P.FONT = 0
         device,set_font=set.w[wbmc].font
+        ;;create pixmap window
+        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+        wset,wpix
         ;;fill out image
-        bmcimg[bmcsel] = pkt.bmc.acmd
+        if shm_var[settings.shm_bmctype] eq settings.bmctype_cmd then begin
+           bmcimg[bmcsel] = pkt.bmc.acmd
+           bmcflat = pkt.bmc.acmd
+           range = [0,150]
+        endif
+        if shm_var[settings.shm_bmctype] eq settings.bmctype_dif then begin
+           bmcimg[bmcsel] = pkt.bmc.acmd - bmcflat
+           range = 0
+        endif
         ;;display image
-        implot,bmcimg,blackout=bmcnotsel,range=[0,150],cbtitle='V',cbformat='(I)',ncolors=254,title='BMC DM Command'
+        implot,bmcimg,blackout=bmcnotsel,range=range,cbtitle='V',cbformat='(I)',ncolors=254,title='BMC DM Command',/erase
+        ;;take snapshot
+        snap = TVRD(true=1)
+        ;;delete pixmap window
+        wdelete,wpix
+        ;;switch back to real window
+        wset,wbmc
+        ;;display image
+        tv,snap,true=1
         loadct,0
      endif
      
@@ -772,9 +767,9 @@ pro piccgse_processData, hed, pkt, tag
               simage  = dblarr(scixs,sciys)
               if shm_var[settings.shm_scitype] eq settings.scitype_real      then simage[scisel] = pkt.field[i].r
               if shm_var[settings.shm_scitype] eq settings.scitype_imaginary then simage[scisel] = pkt.field[i].i
-              if shm_var[settings.shm_scitype] eq settings.scitype_amplitude then simage[scisel] = pkt.field[i].r / cos(atan(pkt.field[i].i,pkt.field[i].r))
-              if shm_var[settings.shm_scitype] eq settings.scitype_phase     then simage[scisel] = atan(pkt.field[i].i,pkt.field[i].r)
-              print,'SCI '+n2s(i)+': ',min(simage[scisel]),max(simage[scisel]),mean(simage[scisel])
+              if shm_var[settings.shm_scitype] eq settings.scitype_amplitude then simage[scisel] = sqrt(pkt.field[i].r^2 + pkt.field[i].i^2)
+              if shm_var[settings.shm_scitype] eq settings.scitype_phase     then simage[scisel] = atan(pkt.field[i].i,pkt.field[i].r,/phase)
+              print,'SCI '+n2s(i)+': ',min(simage[scisel]),max(simage[scisel]),mean(simage[scisel]),min(simage),max(simage),mean(simage)
               simage = rebin(simage,scirebin,scirebin,/sample)
               ;;scale image
               greygrscale,simage,1e9

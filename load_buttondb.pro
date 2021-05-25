@@ -95,6 +95,12 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/up.bmp',cmd:'shk inc target 1 -0.02',tooltip:'Move star up on VVC',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/down.bmp',cmd:'shk inc target 1 +0.02',tooltip:'Move star down on VVC',igse:0,vgse:0}
 
+  ;;SCI image position
+  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/left.bmp',cmd:'sci shift origin +x',tooltip:'Move SCI window 1px left',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/right.bmp',cmd:'sci shift origin -x',tooltip:'Move SCI window 1px right',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/up.bmp',cmd:'sci shift origin -y',tooltip:'Move SCI window 1px up',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/down.bmp',cmd:'sci shift origin +y',tooltip:'Move SCI window 1px down',igse:0,vgse:0}
+
   ;;GSE Commands
   b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Exit',cmd:'',tooltip:'Close GSE',igse:settings.shm_run,vgse:0}
   b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Reset',cmd:'',tooltip:'Reset GSE',igse:settings.shm_reset,vgse:1}
@@ -104,6 +110,8 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'I-Part',cmd:'',tooltip:'Display SCI Imaginary part',igse:settings.shm_scitype,vgse:settings.scitype_imaginary}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'Amp',cmd:'',tooltip:'Display SCI Amplitude',igse:settings.shm_scitype,vgse:settings.scitype_amplitude}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'Phase',cmd:'',tooltip:'Display SCI Phase',igse:settings.shm_scitype,vgse:settings.scitype_phase}
+  b[i++]={id:i,show:1,type1:'gse',type2:'bmctype',name:'CMD',cmd:'',tooltip:'Display command',igse:settings.shm_bmctype,vgse:settings.bmctype_cmd}
+  b[i++]={id:i,show:1,type1:'gse',type2:'bmctype',name:'DIF',cmd:'',tooltip:'Display difference',igse:settings.shm_bmctype,vgse:settings.bmctype_dif}
 
   ;;Trim database
   buttondb = b[0:i-1]

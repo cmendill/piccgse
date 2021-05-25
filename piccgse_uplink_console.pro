@@ -387,6 +387,20 @@ pro piccgse_uplink_console
 
   ;;--install event handler
   xmanager,'gse_command_buttons',scitype_sub2,/no_block
+
+  ;;BMC Display Type
+  bmctype_sub1 = widget_base(col5,/row,/align_center)            
+  bmctype_sub2 = widget_base(col5,column=1,/align_center)            
+  bmctype_but1 = widget_base(bmctype_sub2,row=1,/align_center)
+  button_label = widget_label(bmctype_sub1,value='BMC Type',/align_center)
+  sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq 'bmctype' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     dropid=widget_droplist(bmctype_but1,VALUE=buttons.name,uvalue=buttons.id)
+  endif
+
+  ;;--install event handler
+  xmanager,'gse_command_buttons',bmctype_sub2,/no_block
  
   ;;Column 6
   col6 = widget_base(base,/column,/align_top)
@@ -417,6 +431,19 @@ pro piccgse_uplink_console
   ;;install event handler
   xmanager,'serial_command_buttons',shk_arrow_sub1,/no_block
 
+  ;;SCI arrows
+  sci_arrow_sub1 = widget_base(col6,/row)
+  button_label = widget_label(sci_arrow_sub1,value='SCI:',/align_left)
+  sel = where(buttondb.type1 eq 'sci' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
+  if nsel gt 0 then begin
+     buttons = buttondb[sel]
+     for i=0,n_elements(buttons)-1 do begin
+        bid = WIDGET_BUTTON(sci_arrow_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
+     endfor
+  endif
+  ;;install event handler
+  xmanager,'serial_command_buttons',sci_arrow_sub1,/no_block
+
   ;;HEX arrows
   hex_arrow_sub1 = widget_base(col6,/row)
   button_label = widget_label(hex_arrow_sub1,value='HEX:',/align_left)
@@ -431,17 +458,17 @@ pro piccgse_uplink_console
   xmanager,'serial_command_buttons',hex_arrow_sub1,/no_block
 
   ;;HEX Z
-  hex_z_sub1 = widget_base(col6,/row)
-  button_label = widget_label(hex_z_sub1,value='HEX:',/align_left)
-  sel = where(buttondb.type1 eq 'hex' and buttondb.type2 eq 'z' and buttondb.show eq 1,nsel)
-  if nsel gt 0 then begin
-     buttons = buttondb[sel]
-     for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(hex_z_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
-     endfor
-  endif
+  ;hex_z_sub1 = widget_base(col6,/row)
+  ;button_label = widget_label(hex_z_sub1,value='HEX:',/align_left)
+  ;sel = where(buttondb.type1 eq 'hex' and buttondb.type2 eq 'z' and buttondb.show eq 1,nsel)
+  ;if nsel gt 0 then begin
+  ;   buttons = buttondb[sel]
+  ;   for i=0,n_elements(buttons)-1 do begin
+  ;      bid = WIDGET_BUTTON(hex_z_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip)
+  ;   endfor
+  ;endif
   ;;install event handler
-  xmanager,'serial_command_buttons',hex_z_sub1,/no_block
+  ;xmanager,'serial_command_buttons',hex_z_sub1,/no_block
 
   ;;GSE buttons
   gse_sub1 = widget_base(col6,/row)
