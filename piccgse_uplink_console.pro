@@ -30,38 +30,43 @@ pro command_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   ;;command line event
-  widget_control,ev.id,GET_VALUE=cmd
-  ;;send command
-  if shm_var[settings.shm_uplink] then begin
-     if upfd ge 0 then begin
-        ;;use uplink port
-        if strlen(cmd) eq 0 then uplink,upfd,string(10B) else uplink,upfd,cmd
+  widget_control,ev.id,GET_VALUE=cmd_array
+
+  ;;loop over multiple commands
+  for icmd=0,n_elements(cmd_array)-1 do begin
+     cmd = cmd_array[icmd]
+     ;;send command
+     if shm_var[settings.shm_uplink] then begin
+        if upfd ge 0 then begin
+           ;;use uplink port
+           if strlen(cmd) eq 0 then uplink,upfd,string(10B) else uplink,upfd,cmd
+        endif
+     endif else begin
+        if dnfd ge 0 then begin
+           ;;use downlink port
+           if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
+        endif
+     endelse
+     
+     ;;print command to screen
+     ts=gettimestamp('.')
+     if strlen(cmd) eq 0 then cmd='CR'
+     cmdstr=ts+': '+cmd
+     widget_control,log_text,SET_VALUE=cmd,/APPEND
+     widget_control,ev.id,set_value=''
+     
+     ;;log command
+     gsets=strcompress(string(shm_var[settings.shm_timestamp:*]),/REMOVE_ALL)
+     logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
+     if not file_test(logfile) then begin
+        ;;close logfile if it is open
+        if n_elements(cmdlogfd) gt 0 then free_lun,cmdlogfd
+        ;;open logfile
+        openw,cmdlogfd,logfile,/get_lun
+        print,'Widget opened: '+file_basename(logfile)
      endif
-  endif else begin
-     if dnfd ge 0 then begin
-        ;;use downlink port
-        if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
-     endif
-  endelse
-    
-  ;;print command to screen
-  ts=gettimestamp('.')
-  if strlen(cmd) eq 0 then cmd='CR'
-  cmdstr=ts+': '+cmd
-  widget_control,log_text,SET_VALUE=cmd,/APPEND
-  widget_control,ev.id,set_value=''
-  
-  ;;log command
-  gsets=strcompress(string(shm_var[settings.shm_timestamp:*]),/REMOVE_ALL)
-  logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
-  if not file_test(logfile) then begin
-     ;;close logfile if it is open
-     if n_elements(cmdlogfd) gt 0 then free_lun,cmdlogfd
-     ;;open logfile
-     openw,cmdlogfd,logfile,/get_lun
-     print,'Widget opened: '+file_basename(logfile)
-  endif
-  printf,cmdlogfd,cmdstr
+     printf,cmdlogfd,cmdstr
+  endfor
   
 end
 
