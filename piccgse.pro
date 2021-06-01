@@ -352,6 +352,8 @@ pro piccgse_processData, hed, pkt, tag
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
+        ;;set color table
+        linecolor
         ;;setup plotting
         plotsym,0,/fill
         ;;plot image axes
@@ -383,15 +385,13 @@ pro piccgse_processData, hed, pkt, tag
            endif
         endfor
         ;;take snapshot
-        snap = TVRD()
+        snap = TVRD(true=1)
         ;;delete pixmap window
         wdelete,wpix
         ;;switch back to real window
         wset,wshk
-        ;;set color table
-        linecolor
         ;;display image
-        tv,snap
+        tv,snap,true=1
         loadct,0
      endif
 
@@ -426,13 +426,13 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx,sy-dy*c++,'AVG Max Pixel: '+n2s(long(mean(pkt.cells.maxval)))+' counts',/device
         xyouts,sx,sy-dy*c++,'BKG Intensity: '+n2s(mean(pkt.cells.background),format='(F10.2)')+' counts/px',/device
         ;;take snapshot
-        snap = TVRD()
+        snap = TVRD(true=1)
         ;;delete pixmap window
         wdelete,wpix
         ;;switch back to real window
         wset,wsda
         ;;display image
-        tv,snap
+        tv,snap,true=1
         loadct,0
      endif
      
@@ -446,6 +446,8 @@ pro piccgse_processData, hed, pkt, tag
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
+        ;;set color table
+        loadct,0
         ;;set text origin and spacing
         dy = 16
         sx = 5            
@@ -462,15 +464,13 @@ pro piccgse_processData, hed, pkt, tag
            xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.2,F+6.2,F+6.2)'),/device
         endfor
         ;;take snapshot
-        snap = TVRD()
+        snap = TVRD(true=1)
         ;;delete pixmap window
         wdelete,wpix
         ;;switch back to real window
         wset,wshz
-        ;;set color table
-        loadct,0
         ;;display data
-        tv,snap,0,0
+        tv,snap,0,0,true=1
         loadct,0
      endif
      
@@ -568,13 +568,13 @@ pro piccgse_processData, hed, pkt, tag
         if pkt.locked then locked='YES' else locked='NO'
         xyouts,sx,sy-dy*c++,'Locked: '+locked,/device
         ;;take snapshot
-        snap = TVRD()
+        snap = TVRD(true=1)
         ;;delete pixmap window
         wdelete,wpix
         ;;switch back to real window
         wset,wlda
         ;;display image
-        tv,snap
+        tv,snap,true=1
         loadct,0
      endif
 
@@ -588,6 +588,8 @@ pro piccgse_processData, hed, pkt, tag
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
+        ;;set color table
+        loadct,0
         ;;set text origin and spacing
         dy = 16
         sx = 5            
@@ -604,15 +606,13 @@ pro piccgse_processData, hed, pkt, tag
            xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.1,F+6.1,F+6.1)'),/device
         endfor
         ;;take snapshot
-        snap = TVRD()
+        snap = TVRD(true=1)
         ;;delete pixmap window
         wdelete,wpix
         ;;switch back to real window
         wset,wlyz
-        ;;set color table
-        loadct,0
         ;;display data
-        tv,snap,0,0
+        tv,snap,0,0,true=1
         loadct,0
      endif
   endif
@@ -631,9 +631,29 @@ pro piccgse_processData, hed, pkt, tag
            ;;set font
            !P.FONT = 0
            device,set_font=set.w[wsci].font
+           ;;create pixmap window
+           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+           wset,wpix
+
+           ;;set text origin
+           dy  = 16
+           sx = 5
+           sy = !D.Y_SIZE - dy
+           c=0
+           
+           ;;print data
+           xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
+           xyouts,sx,sy-dy*c++,'Exptime: '+n2s(hed.exptime,format='(F10.3)')+' s',/device
+           xyouts,sx,sy-dy*c++,'Meas. Frm Time: '+n2s(hed.ontime,format='(F10.3)')+' s',/device
+           dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
+           xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
+           xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
+
+           ;;display image
            for i=0,n_elements(pkt.bands.band)-1 do begin
               image  = double(transpose(reform(pkt.bands.band[i].data)))
-              print,'SCI '+n2s(i)+': ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),min(image),max(image),mean(image)
+              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] Full: ',min(image),max(image),mean(image),format='(A,I8,I8,I8)'),/device
+              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] DrkH: ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),format='(A,I8,I8,I8)'),/device
               simage = rebin(image,scirebin,scirebin,/sample)
               sat = where(simage ge 65535,nsat)
               
@@ -653,6 +673,16 @@ pro piccgse_processData, hed, pkt, tag
               xsize = !D.X_SIZE/n_elements(pkt.bands.band)
               tv,simage,i*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
            endfor
+           
+           ;;take snapshot
+           snap = TVRD(true=1)
+           ;;delete pixmap window
+           wdelete,wpix
+           ;;switch back to real window
+           wset,wsci
+           ;;display image
+           tv,snap,true=1
+           
            loadct,0
         endif
      endif
@@ -742,13 +772,13 @@ pro piccgse_processData, hed, pkt, tag
 
 
         ;;take snapshot
-        snap = TVRD()
+        snap = TVRD(true=1)
         ;;delete pixmap window
         wdelete,wpix
         ;;switch back to real window
         wset,wbmd
         ;;display image
-        tv,snap
+        tv,snap,true=1
         loadct,0
      endif
   endif
@@ -797,6 +827,8 @@ pro piccgse_processData, hed, pkt, tag
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
+        ;;set color table
+        greyr
         ;;scale image
         image = pkt.image.data
         ss=size(image)
@@ -823,15 +855,13 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx,sy-dy*c++,'Hole: '+n2s(acq_xhole)+','+n2s(acq_yhole),/device
         xyouts,sx,sy-dy*c++,'Star: '+n2s(acq_xstar)+','+n2s(acq_ystar),/device
         ;;take snapshot
-        snap = TVRD()
+        snap = TVRD(true=1)
         ;;delete pixmap window
         wdelete,wpix
         ;;switch back to real window
         wset,wacq
-        ;;set color table
-        greyr
         ;;display image
-        tv,snap
+        tv,snap,true=1
         loadct,0
         ;;get mouse events
         cursor,x,y,/nowait,/device
@@ -878,6 +908,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;create pixmap window
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
+        linecolor
         ;;set text origin and spacing
         dy = 16
         dx = 130
@@ -959,13 +990,12 @@ pro piccgse_processData, hed, pkt, tag
         tv,box,!D.X_SIZE-bxs,0
         xyouts,!D.X_SIZE-200,sy-dy*(nl-1),states[hed.state],/device,color=white
         ;;take snapshot
-        snap = TVRD()
+        snap = TVRD(true=1)
         ;;delete pixmap window
         wdelete,wpix
         ;;switch back to real window
         wset,wthm
-        linecolor
-        tv,snap
+        tv,snap,true=1
         loadct,0
      endif
   endif
