@@ -227,7 +227,7 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,scidark,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
   common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat
@@ -285,7 +285,10 @@ pro piccgse_processData, hed, pkt, tag
      ;;SCI Image Pixel Selection
      restore,'config/howfs_scimask.idl' ;;built by picctest/export_howfc.pro
      scisel = where(scimask,complement=scinotsel)
-          
+
+     ;;Init scidark
+     scidark = dblarr(SCIXS,SCIYS)
+     
      ;;Temperature database
      t = load_tempdb()
      adc1 = t[where(t.adc eq 1)]
@@ -413,7 +416,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;print data
         xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
         xyouts,sx,sy-dy*c++,'# of Samples: '+n2s(pkt.nsamples),/device
-        xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device
+        xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(long(hed.frmtime*1d6))+' | '+n2s(long(hed.exptime*1d6))+' us',/device
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
         xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
         xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
@@ -504,9 +507,10 @@ pro piccgse_processData, hed, pkt, tag
         ;;set font
         !P.FONT = 0
         device,set_font=set.w[wlyt].font
-        ;;mask image (make this switchable)
         simage = transpose(pkt.image.data)
-        simage[lytmasknotsel]=min(simage[lytmasksel])
+        simage[lytxs/2,lytys/2] = max(simage) ;; max out center pixel
+        ;;mask image (make this switchable)
+        ;simage[lytmasknotsel]=min(simage[lytmasksel])
         ;;scale image
         simage = rebin(simage,lytrebin,lytrebin,/sample)
         greyrscale,simage,4092
@@ -553,7 +557,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;print data
         xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
         xyouts,sx,sy-dy*c++,'# of Samples: '+n2s(pkt.nsamples),/device
-        xyouts,sx,sy-dy*c++,'Meas. Exp: '+n2s(long(hed.ontime*1d6))+' us',/device
+        xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(long(hed.frmtime*1d6))+' | '+n2s(long(hed.exptime*1d6))+' us',/device
         dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
         xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
         xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
@@ -644,16 +648,18 @@ pro piccgse_processData, hed, pkt, tag
            ;;print data
            xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
            xyouts,sx,sy-dy*c++,'Exptime: '+n2s(hed.exptime,format='(F10.3)')+' s',/device
-           xyouts,sx,sy-dy*c++,'Meas. Frm Time: '+n2s(hed.ontime,format='(F10.3)')+' s',/device
+           xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(hed.frmtime)+' | '+n2s(hed.exptime)+' sec',/device
            dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
            xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
            xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
-
+           xyouts,sx,sy-dy*c++,'iHOWFS: '+n2s(fix(pkt.ihowfs)),/device
            ;;display image
            for i=0,n_elements(pkt.bands.band)-1 do begin
               image  = double(transpose(reform(pkt.bands.band[i].data)))
+              if pkt.ihowfs eq 0 then scidark = image
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] Full: ',min(image),max(image),mean(image),format='(A,I8,I8,I8)'),/device
-              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] DrkH: ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),format='(A,I8,I8,I8)'),/device
+              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] DrkH: ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),mean(scidark[scisel]),$
+                                         format='(A,I8,I8,I8,I8)'),/device
               simage = rebin(image,scirebin,scirebin,/sample)
               sat = where(simage ge 65535,nsat)
               
@@ -799,7 +805,6 @@ pro piccgse_processData, hed, pkt, tag
               if shm_var[settings.shm_scitype] eq settings.scitype_imaginary then simage[scisel] = pkt.field[i].i
               if shm_var[settings.shm_scitype] eq settings.scitype_amplitude then simage[scisel] = sqrt(pkt.field[i].r^2 + pkt.field[i].i^2)
               if shm_var[settings.shm_scitype] eq settings.scitype_phase     then simage[scisel] = atan(pkt.field[i].i,pkt.field[i].r,/phase)
-              print,'SCI '+n2s(i)+': ',min(simage[scisel]),max(simage[scisel]),mean(simage[scisel]),min(simage),max(simage),mean(simage)
               simage = rebin(simage,scirebin,scirebin,/sample)
               ;;scale image
               greygrscale,simage,1e9

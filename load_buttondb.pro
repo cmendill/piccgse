@@ -25,12 +25,14 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'LOW POW' ,cmd:'state lpw',tooltip:'STATE_LOW_POWER',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'STANDBY' ,cmd: standby   ,tooltip:'STATE_STANDBY',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'ACQUIRE' ,cmd:'state acq',tooltip:'STATE_ACQUIRE_TARGET',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'SPIRAL'  ,cmd:'state sps',tooltip:'STATE_SPIRAL_SEARCH',igse:0,vgse:0}
+  ;b[i++]={id:i,show:1,type1:'state',type2:'',name:'SPIRAL'  ,cmd:'state sps',tooltip:'STATE_SPIRAL_SEARCH',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'M2 ALIGN',cmd:'state m2a',tooltip:'STATE_M2_ALIGN',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'SHK ZERN',cmd:'state szc',tooltip:'STATE_SHK_ZERN_LOWFC',igse:0,vgse:0}
+  ;b[i++]={id:i,show:1,type1:'state',type2:'',name:'SHK ZERN',cmd:'state szc',tooltip:'STATE_SHK_ZERN_LOWFC',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'SHK CELL',cmd:'state scc',tooltip:'STATE_SHK_CELL_LOWFC',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'LYT TILT',cmd:'state ltt',tooltip:'STATE_LYT_TT_LOWFC',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'LYT ZERN',cmd:'state lzc',tooltip:'STATE_LYT_ZERN_LOWFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state',type2:'',name:'HOWFS'   ,cmd:'state how',tooltip:'STATE_HOWFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state',type2:'',name:'EFC'     ,cmd:'state efc',tooltip:'STATE_EFC',igse:0,vgse:0}
 
   ;;Hexapod commands
   b[i++]={id:i,show:1,type1:'hex',type2:'',name:'GO HOME' ,cmd:'hex gohome',tooltip:'Go to hex home position',igse:0,vgse:0}
@@ -75,13 +77,14 @@ function load_buttondb
   ;;Other commands
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'LED ON',cmd:'led on 2.8',tooltip:'Turn LED on',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'LED OFF',cmd:'led off',tooltip:'Turn LED off',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'other',type2:'',name:'BMC FLAT',cmd:'bmc load flat',tooltip:'Reload BMC flat',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP FLAT',cmd:'alp load flat',tooltip:'Reload ALP flat',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP +TILT',cmd:'shk target 0 1',tooltip:'Set SHK Z0 target to 1 micron',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP -TILT',cmd:'shk target 0 0',tooltip:'Set SHK Z0 target to 0',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI SET',cmd:'sci set origin',tooltip:'Set SCI image origins',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI FIND',cmd:'sci find origin',tooltip:'Find SCI image origins',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI LOAD',cmd:'sci load origin',tooltip:'Load SCI image origins',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI REVERT',cmd:'sci revert origin',tooltip:'Revert SCI image origins',igse:0,vgse:0}
+  ;b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI LOAD',cmd:'sci load origin',tooltip:'Load SCI image origins',igse:0,vgse:0}
+  ;b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI REVERT',cmd:'sci revert origin',tooltip:'Revert SCI image origins',igse:0,vgse:0}
 
   ;;LYT image position
   b[i++]={id:i,show:1,type1:'lyt',type2:'arrow',name:'bmp/left.bmp',cmd:'lyt shift origin +x',tooltip:'Move LYT window 1px left',igse:0,vgse:0}
@@ -90,10 +93,10 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'lyt',type2:'arrow',name:'bmp/down.bmp',cmd:'lyt shift origin +y',tooltip:'Move LYT window 1px down',igse:0,vgse:0}
 
   ;;SHK zernike target
-  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/left.bmp',cmd:'shk inc target 0 -0.02',tooltip:'Move star left on VVC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/right.bmp',cmd:'shk inc target 0 +0.02',tooltip:'Move star right on VVC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/up.bmp',cmd:'shk inc target 1 -0.02',tooltip:'Move star up on VVC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/down.bmp',cmd:'shk inc target 1 +0.02',tooltip:'Move star down on VVC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/left.bmp',cmd:'shk inc target 0 -0.01',tooltip:'Move star left on VVC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/right.bmp',cmd:'shk inc target 0 +0.01',tooltip:'Move star right on VVC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/up.bmp',cmd:'shk inc target 1 -0.01',tooltip:'Move star up on VVC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/down.bmp',cmd:'shk inc target 1 +0.01',tooltip:'Move star down on VVC',igse:0,vgse:0}
 
   ;;SCI image position
   b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/left.bmp',cmd:'sci shift origin +x',tooltip:'Move SCI window 1px left',igse:0,vgse:0}
