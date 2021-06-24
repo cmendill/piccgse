@@ -986,7 +986,9 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string('Sens','Temp','RH %',format='(A5,A7,A7)'),/device,color=white
         c++
         for i=0,n_elements(pkt.hum)-1 do begin
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(hum_name[i],pkt.hum[i].temp,pkt.hum[i].humidity,format='(A5,F7.1,F7.1)'),$
+           hum = pkt.hum[i].humidity
+           if hum gt 50 then hum = '>50' else hum = n2s(hum,format='(F7.1)')
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(hum_name[i],pkt.hum[i].temp,hum,format='(A5,F7.1,A7)'),$
                   /device,color=white
            c++
         endfor
