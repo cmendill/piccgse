@@ -230,7 +230,7 @@ pro piccgse_processData, hed, pkt, tag
   common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,scidark,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
-  common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat
+  common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat, actuator_alp, actuator_hex
   
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -259,6 +259,8 @@ pro piccgse_processData, hed, pkt, tag
      SCIYS  = read_c_define(header,"SCIYS")
      LOWFS_N_ZERNIKE = read_c_define(header,"LOWFS_N_ZERNIKE")
      LOWFS_N_PID = read_c_define(header,"LOWFS_N_PID")
+     ACTUATOR_ALP = read_c_define(header,"ACTUATOR_ALP")
+     ACTUATOR_HEX = read_c_define(header,"ACTUATOR_HEX")
 
      ;;Get process IDs
      procids = read_c_enum(header,'procids')
@@ -339,7 +341,13 @@ pro piccgse_processData, hed, pkt, tag
      acq_xhole = 0
      acq_yhole = 0
   endif
-  
+
+  ;;Colors
+  red=1
+  green=2
+  blue=3
+  white=255
+
   ;;Swap column/row major for 2D arrays
   struct_swap_majority,pkt
   
@@ -450,7 +458,7 @@ pro piccgse_processData, hed, pkt, tag
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
         ;;set color table
-        loadct,0
+        linecolor
         ;;set text origin and spacing
         dy = 16
         sx = 5            
@@ -460,11 +468,18 @@ pro piccgse_processData, hed, pkt, tag
         zavg = mean(pkt.zernike_measured,dimension=2)
         zstd = stddev(pkt.zernike_measured,dimension=2)
         ztar = pkt.zernike_target
+        ;;set zernike colors
+        zclr = intarr(n_elements(ztar)) + white
+        zsel = where(pkt.zernike_control eq ACTUATOR_ALP,nzsel)
+        if nzsel gt 0 then zclr[zsel] = green
+        zsel = where(pkt.zernike_control eq ACTUATOR_HEX,nzsel)
+        if nzsel gt 0 then zclr[zsel] = blue
+        
         ;;print header
         xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
-           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.2,F+6.2,F+6.2)'),/device
+           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.2,F+6.2,F+6.2)'),/device,color=zclr[i]
         endfor
         ;;take snapshot
         snap = TVRD(true=1)
@@ -593,7 +608,7 @@ pro piccgse_processData, hed, pkt, tag
         window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
         wset,wpix
         ;;set color table
-        loadct,0
+        linecolor
         ;;set text origin and spacing
         dy = 16
         sx = 5            
@@ -603,11 +618,17 @@ pro piccgse_processData, hed, pkt, tag
         zavg = mean(pkt.zernike_measured,dimension=2)*1000
         zstd = stddev(pkt.zernike_measured,dimension=2)*1000
         ztar = pkt.zernike_target*1000
+        ;;set zernike colors
+        zclr = intarr(n_elements(ztar)) + white
+        zsel = where(pkt.zernike_control eq ACTUATOR_ALP,nzsel)
+        if nzsel gt 0 then zclr[zsel] = green
+        zsel = where(pkt.zernike_control eq ACTUATOR_HEX,nzsel)
+        if nzsel gt 0 then zclr[zsel] = blue
         ;;print header
         xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device
         ;;print zernikes
         for i=0,n_elements(zavg)-1 do begin
-           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.1,F+6.1,F+6.1)'),/device
+           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.1,F+6.1,F+6.1)'),/device,color=zclr[i]
         endfor
         ;;take snapshot
         snap = TVRD(true=1)
@@ -647,8 +668,7 @@ pro piccgse_processData, hed, pkt, tag
            
            ;;print data
            xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
-           xyouts,sx,sy-dy*c++,'Exptime: '+n2s(hed.exptime,format='(F10.3)')+' s',/device
-           xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(hed.frmtime)+' | '+n2s(hed.exptime)+' sec',/device
+           xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(hed.ontime,format='(F0.3)')+' | '+n2s(hed.exptime,format='(F0.3)')+' sec',/device
            dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
            xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
            xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
@@ -921,10 +941,6 @@ pro piccgse_processData, hed, pkt, tag
         sy = !D.Y_SIZE - dy
         nl = 24
         c  = 0
-        red=1
-        green=2
-        blue=3
-        white=255
         ;;adc1 data
         for i=0,n_elements(adc1)-1 do begin
            color = green

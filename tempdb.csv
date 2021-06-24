@@ -1,13 +1,13 @@
 #ADC,Channel,Location,Name,Abbr,Minimum,Maximum,Order
 1,0,Instrument Interior,BMC DM Chassis,BMCC,0,50,0
-1,1,M2,M2 Mirror Back,M2GL,-40,50,1
+1,1,M2,M2 Mirror Glass,M2GL,-40,50,1
 1,2,Instrument Interior,ALPAO DM Chassis,ALPC,0,50,2
 1,3,Hexapod,Hexapod Leg 4,HEX4,0,50,3
 1,4,Instrument Interior,POL 1,POL1,0,50,4
 1,5,Hexapod,Hexapod Leg 1,HEX1,0,50,5
 1,6,Instrument Interior,POL 2,POL2,0,50,6
 1,7,Hexapod,Hexapod Leg 5,HEX5,0,50,7
-1,8,Instrument Interior,5 Color Camera Bench,5CCB,0,50,8
+1,8,M2,M2 Back Plate,M2BK,0,50,8
 1,9,Hexapod,Hexapod Leg 2,HEX2,0,50,9
 1,10,Truss,Bench Mount 1,OBM1,-40,50,10
 1,11,Hexapod,Hexapod Leg 3,HEX3,0,50,11
@@ -52,7 +52,7 @@
 3,2,Instrument Interior,ACQ Camera,ACQ,-40,50,2
 3,3,Instrument Interior,SCI Camera Heat Sink,SCI,-40,50,3
 3,4,Instrument Interior,FWD Door Motor,MTRF,-40,50,4
-3,5,Instrument Interior,SCI Chassis,SCIB,-40,50,5
+3,5,Instrument Interior,SCI Enclosure Lid,SLID,-40,50,5
 3,6,Instrument Interior,Optical Bench Top 1,OBT1,-40,50,6
 3,7,Instrument Interior,Optical Bench Top 2,OBT2,-40,50,7
 3,8,Instrument Interior,Optical Bench Top 3,OBT3,-40,50,8
