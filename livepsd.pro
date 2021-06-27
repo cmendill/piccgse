@@ -1,5 +1,5 @@
 pro livepsd_event, ev
-  common event_block, zlyt1, zlyt2, zshk1, zshk2, ids, twin, start, type, xlog
+  common event_block, zlyt1, zlyt2, zshk1, zshk2, ids, twin, start, type, xlog, zreq_freq, zreq_psd
   if n_elements(zlyt1) eq 0 then begin
      zlyt1 = 0
      zlyt2 = 1
@@ -10,6 +10,42 @@ pro livepsd_event, ev
      xlog  = 1
      start = systime(/seconds)
      widget_control,ev.top,get_uvalue=ids
+
+     ;;Zernike surface tilt to sky arcsec conversion
+     ;;Telescope tilts 1", DM tilts half this amount to compensate
+     ;;1" DM == 2" sky (divided by beam expansion)
+     ;;         RAD->AS    RMS->PEAK   PEAK->PV   REFLECTION   BEAM DIAMETER IN NM
+     zern2as  = 206265d * (2d        * 2d       * 2d         / 0.5969e9) 
+     as2zern  = 1d / zern2as
+
+     ;;Generate pointing Requirement
+     dt     = 0.002
+     tt     = 600.0
+     n      = round(tt/dt)
+     if n mod 2 then n++
+     df     = 1./(n*dt)
+     k      = dindgen(n/2)*df
+     reqt   = dindgen(n)*dt
+     reqdt  = dt
+     ;;--psd parameters
+     a = 0.35   ;;Amplitude
+     b = 0.08   ;;1st knee frequency
+     c = 1.4    ;;1st power law
+     d = 4.0    ;;1st power law rolloff parameter
+     e = 2.9    ;;2nd knee frequency
+     f = 5.0    ;;2nd power law
+     g = 6.0    ;;2nd power law rolloff parameter
+     wreq_psd = a * (1./(1. + (k/b)^d)^(c/d)) * (1./(1. + (k/e)^g)^(f/g))
+     ;;--add spectral features [amp,freq,sigma,offset]
+     wreq_psd *= gaussian(k,[35,0.134,0.007,1])
+     wreq_freq = k
+     ;;--remove DC component
+     wreq_psd[0]=0 
+     ;;--integrate
+     wreq_int = total(wreq_psd*df,/cumulative)
+     wreq_rms = sqrt(max(wreq_int))
+     zreq_freq = wreq_freq
+     zreq_psd  = wreq_psd * as2zern * as2zern
   endif
 
   ;;Get dropdown zernike indices
@@ -68,6 +104,8 @@ pro livepsd_event, ev
   sym_sq  = '!E2!N'
   sym_sig = greek('sigma')+'!N'
   
+
+
   ;;Plot positions
   xbuf = 0.03
   ybuf = 0.045
@@ -305,6 +343,7 @@ pro livepsd_event, ev
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd1_freq,cmd1_psd,color=3
         oplot,mes1_freq,mes1_int,linestyle=3
+        if zlyt1 le 1 then oplot,zreq_freq,zreq_psd,color=2
         
         if zlyt2 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes2_freq[1],mes2_freq[-1]] 
@@ -313,6 +352,8 @@ pro livepsd_event, ev
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd2_freq,cmd2_psd,color=3
         oplot,mes2_freq,mes2_int,linestyle=3
+        if zlyt2 le 1 then oplot,zreq_freq,zreq_psd,color=2
+
      endif else begin
         ;;Time series plots
         plot,time,mes1,/xs,/ys,position=lyt1pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt1)+'] nm',charsize=charsize,$
