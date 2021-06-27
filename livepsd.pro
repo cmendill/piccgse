@@ -100,6 +100,7 @@ pro livepsd_event, ev
   window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
   wset,wpix
   !P.MULTI=[0,2,2]
+  linecolor
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;;SHK Plots
@@ -111,8 +112,8 @@ pro livepsd_event, ev
         restore,shkfiles[-(i+1)] ;;start with newest, move backwards
         m1 = reform(double(pkt.zernike_measured[zshk1,0:pkt.nsamples-1])*1000)
         m2 = reform(double(pkt.zernike_measured[zshk2,0:pkt.nsamples-1])*1000)
-        c1 = m1*0
-        c2 = m2*0
+        c1 = reform(double(pkt.alp_zcmd[zshk1,0:pkt.nsamples-1])*1000)
+        c2 = reform(double(pkt.alp_zcmd[zshk2,0:pkt.nsamples-1])*1000)
         t1 = (double(pkt.zernike_target[zshk1])*1000)[0] + dblarr(n_elements(m1))
         t2 = (double(pkt.zernike_target[zshk2])*1000)[0] + dblarr(n_elements(m2))
         if i eq 0 then begin
@@ -126,8 +127,8 @@ pro livepsd_event, ev
            tottime = frmtime * n_elements(mes1)
            state   = hed.state
         endif else begin
-           ;;Check frame time & state
-           if (hed.frmtime ne frmtime) OR (hed.state ne state) then begin
+           ;;Check frame time 
+           if (hed.frmtime ne frmtime) then begin
               trim_last = 1
               break
            endif
@@ -165,14 +166,19 @@ pro livepsd_event, ev
         npts = n_elements(mes1)
      endif
      time = dindgen(n_elements(mes1))*frmtime
-     
+
      ;;Calculate total time
      total_time = npts * frmtime
+     period     = double(frmtime)
+     rate       = round(1/period)
+
+     ;;Offset commands to match measured
+     cmd1 -= mean(cmd1) - mean(mes1)
+     cmd2 -= mean(cmd2) - mean(mes2)
 
      ;;PSD Plots
      if type eq 0 then begin
         ;;Calc PSD
-        period = double(frmtime)
         mkpsd,mes1,mes1_freq,mes1_psd,mes1_int,mes1_df,period=period,detrend=detrend,logbin=logbin,window=window,renormalize=renormalize
         mkpsd,mes2,mes2_freq,mes2_psd,mes2_int,mes2_df,period=period,detrend=detrend,logbin=logbin,window=window,renormalize=renormalize
         mkpsd,cmd1,cmd1_freq,cmd1_psd,cmd1_int,cmd1_df,period=period,detrend=detrend,logbin=logbin,window=window,renormalize=renormalize
@@ -183,7 +189,7 @@ pro livepsd_event, ev
         psdxr = [mes1_freq[1],mes1_freq[-1]] 
         
         plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=shk1pos,$
-             title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec',$
+             title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd1_freq,cmd1_psd,color=3
         oplot,mes1_freq,mes1_int,linestyle=3
@@ -191,19 +197,19 @@ pro livepsd_event, ev
         if zshk2 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes2_freq[1],mes2_freq[-1]] 
         plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=shk2pos,$
-             title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec',$
+             title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd2_freq,cmd2_psd,color=3
         oplot,mes2_freq,mes2_int,linestyle=3
      endif else begin
         ;;Time series plots
         plot,time,mes1,/xs,/ys,position=shk1pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk1)+'] nm',charsize=charsize,$
-             title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec'
-        oplot,time,cmd1
+             title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
+        oplot,time,cmd1,color=3
         oplot,time,tar1,color=1
         plot,time,mes2,/xs,/ys,position=shk2pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk2)+'] nm',charsize=charsize,$
-             title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec'
-        oplot,time,cmd2
+             title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
+        oplot,time,cmd2,color=3
         oplot,time,tar2,color=1
      endelse
   endif else print,'Waiting for SHK files...'
@@ -233,8 +239,8 @@ pro livepsd_event, ev
            tottime = frmtime * n_elements(mes1)
            state   = hed.state
         endif else begin
-           ;;Check frame time & state
-           if (hed.frmtime ne frmtime) OR (hed.state ne state) then begin
+           ;;Check frame time
+           if (hed.frmtime ne frmtime) then begin
               trim_last = 1
               break
            endif
@@ -275,11 +281,16 @@ pro livepsd_event, ev
 
      ;;Calculate total time
      total_time = npts * frmtime
+     period     = double(frmtime)
+     rate       = round(1/period)
+
+     ;;Offset commands to match measured
+     cmd1 -= mean(cmd1) - mean(mes1)
+     cmd2 -= mean(cmd2) - mean(mes2)
 
      ;;PSD Plots
      if type eq 0 then begin
         ;;Calc PSD
-        period = double(frmtime)
         mkpsd,mes1,mes1_freq,mes1_psd,mes1_int,mes1_df,period=period,detrend=detrend,logbin=logbin,window=window,renormalize=renormalize
         mkpsd,mes2,mes2_freq,mes2_psd,mes2_int,mes2_df,period=period,detrend=detrend,logbin=logbin,window=window,renormalize=renormalize
         mkpsd,cmd1,cmd1_freq,cmd1_psd,cmd1_int,cmd1_df,period=period,detrend=detrend,logbin=logbin,window=window,renormalize=renormalize
@@ -290,7 +301,7 @@ pro livepsd_event, ev
         psdxr = [mes1_freq[1],mes1_freq[-1]] 
         
         plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=lyt1pos,$
-             title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec',$
+             title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd1_freq,cmd1_psd,color=3
         oplot,mes1_freq,mes1_int,linestyle=3
@@ -298,19 +309,19 @@ pro livepsd_event, ev
         if zlyt2 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes2_freq[1],mes2_freq[-1]] 
         plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=lyt2pos,$
-             title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec',$
+             title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd2_freq,cmd2_psd,color=3
         oplot,mes2_freq,mes2_int,linestyle=3
      endif else begin
         ;;Time series plots
         plot,time,mes1,/xs,/ys,position=lyt1pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt1)+'] nm',charsize=charsize,$
-             title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec'
-        oplot,time,cmd1
+             title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
+        oplot,time,cmd1,color=3
         oplot,time,tar1,color=1
         plot,time,mes2,/xs,/ys,position=lyt2pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt2)+'] nm',charsize=charsize,$
-             title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec'
-        oplot,time,cmd2
+             title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
+        oplot,time,cmd2,color=3
         oplot,time,tar2,color=1
      endelse
   endif else print,'Waiting for LYT files...'
@@ -319,15 +330,13 @@ pro livepsd_event, ev
 
   
   ;;Take snapshot
-  snap = TVRD()
+  snap = TVRD(true=1)
   ;;Delete pixmap window
   wdelete,wpix
   ;;Switch back to real window
   wset,ids.wdraw
-  ;;Set color table
-  linecolor
   ;;Display image
-  tv,snap
+  tv,snap,true=1
   loadct,0
   !P.MULTI=0
   

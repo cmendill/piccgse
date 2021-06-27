@@ -676,7 +676,7 @@ pro piccgse_processData, hed, pkt, tag
            ;;display image
            for i=0,n_elements(pkt.bands.band)-1 do begin
               image  = double(transpose(reform(pkt.bands.band[i].data)))
-              if pkt.ihowfs eq 0 then scidark = image
+              if (pkt.ihowfs eq 0) AND (states[hed.state] eq 'STATE_EFC')  then scidark = image ;;only update darkhole numbers when in STATE_EFC
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] Full: ',min(image),max(image),mean(image),format='(A,I8,I8,I8)'),/device
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] DrkH: ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),mean(scidark[scisel]),$
                                          format='(A,I8,I8,I8,I8)'),/device

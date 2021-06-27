@@ -35,8 +35,8 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'EFC'     ,cmd:'state efc',tooltip:'STATE_EFC',igse:0,vgse:0}
 
   ;;Hexapod commands
-  b[i++]={id:i,show:1,type1:'hex',type2:'',name:'GO HOME' ,cmd:'hex gohome',tooltip:'Go to hex home position',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'hex',type2:'',name:'GO DEF' ,cmd:'hex godef',tooltip:'Go to hex default position',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'hex',type2:'',name:'SAVE' ,cmd:'hex savepos',tooltip:'Save current hex position',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'hex',type2:'',name:'LOAD' ,cmd:'hex loadpos',tooltip:'Load saved hex position',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'hex',type2:'',name:'SPIRAL ON' ,cmd:'hex calmode spiral',tooltip:'Start hex spiral search',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'hex',type2:'',name:'SPIRAL OFF' ,cmd:'hex calmode none',tooltip:'Stop hex spiral search',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'hex',type2:'',name:'SPIRAL RST' ,cmd:'acq reset',tooltip:'Reset spiral search',igse:0,vgse:0}
