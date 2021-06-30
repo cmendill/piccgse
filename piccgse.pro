@@ -583,7 +583,8 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx,sy-dy*c++,'Max Pixel: '+n2s(max(pkt.image.data),format='(I5)'),/device
         xyouts,sx,sy-dy*c++,'Avg Pixel: '+n2s(mean(pkt.image.data),format='(I5)'),/device
         xyouts,sx,sy-dy*c++,'Bkg Pixel: '+n2s(pkt.background,format='(I5)'),/device
-        xyouts,sx,sy-dy*c++,'Centroid: '+n2s(mean(pkt.xcentroid),format='(F0.2)')+'  '+n2s(mean(pkt.ycentroid),format='(F0.2)'),/device
+        ;;NOTE: we are transposing the centroids to match displayed image coordinates
+        xyouts,sx,sy-dy*c++,'Centroid: '+n2s(mean(pkt.ycentroid),format='(F0.2)')+'  '+n2s(mean(pkt.xcentroid),format='(F0.2)'),/device
         if pkt.locked then locked='YES' else locked='NO'
         xyouts,sx,sy-dy*c++,'Locked: '+locked,/device
         ;;take snapshot

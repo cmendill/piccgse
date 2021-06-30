@@ -21,7 +21,7 @@ function load_buttondb
   cr = string(10B)
   
   ;;State commands
-  standby = 'state stb'+cr+'alp load flat'+cr+'lyt reset'+cr+'lyt zernike disable all'+cr+'lyt zernike enable 0 1'
+  standby = 'state stb'+cr+'alp load flat'+cr+'lyt reset'+cr+'lyt zernike disable all'+cr+'lyt zernike enable 0 1'+cr+'shk reset'
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'LOW POW' ,cmd:'state lpw',tooltip:'STATE_LOW_POWER',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'STANDBY' ,cmd: standby   ,tooltip:'STATE_STANDBY',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state',type2:'',name:'ACQUIRE' ,cmd:'state acq',tooltip:'STATE_ACQUIRE_TARGET',igse:0,vgse:0}

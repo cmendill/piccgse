@@ -115,7 +115,9 @@ pro livepsd_event, ev
   shk2pos = [0.0,0.0,0.5,0.5]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
   lyt1pos = [0.5,0.5,1.0,1.0]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
   lyt2pos = [0.5,0.0,1.0,0.5]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
-
+  shkyr = 100
+  lytyr = 10
+  
   ;;Get folder
   folders = file_search('data/piccgse/piccgse*',count=nfolders)
   if nfolders gt 1 then path = folders[-1] else stop,'No piccgse data'
@@ -241,11 +243,11 @@ pro livepsd_event, ev
         oplot,mes2_freq,mes2_int,linestyle=3
      endif else begin
         ;;Time series plots
-        plot,time,mes1,/xs,/ys,position=shk1pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk1)+'] nm',charsize=charsize,$
+        plot,time,mes1,/xs,/ys,position=shk1pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk1)+'] nm',charsize=charsize,yrange=[tar1[0]-shkyr,tar1[0]+shkyr],$
              title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd1,color=3
         oplot,time,tar1,color=1
-        plot,time,mes2,/xs,/ys,position=shk2pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk2)+'] nm',charsize=charsize,$
+        plot,time,mes2,/xs,/ys,position=shk2pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk2)+'] nm',charsize=charsize,yrange=[tar2[0]-shkyr,tar2[0]+shkyr],$
              title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd2,color=3
         oplot,time,tar2,color=1
@@ -356,11 +358,11 @@ pro livepsd_event, ev
 
      endif else begin
         ;;Time series plots
-        plot,time,mes1,/xs,/ys,position=lyt1pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt1)+'] nm',charsize=charsize,$
+        plot,time,mes1,/xs,/ys,position=lyt1pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt1)+'] nm',charsize=charsize,yrange=[tar1[0]-lytyr,tar1[0]+lytyr],$
              title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd1,color=3
         oplot,time,tar1,color=1
-        plot,time,mes2,/xs,/ys,position=lyt2pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt2)+'] nm',charsize=charsize,$
+        plot,time,mes2,/xs,/ys,position=lyt2pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt2)+'] nm',charsize=charsize,yrange=[tar2[0]-lytyr,tar2[0]+lytyr],$
              title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd2,color=3
         oplot,time,tar2,color=1
