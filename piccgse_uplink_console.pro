@@ -99,7 +99,7 @@ pro serial_command_buttons_event, ev
         dv = -dx * scale ;;+X = +V
         du =  dy * scale ;;+Y = -U
         cr = string(10B)
-        cmd = 'hex move du '+n2s(du,format='(F15.4)')+cr+'hex move dv '+n2s(dv,format='(F15.4)')
+        cmd = 'hex move du '+n2s(du,format='(F15.4)')+cr+'sleep 0.5'+cr+'hex move dv '+n2s(dv,format='(F15.4)')
      endif
      
      ;;send command
