@@ -368,7 +368,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;setup plotting
         plotsym,0,/fill
         ;;plot image axes
-        zoom=40
+        zoom=80/SHKBIN
         xoff=-5
         yoff=-7
         plot,[0],[0],xrange=[zoom+xoff,shkxs-zoom+xoff],yrange=[zoom+yoff,shkys-zoom+yoff],xstyle=5,ystyle=5,/nodata,position=[0,0,1,1]
@@ -430,7 +430,7 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
         xyouts,sx,sy-dy*c++,'ALP Cell PID: '+string(pkt.gain_alp_cell,format='(3F7.3)'),/device
         xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
-               string(pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
+               string(pkt.gain_alp_zern[0,0],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
                /device
         xyouts,sx,sy-dy*c++,'HEX Zern PID: '+string(pkt.gain_hex_zern,format='(3F7.3)'),/device
         xyouts,sx,sy-dy*c++,'MAX Max Pixel: '+n2s(long(max(pkt.cells.maxval)))+' counts',/device
@@ -584,7 +584,9 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx,sy-dy*c++,'Avg Pixel: '+n2s(mean(pkt.image.data),format='(I5)'),/device
         xyouts,sx,sy-dy*c++,'Bkg Pixel: '+n2s(pkt.background,format='(I5)'),/device
         ;;NOTE: we are transposing the centroids to match displayed image coordinates
-        xyouts,sx,sy-dy*c++,'Centroid: '+n2s(mean(pkt.ycentroid),format='(F0.2)')+'  '+n2s(mean(pkt.xcentroid),format='(F0.2)'),/device
+        r = sqrt(pkt.xcentroid^2 + pkt.ycentroid^2)
+        dummy = max(r,rmax)
+        xyouts,sx,sy-dy*c++,'Max Centroid: '+n2s(pkt.ycentroid[rmax],format='(F0.2)')+'  '+n2s(pkt.xcentroid[rmax],format='(F0.2)'),/device
         if pkt.locked then locked='YES' else locked='NO'
         xyouts,sx,sy-dy*c++,'Locked: '+locked,/device
         ;;take snapshot
