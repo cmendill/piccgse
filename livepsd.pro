@@ -116,7 +116,7 @@ pro livepsd_event, ev
   lyt1pos = [0.5,0.5,1.0,1.0]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
   lyt2pos = [0.5,0.0,1.0,0.5]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
   shkyr = 500
-  lytyr = 10
+  lytyr = 50
   
   ;;Get folder
   folders = file_search('data/piccgse/piccgse*',count=nfolders)
