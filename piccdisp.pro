@@ -625,9 +625,9 @@ while 1 do begin
                      if sync eq TLM_LPOST then begin
                         readu, TMUNIT, sync
                         if sync eq TLM_MPOST then begin
-                           ;;good packet
-                        endif
-                     endif
+                           print,'good '+tag+' packet'
+                        endif else print,'bad '+tag+' packet'
+                     endif else print,'bad '+tag+' packet'
                   endif
                endif
             endif
