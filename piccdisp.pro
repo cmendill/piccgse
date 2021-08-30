@@ -17,6 +17,11 @@ scievent = read_c_struct(header,'scievent')
 thmevent = read_c_struct(header,'thmevent')
 mtrevent = read_c_struct(header,'mtrevent')
 
+shkpkt   = read_c_struct(header,'shkpkt')
+lytpkt   = read_c_struct(header,'lytpkt')
+acqevent = read_c_struct(header,'acqevent')
+wfsevent = read_c_struct(header,'wfsevent')
+
 ;;Check for padding
 if check_padding(pkthed)   then stop,'pkthed contains padding'
 if check_padding(shkfull)  then stop,'shkfull contains padding'
@@ -489,7 +494,22 @@ while 1 do begin
                             n2s((end_time-read_time)*1000,format='(F10.3)')+'ms'
                      lytevent_count++
                   endif
-                  
+                  if pkthed.type eq BUFFER_SHKPKT then begin
+                     gotdata=1
+                     readu,TMUNIT,shkpkt
+                  endif
+                  if pkthed.type eq BUFFER_LYTPKT then begin
+                     gotdata=1
+                     readu,TMUNIT,lytpkt
+                  endif
+                  if pkthed.type eq BUFFER_ACQEVENT then begin
+                     gotdata=1
+                     readu,TMUNIT,acqevent
+                  endif
+                  if pkthed.type eq BUFFER_WFSEVENT then begin
+                     gotdata=1
+                     readu,TMUNIT,wfsevent
+                  endif
                   if pkthed.type eq BUFFER_ACQFULL then begin
                      gotdata=1
                      readu,TMUNIT,acqfull
