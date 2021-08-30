@@ -165,11 +165,13 @@ while 1 do begin
 
       ;;Start data loop
       while 1 do begin
+         gotdata=0
          ;;install error handler
          ON_IOERROR, RESET_CONNECTION
          IF FILE_POLL_INPUT(TMUNIT,TIMEOUT=5) GT 0 THEN BEGIN
             start_time = systime(1)
             dc=0
+            ;;Read presync
             readu,TMUNIT, sync
             if sync eq TLM_LPRE then begin
                readu, TMUNIT, sync
@@ -177,6 +179,7 @@ while 1 do begin
                   ;;Read header
                   readu,TMUNIT,pkthed
                   if pkthed.type eq BUFFER_SCIEVENT then begin
+                     gotdata=1
                      readu,TMUNIT,scievent
                      read_time = systime(1)
 
@@ -231,6 +234,7 @@ while 1 do begin
                   endif
                   
                   if pkthed.type eq BUFFER_SHKFULL then begin
+                     gotdata=1
                      readu,TMUNIT,shkfull
                      read_time = systime(1)
                      
@@ -381,6 +385,7 @@ while 1 do begin
                   endif
                   
                   if pkthed.type eq BUFFER_LYTEVENT then begin
+                     gotdata=1
                      readu,TMUNIT,lytevent
                      read_time = systime(1)
 
@@ -486,6 +491,7 @@ while 1 do begin
                   endif
                   
                   if pkthed.type eq BUFFER_ACQFULL then begin
+                     gotdata=1
                      readu,TMUNIT,acqfull
                      read_time = systime(1)
                      struct_swap_majority,acqfull
@@ -528,6 +534,7 @@ while 1 do begin
                   endif
                   
                   if pkthed.type eq BUFFER_THMEVENT then begin
+                     gotdata=1
                      readu,TMUNIT,thmevent
                      read_time = systime(1)
 
@@ -593,6 +600,7 @@ while 1 do begin
                   endif
                   
                   if pkthed.type eq BUFFER_MTREVENT then begin
+                     gotdata=1
                      readu,TMUNIT,mtrevent
                      read_time = systime(1)
 
@@ -611,12 +619,14 @@ while 1 do begin
                             n2s((end_time-read_time)*1000,format='(F10.3)')+'ms'
                      mtrevent_count++
                   endif
-                  ;;Read post syncs
-                  readu, TMUNIT, sync
-                  if sync eq TLM_LPOST then begin
+                  if gotdata then begin
+                     ;;Read post syncs
                      readu, TMUNIT, sync
-                     if sync eq TLM_MPOST then begin
-                        ;;good packet
+                     if sync eq TLM_LPOST then begin
+                        readu, TMUNIT, sync
+                        if sync eq TLM_MPOST then begin
+                           ;;good packet
+                        endif
                      endif
                   endif
                endif
