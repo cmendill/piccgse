@@ -1054,6 +1054,7 @@ function piccgse_tmConnect
   if set.tmserver_type eq 'network' then begin
      ;;Command to ask server for data
      ;;NOTE: Investigate why the endian is different, both are x86 PCs
+     CMD_SENDDATA = swap_endian('0ABACABB'XUL)
      if set.tmserver_addr eq 'picture'   then CMD_SENDDATA = swap_endian('0ABACABB'XUL)
      if set.tmserver_addr eq 'localhost' then CMD_SENDDATA = swap_endian('0ABACABB'XUL)
      if set.tmserver_addr eq 'tmserver'  then CMD_SENDDATA = '22220001'XUL
