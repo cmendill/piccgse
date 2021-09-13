@@ -1025,7 +1025,12 @@ pro piccgse_processData, hed, pkt, tag
         loadct,0
      endif
   endif
-  
+
+  ;;MSGEVENT
+  if tag eq 'msgevent' then begin
+     print,string(pkt.message),format='(A,$)'
+  endif
+
   ;;save data
   if set.savedata then save,hed,pkt,tag,filename=set.datapath+'piccgse.'+gettimestamp('.')+'.'+tag+'.'+n2s(hed.frame_number,format='(I8.8)')+'.idl'
     
@@ -1143,6 +1148,7 @@ settings = load_settings()
   acqevent = read_c_struct(header,'acqevent')
   thmevent = read_c_struct(header,'thmevent')
   mtrevent = read_c_struct(header,'mtrevent')
+  msgevent = read_c_struct(header,'msgevent')
 
   ;;Get #defines
   TLM_PRESYNC   = '12345678'XUL
@@ -1161,6 +1167,7 @@ settings = load_settings()
   if check_padding(acqevent) then stop,'acqevent contains padding'
   if check_padding(thmevent) then stop,'thmevent contains padding'
   if check_padding(mtrevent) then stop,'mtrevent contains padding'
+  if check_padding(msgevent) then stop,'msgevent contains padding'
 
   ;;Remove headers from structures -- they are read seperately
   struct_delete_field,shkpkt,'hed'
@@ -1170,7 +1177,8 @@ settings = load_settings()
   struct_delete_field,acqevent,'hed'
   struct_delete_field,thmevent,'hed'
   struct_delete_field,mtrevent,'hed'
-  
+  struct_delete_field,msgevent,'hed'
+
 ;*************************************************
 ;* LOAD CONFIGURATION FILE
 ;*************************************************
@@ -1364,6 +1372,10 @@ settings = load_settings()
                        BUFFER_MTREVENT: begin
                           tag = 'mtrevent'
                           pkt = mtrevent
+                       end
+                       BUFFER_MSGEVENT: begin
+                          tag = 'msgevent'
+                          pkt = msgevent
                        end
                        BUFFER_THMEVENT: begin
                           tag = 'thmevent'
