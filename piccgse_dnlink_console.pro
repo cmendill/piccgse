@@ -19,7 +19,7 @@ pro console_event, ev
   bytesread=0L
   if dnfd ge 0 then begin
      ;;read data until we reach a line feed
-     while FILE_POLL_INPUT(dnfd,timeout=0.1) do begin
+     while FILE_POLL_INPUT(dnfd,timeout=0.1) AND bytesread lt 200 do begin
         readu,dnfd,word
         bytesread++
         ;;use only standard ASCII characters
