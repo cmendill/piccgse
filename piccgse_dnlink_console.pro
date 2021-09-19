@@ -88,8 +88,8 @@ pro piccgse_dnlink_console
   ;;setup downlink console
   nchar = 80
   sub1 = widget_base(base,/column)
-  con_label = widget_label(sub1,value='Downlink',/align_left)
-  con_text  = widget_text(sub1,xsize=nchar,ysize=17)
+  ;con_label = widget_label(sub1,value='Downlink',/align_left)
+  con_text  = widget_text(sub1,xsize=nchar,ysize=21)
   xmanager,'console',sub1,/no_block
   
   ;;create widgets
