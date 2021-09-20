@@ -1135,21 +1135,29 @@ settings = load_settings()
   ;;Flight software header file
   header='../piccflight/src/controller.h'
 
-  ;;Buffer IDs
-  buffer_id = read_c_enum(header,'bufids')
-  for i=0, n_elements(buffer_id)-1 do void=execute(buffer_id[i]+'='+n2s(i))
+  ;;Packet names
+  packet_name = strsplit(read_c_enum(header,'bufids'),'_',/extract)
+  packet_name = packet_name.toarray()
+  packet_name = strlowcase(packet_name[*,1])
+  packet_name = packet_name[0:-2] ;;remove last entry for NCIRCBUF
   
-  ;;Build packet structures
+  ;;Read packet header and check for padding
   pkthed   = read_c_struct(header,'pkthed')
-  shkpkt   = read_c_struct(header,'shkpkt')
-  lytpkt   = read_c_struct(header,'lytpkt')
-  scievent = read_c_struct(header,'scievent')
-  wfsevent = read_c_struct(header,'wfsevent')
-  acqevent = read_c_struct(header,'acqevent')
-  thmevent = read_c_struct(header,'thmevent')
-  mtrevent = read_c_struct(header,'mtrevent')
-  msgevent = read_c_struct(header,'msgevent')
+  if check_padding(pkthed)   then stop,'pkthed contains padding'
 
+  ;;Read packet structures
+  packet_list = list()
+  for i=0, n_elements(packet_name)-1 do begin
+     ;;read structure
+     void = execute(packet_name[i]+'= read_c_struct(header,"'+packet_name[i]+'")')
+     ;;remove header
+     void = execute('struct_delete_field,'+packet_name[i]+',"hed"')
+     ;;add to list
+     void = execute('packet_list.add,'+packet_name[i])
+     ;;check for padding
+     if check_padding(packet_list[i]) then stop,packet_name[i]+' contains padding'
+  endfor
+  
   ;;Get #defines
   TLM_PRESYNC   = '12345678'XUL
   TLM_POSTSYNC  = 'DEADBEEF'XUL
@@ -1157,27 +1165,6 @@ settings = load_settings()
   TLM_MPRE      = mss(TLM_PRESYNC)
   TLM_LPOST     = lss(TLM_POSTSYNC)
   TLM_MPOST     = mss(TLM_POSTSYNC)
-
-  ;;Check for padding
-  if check_padding(pkthed)   then stop,'pkthed contains padding'
-  if check_padding(shkpkt)   then stop,'shkpkt contains padding'
-  if check_padding(lytpkt)   then stop,'lytpkt contains padding'
-  if check_padding(scievent) then stop,'scievent contains padding'
-  if check_padding(wfsevent) then stop,'wfsevent contains padding'
-  if check_padding(acqevent) then stop,'acqevent contains padding'
-  if check_padding(thmevent) then stop,'thmevent contains padding'
-  if check_padding(mtrevent) then stop,'mtrevent contains padding'
-  if check_padding(msgevent) then stop,'msgevent contains padding'
-
-  ;;Remove headers from structures -- they are read seperately
-  struct_delete_field,shkpkt,'hed'
-  struct_delete_field,lytpkt,'hed'
-  struct_delete_field,scievent,'hed'
-  struct_delete_field,wfsevent,'hed'
-  struct_delete_field,acqevent,'hed'
-  struct_delete_field,thmevent,'hed'
-  struct_delete_field,mtrevent,'hed'
-  struct_delete_field,msgevent,'hed'
 
 ;*************************************************
 ;* LOAD CONFIGURATION FILE
@@ -1348,41 +1335,10 @@ settings = load_settings()
                     ;;Init packet string tag
                     tag=''
                     ;;Identify data
-                    case pkthed.type of
-                       BUFFER_SHKPKT: begin
-                          tag = 'shkpkt'
-                          pkt = shkpkt
-                       end
-                       BUFFER_LYTPKT: begin
-                          tag = 'lytpkt'
-                          pkt = lytpkt
-                       end
-                       BUFFER_SCIEVENT: begin
-                          tag = 'scievent'
-                          pkt = scievent
-                       end
-                       BUFFER_WFSEVENT: begin
-                          tag = 'wfsevent'
-                          pkt = wfsevent
-                       end
-                       BUFFER_ACQEVENT: begin
-                          tag = 'acqevent'
-                          pkt = acqevent
-                       end
-                       BUFFER_MTREVENT: begin
-                          tag = 'mtrevent'
-                          pkt = mtrevent
-                       end
-                       BUFFER_MSGEVENT: begin
-                          tag = 'msgevent'
-                          pkt = msgevent
-                       end
-                       BUFFER_THMEVENT: begin
-                          tag = 'thmevent'
-                          pkt = thmevent
-                       end
-                       else:;;do nothing
-                    endcase
+                    if (pkthed.type ge 0) AND (pkthed.type lt n_elements(packet_name)) then begin
+                       tag = packet_name[pkthed.type]
+                       pkt = packet_list[pkthed.type]
+                    endif
                     ;;If we identified the packet
                     if tag ne '' then begin 
                        ;;read and process packet
@@ -1495,6 +1451,8 @@ settings = load_settings()
            print,'Shared memory unmapped'
            while !D.WINDOW ne -1 do wdelete
            print,'Exiting IDL'
+           ;;IDL requires two exit commands to fully exit
+           exit
            exit
         endif
         

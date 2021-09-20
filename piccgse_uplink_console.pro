@@ -21,8 +21,10 @@ pro uplink, fd, cmd
      ;;Send packet
      writeu,fd,pkt
      ;;Print packet
-     ;;print,'Sent: '+string(pkt[0:25],format='(65Z3.2)')
-     ;;for i=1,9 do print,'      '+string(pkt[26*i:26*i+25],format='(65Z3.2)')
+     if 0 then begin
+        print,'Sent: '+string(pkt[0:25],format='(65Z3.2)')
+        for i=1,9 do print,'      '+string(pkt[26*i:26*i+25],format='(65Z3.2)')
+     endif
   endelse
 end
 
