@@ -1,31 +1,33 @@
 ;;UPLINK
 ;;  Function to format CSBF "Request-to-Send" packets for command uplink
 pro uplink, fd, cmd
-  pkt = bytarr(260)
+  lmax = 255
+  lmin = 21 ;;discovered by experimenting with uplink at FTS
+  bcmd = byte(cmd)
+  len  = n_elements(bcmd)
+  if len lt lmin then bcmd = [bcmd,bytarr(lmin - len)]
+  len  = n_elements(bcmd)
+  if len gt lmax then begin
+     print, 'Uplink command failed: length exceedes '+n2s(lmax)+' characters'
+     return
+  endif
+  ;;Init packet and add command
+  pkt  = [0B,0B,0B,0B,bcmd,0B]
+  npkt = n_elements(pkt)
   ;;Fill out static packet elements
   pkt[0]   = 16  ;;start byte == 0x10
   pkt[1]   = 0   ;;link routing (0=LOS,1=TDRSS,2=Iridium)
   pkt[2]   = 9   ;;routing addresss (9=COMM1,C=COMM2)
-  pkt[3]   = 255 ;;length (always 255, zero-padded)
-  pkt[259] = 3   ;;stop byte == 0x3
-  ;;Fill out command
-  barr = bytarr(255)
-  bcmd = byte(cmd)
-  if n_elements(bcmd) gt 255 then begin
-     print, 'Uplink command failed: length exceedes 255 characters'
-  endif else begin
-     ;;Add command to byte array
-     barr[0:n_elements(bcmd)-1] = bcmd
-     ;;Add byte array to packet
-     pkt[4:258] = barr
-     ;;Send packet
-     writeu,fd,pkt
-     ;;Print packet
-     if 0 then begin
-        print,'Sent: '+string(pkt[0:25],format='(65Z3.2)')
-        for i=1,9 do print,'      '+string(pkt[26*i:26*i+25],format='(65Z3.2)')
-     endif
-  endelse
+  pkt[3]   = len ;;length
+  pkt[-1]  = 3   ;;stop byte == 0x3
+  ;;Send packet
+  writeu,fd,pkt
+  ;;Print packet
+  if 0 then begin
+     print,'Sent: '+string(pkt[0:25 < (npkt-1)],format='(65Z3.2)')
+     nlines = ceil(npkt / 26.)
+     for i=1,nlines-1 do print,'      '+string(pkt[26*i:(26*i+25) < (npkt-1)],format='(65Z3.2)')
+  endif
 end
 
 pro command_event, ev
@@ -41,7 +43,7 @@ pro command_event, ev
      if shm_var[settings.shm_uplink] then begin
         if upfd ge 0 then begin
            ;;use uplink port
-           if strlen(cmd) eq 0 then uplink,upfd,string(10B) else uplink,upfd,cmd
+           if strlen(cmd) eq 0 then uplink,upfd,string(10B) else uplink,upfd,cmd+string(10B)
         endif
      endif else begin
         if dnfd ge 0 then begin
@@ -108,7 +110,7 @@ pro serial_command_buttons_event, ev
      if shm_var[settings.shm_uplink] then begin
         ;;use uplink port
         if upfd ge 0 then begin
-           uplink,upfd,cmd
+           uplink,upfd,cmd+string(10B)
         endif
      endif else begin
         ;;use downlink port
