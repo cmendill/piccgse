@@ -1,81 +1,81 @@
-#ADC,Channel,Location,Name,Abbr,Minimum,Maximum,Order
-1,0,Instrument Interior,BMC DM Chassis,BMCC,0,50,0
-1,1,M2,M2 Mirror Glass,M2GL,-40,50,1
-1,2,Instrument Interior,ALPAO DM Chassis,ALPC,0,50,2
-1,3,Hexapod,Hexapod Leg 4,HEX4,0,50,3
-1,4,Instrument Interior,POL 1,POL1,0,50,4
-1,5,Hexapod,Hexapod Leg 1,HEX1,0,50,5
-1,6,Instrument Interior,POL 2,POL2,0,50,6
-1,7,Hexapod,Hexapod Leg 5,HEX5,0,50,7
-1,8,M2,M2 Back Plate,M2BK,0,50,8
-1,9,Hexapod,Hexapod Leg 2,HEX2,0,50,9
-1,10,Truss,Bench Mount 1,OBM1,-40,50,10
-1,11,Hexapod,Hexapod Leg 3,HEX3,0,50,11
-1,12,Truss,Bench Mount 2,OBM2,-40,50,12
-1,13,Hexapod,Hexapod Leg 6,HEX6,0,50,13
-1,14,Truss,Bench Mount 3,OBM3,-40,50,14
-1,15,TEMP Box 1,Reference Resistor,VREF,4.5,5.5,15
-2,0,Secondary Mirror,M2 Mount Plate,M2PL,-40,50,0
-2,1,Secondary Mirror,M2 Door Motor,MTR2,-40,50,1
-2,2,Primary Mirror,M1 Door Motor,MTR1,-40,50,2
-2,3,Primary Mirror,M1 Mount Bipod 2 Base,M1B2,-40,50,3
-2,4,Primary Mirror,M1 Mirror 2,M1G2,-40,50,4
-2,5,Primary Mirror,M1 Mount Plate 2,M1P2,-40,50,5
-2,6,Telescope Truss,Truss Member 4-5,T4-5,-40,50,6
-2,7,Telescope Truss,Truss Member 4-4,T4-4,-40,50,7
-2,8,Telescope Truss,Truss Member 4-3,T4-3,-40,50,8
-2,9,Telescope Truss,Truss Member 4-2,T4-2,-40,50,9
-2,10,Telescope Truss,Truss Member 4-1,T4-1,-40,50,10
-2,11,Telescope Truss,Truss Member 3-5,T3-5,-40,50,11
-2,12,Telescope Truss,Truss Member 3-4,T3-4,-40,50,12
-2,13,Telescope Truss,Truss Member 3-3,T3-3,-40,50,13
-2,14,Telescope Truss,Truss Member 3-2,T3-2,-40,50,14
-2,15,Telescope Truss,Truss Member 3-1,T3-1,-40,50,15
-2,16,Primary Mirror,M1 Mount Plate 3,M1P3,-40,50,16
-2,17,Primary Mirror,M1 Mount Bipod 3 Base,M1B3,-40,50,17
-2,18,Primary Mirror,M1 Mirror 3,M1G3,-40,50,18
-2,19,Primary Mirror,M1 Mount Bipod 1 Base,M1B1,-40,50,19
-2,20,Primary Mirror,M1 Mirror 1,M1G1,-40,50,20
-2,21,Primary Mirror,M1 Mount Plate 1,M1P1,-40,50,21
-2,22,Telescope Truss,Truss Member 2-5,T2-5,-40,50,22
-2,23,Telescope Truss,Truss Member 2-4,T2-4,-40,50,23
-2,24,Telescope Truss,Truss Member 2-3,T2-3,-40,50,24
-2,25,Telescope Truss,Truss Member 2-2,T2-2,-40,50,25
-2,26,Telescope Truss,Truss Member 2-1,T2-1,-40,50,26
-2,27,Telescope Truss,Truss Member 1-5,T1-5,-40,50,27
-2,28,Telescope Truss,Truss Member 1-4,T1-4,-40,50,28
-2,29,Telescope Truss,Truss Member 1-3,T1-3,-40,50,29
-2,30,Telescope Truss,Truss Member 1-2,T1-2,-40,50,30
-2,31,Telescope Truss,Truss Member 1-1,T1-1,-40,50,31
-3,0,Instrument Interior,LYT Camera,LYT,-40,50,0
-3,1,Instrument Interior,SHK Camera,SHK,-40,50,1
-3,2,Instrument Interior,ACQ Camera,ACQ,-40,50,2
-3,3,Instrument Interior,SCI Camera Heat Sink,SCI,-40,50,3
-3,4,Instrument Interior,FWD Door Motor,MTRF,-40,50,4
-3,5,Instrument Interior,SCI Enclosure Lid,SLID,-40,50,5
-3,6,Instrument Interior,Optical Bench Top 1,OBT1,-40,50,6
-3,7,Instrument Interior,Optical Bench Top 2,OBT2,-40,50,7
-3,8,Instrument Interior,Optical Bench Top 3,OBT3,-40,50,8
-3,9,Instrument Interior,Optical Bench Top 4,OBT4,-40,50,9
-3,10,Instrument Interior,Optical Bench Top 5,OBT5,-40,50,10
-3,11,Instrument Interior,Optical Bench Top 6,OBT6,-40,50,11
-3,12,Instrument Interior,Enclosure Wall 1,ENC1,-40,50,12
-3,13,Instrument Interior,Enclosure Wall 2,ENC2,-40,50,13
-3,14,Instrument Interior,Enclosure Wall 3,ENC3,-40,50,14
-3,15,Instrument Interior,Enclosure Wall 4,ENC4,-40,50,15
-3,16,Instrument Exterior,Optical Bench Bot 1,OBB1,-40,50,16
-3,17,Instrument Exterior,Optical Bench Bot 2,OBB2,-40,50,17
-3,18,Instrument Exterior,Optical Bench Bot 3,OBB3,-40,50,18
-3,19,Electronics,Computer Bulkhead,CPUB,-40,50,19
-3,20,Electronics,Computer Enclosure Top Plate,CPUP,-40,50,20
-3,21,Electronics,Temp Sensor Box,TEMP,-40,50,21
-3,22,Electronics,Between PSU & ALPAO Bulkhead,PABK,-40,50,22
-3,23,Electronics,Between ALPAO & HEX Bulkhead,AHBK,-40,50,23
-3,24,Electronics,Power Supply 5V DC/DC,PS05,-40,50,24
-3,25,Electronics,Power Supply 12V DC/DC,PS12,-40,50,25
-3,26,Electronics,Power Supply 24V DC/DC,PS24,-40,50,26
-3,27,Electronics,ALPAO Board 1,ALB1,0,50,27
-3,28,Electronics,ALPAO Board 2,ALB2,0,50,28
-3,29,Electronics,ALPAO Board 3,ALB3,0,50,29
-3,30,Electronics,ALPAO Board 4,ALB4,0,50,30
-3,31,Electronics,Hexapod Board 1,HXB1,0,50,31
+#ADC,Channel,Heater,Location,Name,Abbr,Minimum,Maximum,Order
+1,0,1,Instrument Interior,BMC DM Chassis,BMCC,0,50,0
+1,1,1,Secondary Mirror,M2 Mirror Glass,M2GL,-40,50,1
+1,2,1,Instrument Interior,ALPAO DM Chassis,ALPC,0,50,2
+1,3,1,Hexapod,Hexapod Leg 4,HEX4,0,50,3
+1,4,1,Instrument Interior,POL 1,POL1,0,50,4
+1,5,1,Hexapod,Hexapod Leg 1,HEX1,0,50,5
+1,6,1,Instrument Interior,POL 2,POL2,0,50,6
+1,7,1,Hexapod,Hexapod Leg 5,HEX5,0,50,7
+1,8,0,Secondary Mirror,M2 Back Plate,M2BK,0,50,8
+1,9,1,Hexapod,Hexapod Leg 2,HEX2,0,50,9
+1,10,0,Telescope Truss,Bench Mount 1,OBM1,-40,50,10
+1,11,1,Hexapod,Hexapod Leg 3,HEX3,0,50,11
+1,12,0,Telescope Truss,Bench Mount 2,OBM2,-40,50,12
+1,13,1,Hexapod,Hexapod Leg 6,HEX6,0,50,13
+1,14,0,Telescope Truss,Bench Mount 3,OBM3,-40,50,14
+1,15,0,Electronics,Reference Resistor,VREF,4.5,5.5,15
+2,0,0,Secondary Mirror,M2 Mount Plate,M2PL,-40,50,0
+2,1,0,Secondary Mirror,M2 Door Motor,MTR2,-40,50,1
+2,2,0,Primary Mirror,M1 Door Motor,MTR1,-40,50,2
+2,3,0,Primary Mirror,M1 Mount Bipod 2 Base,M1B2,-40,50,3
+2,4,0,Primary Mirror,M1 Mirror 2,M1G2,-40,50,4
+2,5,0,Primary Mirror,M1 Mount Plate 2,M1P2,-40,50,5
+2,6,0,Telescope Truss,Truss Member 4-5,T4-5,-40,50,6
+2,7,0,Telescope Truss,Truss Member 4-4,T4-4,-40,50,7
+2,8,0,Telescope Truss,Truss Member 4-3,T4-3,-40,50,8
+2,9,0,Telescope Truss,Truss Member 4-2,T4-2,-40,50,9
+2,10,0,Telescope Truss,Truss Member 4-1,T4-1,-40,50,10
+2,11,0,Telescope Truss,Truss Member 3-5,T3-5,-40,50,11
+2,12,0,Telescope Truss,Truss Member 3-4,T3-4,-40,50,12
+2,13,0,Telescope Truss,Truss Member 3-3,T3-3,-40,50,13
+2,14,0,Telescope Truss,Truss Member 3-2,T3-2,-40,50,14
+2,15,0,Telescope Truss,Truss Member 3-1,T3-1,-40,50,15
+2,16,0,Primary Mirror,M1 Mount Plate 3,M1P3,-40,50,16
+2,17,0,Primary Mirror,M1 Mount Bipod 3 Base,M1B3,-40,50,17
+2,18,0,Primary Mirror,M1 Mirror 3,M1G3,-40,50,18
+2,19,0,Primary Mirror,M1 Mount Bipod 1 Base,M1B1,-40,50,19
+2,20,0,Primary Mirror,M1 Mirror 1,M1G1,-40,50,20
+2,21,0,Primary Mirror,M1 Mount Plate 1,M1P1,-40,50,21
+2,22,0,Telescope Truss,Truss Member 2-5,T2-5,-40,50,22
+2,23,0,Telescope Truss,Truss Member 2-4,T2-4,-40,50,23
+2,24,0,Telescope Truss,Truss Member 2-3,T2-3,-40,50,24
+2,25,0,Telescope Truss,Truss Member 2-2,T2-2,-40,50,25
+2,26,0,Telescope Truss,Truss Member 2-1,T2-1,-40,50,26
+2,27,0,Telescope Truss,Truss Member 1-5,T1-5,-40,50,27
+2,28,0,Telescope Truss,Truss Member 1-4,T1-4,-40,50,28
+2,29,0,Telescope Truss,Truss Member 1-3,T1-3,-40,50,29
+2,30,0,Telescope Truss,Truss Member 1-2,T1-2,-40,50,30
+2,31,0,Telescope Truss,Truss Member 1-1,T1-1,-40,50,31
+3,0,0,Instrument Interior,LYT Camera,_LYT,-40,50,0
+3,1,0,Instrument Interior,SHK Camera,_SHK,-40,50,1
+3,2,0,Instrument Interior,ACQ Camera,_ACQ,-40,50,2
+3,3,0,Instrument Interior,SCI Camera Heat Sink,_SCI,-40,50,3
+3,4,0,Instrument Interior,FWD Door Motor,MTRF,-40,50,4
+3,5,0,Instrument Interior,SCI Enclosure Lid,SLID,-40,50,5
+3,6,0,Instrument Interior,Optical Bench Top 1,OBT1,-40,50,6
+3,7,0,Instrument Interior,Optical Bench Top 2,OBT2,-40,50,7
+3,8,0,Instrument Interior,Optical Bench Top 3,OBT3,-40,50,8
+3,9,0,Instrument Interior,Optical Bench Top 4,OBT4,-40,50,9
+3,10,0,Instrument Interior,Optical Bench Top 5,OBT5,-40,50,10
+3,11,0,Instrument Interior,Optical Bench Top 6,OBT6,-40,50,11
+3,12,0,Instrument Interior,Enclosure Wall 1,ENC1,-40,50,12
+3,13,0,Instrument Interior,Enclosure Wall 2,ENC2,-40,50,13
+3,14,0,Instrument Interior,Enclosure Wall 3,ENC3,-40,50,14
+3,15,0,Instrument Interior,Enclosure Wall 4,ENC4,-40,50,15
+3,16,0,Instrument Exterior,Optical Bench Bot 1,OBB1,-40,50,16
+3,17,0,Instrument Exterior,Optical Bench Bot 2,OBB2,-40,50,17
+3,18,0,Instrument Exterior,Optical Bench Bot 3,OBB3,-40,50,18
+3,19,0,Electronics,Computer Bulkhead,CPUB,-40,50,19
+3,20,0,Electronics,Computer Enclosure Top Plate,CPUP,-40,50,20
+3,21,0,Electronics,Temp Sensor Box,TBOX,-40,50,21
+3,22,0,Electronics,Between PSU & ALPAO Bulkhead,PABK,-40,50,22
+3,23,0,Electronics,Between ALPAO & HEX Bulkhead,AHBK,-40,50,23
+3,24,0,Electronics,Power Supply 5V DC/DC,PS05,-40,50,24
+3,25,0,Electronics,Power Supply 12V DC/DC,PS12,-40,50,25
+3,26,0,Electronics,Power Supply 24V DC/DC,PS24,-40,50,26
+3,27,1,Electronics,ALPAO Board 1,ALB1,0,50,27
+3,28,1,Electronics,ALPAO Board 2,ALB2,0,50,28
+3,29,1,Electronics,ALPAO Board 3,ALB3,0,50,29
+3,30,1,Electronics,ALPAO Board 4,ALB4,0,50,30
+3,31,1,Electronics,Hexapod Board 1,HXB1,0,50,31

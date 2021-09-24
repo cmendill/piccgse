@@ -228,7 +228,7 @@ pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
   common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,scidark,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
-  common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, adc1, adc2, adc3
+  common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, tdb, tsort
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
   common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat, actuator_alp, actuator_hex
   
@@ -292,11 +292,10 @@ pro piccgse_processData, hed, pkt, tag
      scidark = dblarr(SCIXS,SCIYS)
      
      ;;Temperature database
-     t = load_tempdb()
-     adc1 = t[where(t.adc eq 1)]
-     adc2 = t[where(t.adc eq 2)]
-     adc3 = t[where(t.adc eq 3)]
-
+     tdb = load_tempdb()
+     tsort = sort(tdb.abbr)
+     tdb = tdb[tsort]
+     
      ;;Get window indicies
      wshk = where(set.w.id eq 'shk')
      wlyt = where(set.w.id eq 'lyt')
@@ -944,30 +943,17 @@ pro piccgse_processData, hed, pkt, tag
         sy = !D.Y_SIZE - dy
         nl = 24
         c  = 0
-        ;;adc1 data
-        for i=0,n_elements(adc1)-1 do begin
+        ;;concatinate data and sort
+        temp = [pkt.adc1_temp,pkt.adc2_temp,pkt.adc3_temp]
+        temp = temp[tsort]
+        ;;print data
+        for i=0,n_elements(temp)-1 do begin
            color = green
-           if pkt.adc1_temp[i] lt adc1[i].min then color = blue
-           if pkt.adc1_temp[i] gt adc1[i].max then color = red
+           if temp[i] lt tdb[i].min then color = blue
+           if temp[i] gt tdb[i].max then color = red
            fmt='F-+6.1'
-           if adc1[i].abbr eq 'VREF' then fmt='F-+6.2'
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc1[i].abbr+':',pkt.adc1_temp[i],format='(A-7,'+fmt+')'),/device,color=color
-           c++
-        endfor
-        ;;adc2 data
-        for i=0,n_elements(adc2)-1 do begin
-           color = green
-           if pkt.adc2_temp[i] lt adc2[i].min then color = blue
-           if pkt.adc2_temp[i] gt adc2[i].max then color = red
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc2[i].abbr+':',pkt.adc2_temp[i],format='(A-7,F-+6.1)'),/device,color=color
-           c++
-        endfor
-        ;;adc3 data
-        for i=0,n_elements(adc3)-1 do begin
-           color = green
-           if pkt.adc3_temp[i] lt adc3[i].min then color = blue
-           if pkt.adc3_temp[i] gt adc3[i].max then color = red
-           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(adc3[i].abbr+':',pkt.adc3_temp[i],format='(A-7,F-+6.1)'),/device,color=color
+           if tdb[i].abbr eq 'VREF' then fmt='F-+6.2'
+           xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string(tdb[i].abbr+':',temp[i],format='(A-7,'+fmt+')'),/device,color=color
            c++
         endfor
         ;;heater data
@@ -1031,8 +1017,6 @@ pro piccgse_processData, hed, pkt, tag
      print,string(pkt.message),format='(A,$)'
   endif
 
-  ;;save data
-  if set.savedata then save,hed,pkt,tag,filename=set.datapath+'piccgse.'+gettimestamp('.')+'.'+tag+'.'+n2s(hed.frame_number,format='(I8.8)')+'.idl'
     
 end
 
@@ -1096,7 +1080,7 @@ end
 ;;   NOUPLINK
 ;;      Use bidirectional downlink for commands instead of uplink
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-pro piccgse, NOSAVE=NOSAVE, NOUPLINK=NOUPLINK
+pro piccgse, NOSAVE=NOSAVE, NOUPLINK=NOUPLINK, NOPLOT=NOPLOT
   common piccgse_block, settings, set, shm_var
 
 ;*************************************************
@@ -1142,8 +1126,8 @@ settings = load_settings()
   packet_name = packet_name[0:-2] ;;remove last entry for NCIRCBUF
   
   ;;Read packet header and check for padding
-  pkthed   = read_c_struct(header,'pkthed')
-  if check_padding(pkthed)   then stop,'pkthed contains padding'
+  hed   = read_c_struct(header,'pkthed')
+  if check_padding(hed)   then stop,'pkthed contains padding'
 
   ;;Read packet structures
   packet_list = list()
@@ -1193,7 +1177,7 @@ settings = load_settings()
 ;*************************************************
 ;* CREATE WINDOWS
 ;*************************************************
-  piccgse_createWindows
+  if NOT keyword_set(NOPLOT) then piccgse_createWindows
  
 ;*************************************************
 ;* INIT TIMERS
@@ -1302,7 +1286,7 @@ settings = load_settings()
         endif else begin
            restore,idlfiles[ifile]
            ;;process data
-           piccgse_processData,hed,pkt,tag
+           if NOT keyword_set(NOPLOT) then piccgse_processData,hed,pkt,tag
            ;;save time
            t_last_telemetry = t_now
            ;;increment file for next time
@@ -1329,15 +1313,15 @@ settings = load_settings()
                  readu, TMUNIT, sync
                  if sync eq TLM_MPRE then begin
                     ;;Read header
-                    readu, TMUNIT, pkthed
+                    readu, TMUNIT, hed
                     ;;Get frame number
-                    sfn = n2s(pkthed.frame_number,format='(I8.8)')
+                    sfn = n2s(hed.frame_number,format='(I8.8)')
                     ;;Init packet string tag
                     tag=''
                     ;;Identify data
-                    if (pkthed.type ge 0) AND (pkthed.type lt n_elements(packet_name)) then begin
-                       tag = packet_name[pkthed.type]
-                       pkt = packet_list[pkthed.type]
+                    if (hed.type ge 0) AND (hed.type lt n_elements(packet_name)) then begin
+                       tag = packet_name[hed.type]
+                       pkt = packet_list[hed.type]
                     endif
                     ;;If we identified the packet
                     if tag ne '' then begin 
@@ -1353,7 +1337,9 @@ settings = load_settings()
                           if sync eq TLM_MPOST then begin
                              ;;process packet
                              start_time = systime(1)
-                             piccgse_processData,pkthed,pkt,tag
+                             if NOT keyword_set(NOPLOT) then piccgse_processData,hed,pkt,tag
+                             ;;save packet
+                             if set.savedata then save,hed,pkt,tag,filename=set.datapath+'piccgse.'+gettimestamp('.')+'.'+tag+'.'+n2s(hed.frame_number,format='(I8.8)')+'.idl'
                              end_time = systime(1)
                              msg2 = gettimestamp('.')+': '+'packet.'+tag+'.'+sfn+'.'+n2s((end_time-start_time)*1000,format='(I)')+'ms'
                           endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps2.' + $
@@ -1365,10 +1351,10 @@ settings = load_settings()
                        if(first ge 0) then print,msg2
                     endif else begin
                        ;;Unknown packet
-                       msg=gettimestamp('.')+': '+'unknown.'+n2s(pkthed.type)+'.'+sfn
+                       msg=gettimestamp('.')+': '+'unknown.'+n2s(hed.type)+'.'+sfn
                        printf,set.pktlogunit,msg
                        print,msg
-                       print,'PKTHED: '+n2s(pkthed.type,format='(Z)')+'     '+sfn
+                       print,'PKTHED: '+n2s(hed.type,format='(Z)')+'     '+sfn
                     endelse
                  endif
               endif
@@ -1429,7 +1415,7 @@ settings = load_settings()
            endif
 
            ;;Check if we need to reset windows
-           if piccgse_newWindows(old_set) then piccgse_createWindows
+           if piccgse_newWindows(old_set) then if NOT keyword_set(NOPLOT) then piccgse_createWindows
            
         endif
      endif

@@ -1,18 +1,14 @@
 pro livetemp, gsepath=gsepath
 path=''
-window,0
+;;Setup window  
+window,0,title='PICTURE-C Temperatures'
 ;;Flight software header file
 header='../piccflight/src/controller.h'
 ;;Temperature database
-t = load_tempdb()
-adc1 = t[where(t.adc eq 1)]
-adc2 = t[where(t.adc eq 2)]
-adc3 = t[where(t.adc eq 3)]
-adc  = [adc1,adc2,adc3]
-items = adc.abbr
-ntemp = n_elements(items)
-lines = intarr(ntemp)
-colors = bytscl(dindgen(ntemp),top=254)
+tdb = load_tempdb()
+tsort = sort(tdb.abbr)
+tdb = tdb[tsort]
+ntemp = n_elements(tdb)
 
 ;;Initialize data
 data  =  dblarr(ntemp)
@@ -40,28 +36,57 @@ while 1 do begin
    files = file_search(path+'/*thmevent*.idl',count=nfiles)
    for i=last,nfiles-1 do begin
       restore,files[i]
-      if i eq 0 then data = [pkt.adc1_temp,pkt.adc2_temp,pkt.adc3_temp] else begin
-         data = [[data],[pkt.adc1_temp,pkt.adc2_temp,pkt.adc3_temp]]
+      if i eq 0 then data = ([pkt.adc1_temp,pkt.adc2_temp,pkt.adc3_temp])(tsort) else begin
+         data = [[data],[([pkt.adc1_temp,pkt.adc2_temp,pkt.adc3_temp])(tsort)]]
       endelse
    endfor
    last = nfiles
    npoints = n_elements(data[0,*])
    window,1,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-   plot,data[0,*],/nodata,yrange=[min(data) < (-40),max(data) > 80],ystyle=9,/xs,background=255,color=0,position=[0.03,0.05,0.97,0.95],charsize=1.5
-   axis,yaxis=1,/ys,color=0,charsize=1.5
-   for i=0,ntemp-1 do begin
-      oplot,data[i,*],color=colors[i]
+   !P.MULTI = [0,2,2]
+   loadct,39
+
+   ;;Make 2x2 plots
+   for iplot=0,3 do begin
+      if iplot eq 0 then begin
+         title='Heaters'
+         sel    = where(tdb.htr,nsel)
+      endif
+      if iplot eq 1 then begin
+         title='Telescope'
+         sel = where((tdb.location eq 'Telescope Truss' OR tdb.location eq 'Primary Mirror' OR $
+                      tdb.location eq 'Secondary Mirror' OR tdb.location eq 'Hexapod') AND (tdb.htr eq 0),nsel)
+      endif
+      if iplot eq 2then begin
+         title='Instrument'
+         sel = where((tdb.location eq 'Instrument Interior' OR tdb.location eq 'Instrument Exterior') AND (tdb.htr eq 0),nsel)
+      endif
+      if iplot eq 3 then begin
+         title='Electronics'
+         sel = where((tdb.location eq 'Electronics') AND (tdb.htr eq 0),nsel)
+      endif
+      
+      items  = tdb[sel].abbr+': '+n2s(data[sel,-1],format='(F10.1)')
+      lines  = intarr(nsel)
+      color  = bytscl(dindgen(nsel),top=254)
+      plot,data[sel[0],*],/nodata,yrange=[min(data[sel,*]) < (-40),max(data[sel,*]) > 80],ystyle=9,/xs,$
+           background=255,color=0,xmargin=[4,4],ymargin=[2,2],charsize=1.5,title=title
+      axis,yaxis=1,/ys,color=0,charsize=1.5
+      for i=0,nsel-1 do begin
+         oplot,data[sel[i],*],color=color[i],thick=3
+      endfor
+      ;;--plot legend
+      lsel = indgen(nsel/2) ;;divide into 2 columns
+      cbmlegend,items[lsel],lines[lsel],color[lsel],[!x.window[0],!y.window[1]],charthick=1,thick=3,corners=corners
+      lsel = indgen(nsel - nsel/2) + nsel/2
+      cbmlegend,items[lsel],lines[lsel],color[lsel],[corners[2],!y.window[1]],charthick=1,thick=3
    endfor
-   temps=n2s([pkt.adc1_temp,pkt.adc2_temp,pkt.adc3_temp],format='(F10.1)')
-   sel = indgen(ntemp/2)
-   cbmlegend,items[sel]+': '+temps[sel],lines[sel],colors[sel],[0.1,0.98],charthick=1,thick=3,corners=corners
-   sel = indgen(ntemp - ntemp/2) + ntemp/2
-   cbmlegend,items[sel]+': '+temps[sel],lines[sel],colors[sel],[corners[2],0.98],charthick=1,thick=3
-   snap = TVRD()
+
+   ;;Get window and display
+   snap = TVRD(/true)
    wdelete,1
    wset,0
-   loadct,39
-   tv,snap
+   tv,snap,/true
    loadct,0
 
    ;;Print data
