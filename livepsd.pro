@@ -37,7 +37,7 @@ pro livepsd_event, ev
      g = 6.0    ;;2nd power law rolloff parameter
      wreq_psd = a * (1./(1. + (k/b)^d)^(c/d)) * (1./(1. + (k/e)^g)^(f/g))
      ;;--add spectral features [amp,freq,sigma,offset]
-     wreq_psd *= gaussian(k,[35,0.134,0.007,1])
+     ;wreq_psd *= gaussian(k,[35,0.134,0.007,1])
      wreq_freq = k
      ;;--remove DC component
      wreq_psd[0]=0 
