@@ -1,5 +1,5 @@
 pro livepsd_event, ev
-  common event_block, zlyt1, zlyt2, zshk1, zshk2, ids, twin, start, type, xlog, zreq_freq, zreq_psd
+  common event_block, zlyt1, zlyt2, zshk1, zshk2, ids, twin, start, type, xlog, zreq_freq, zreq_psd, zreq_rms
   if n_elements(zlyt1) eq 0 then begin
      zlyt1 = 0
      zlyt2 = 1
@@ -46,6 +46,35 @@ pro livepsd_event, ev
      wreq_rms = sqrt(max(wreq_int))
      zreq_freq = wreq_freq
      zreq_psd  = wreq_psd * as2zern * as2zern
+
+     ;;Zernike Requirements
+     zreq_rms = dblarr(23)
+     zreq_rms[00] = 5.3593
+     zreq_rms[01] = 5.3593
+     zreq_rms[02] = 4.0082
+     zreq_rms[03] = 1.5829
+     zreq_rms[04] = 1.6176
+     zreq_rms[05] = 0.9479
+     zreq_rms[06] = 0.9479
+     zreq_rms[07] = 0.0440
+     zreq_rms[08] = 0.0440
+     zreq_rms[09] = 0.6889
+     zreq_rms[10] = 0.0458
+     zreq_rms[11] = 0.0458
+     zreq_rms[12] = 0.0596
+     zreq_rms[13] = 0.0605
+     zreq_rms[14] = 0.0313
+     zreq_rms[15] = 0.0313
+     zreq_rms[16] = 0.0374
+     zreq_rms[17] = 0.0374
+     zreq_rms[18] = 0.0310
+     zreq_rms[19] = 0.0310
+     zreq_rms[20] = 0.0203
+     zreq_rms[21] = 0.0203
+     zreq_rms[22] = 0.0203
+     zreq_rms    /= 2 ;;convert WFE to surface
+
+
   endif
 
   ;;Get dropdown zernike indices
@@ -229,7 +258,8 @@ pro livepsd_event, ev
         psdxr = [mes1_freq[1],mes1_freq[-1]] 
         
         plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=shk1pos,$
-             title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
+             title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm ['+n2s(zreq_rms[zshk1],format='(F10.2)')+' nm] | Window: '+$
+             n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd1_freq,cmd1_psd,color=3
         oplot,mes1_freq,mes1_int,linestyle=3
@@ -237,18 +267,21 @@ pro livepsd_event, ev
         if zshk2 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes2_freq[1],mes2_freq[-1]] 
         plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=shk2pos,$
-             title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
+             title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm ['+n2s(zreq_rms[zshk2],format='(F10.2)')+' nm] | Window: '+$
+             n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd2_freq,cmd2_psd,color=3
         oplot,mes2_freq,mes2_int,linestyle=3
      endif else begin
         ;;Time series plots
         plot,time,mes1,/xs,/ys,position=shk1pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk1)+'] nm',charsize=charsize,yrange=[tar1[0]-shkyr,tar1[0]+shkyr],$
-             title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
+             title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm ['+n2s(zreq_rms[zshk1],format='(F10.2)')+' nm] | Window: '+$
+             n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd1,color=3
         oplot,time,tar1,color=1
         plot,time,mes2,/xs,/ys,position=shk2pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk2)+'] nm',charsize=charsize,yrange=[tar2[0]-shkyr,tar2[0]+shkyr],$
-             title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
+             title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm ['+n2s(zreq_rms[zshk2],format='(F10.2)')+' nm] | Window: '+$
+             n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd2,color=3
         oplot,time,tar2,color=1
      endelse
@@ -341,7 +374,8 @@ pro livepsd_event, ev
         psdxr = [mes1_freq[1],mes1_freq[-1]] 
         
         plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=lyt1pos,$
-             title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
+             title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm ['+n2s(zreq_rms[zlyt1],format='(F10.2)')+' nm] | Window: '+$
+             n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd1_freq,cmd1_psd,color=3
         oplot,mes1_freq,mes1_int,linestyle=3
@@ -350,7 +384,8 @@ pro livepsd_event, ev
         if zlyt2 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes2_freq[1],mes2_freq[-1]] 
         plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=lyt2pos,$
-             title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
+             title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm ['+n2s(zreq_rms[zlyt2],format='(F10.2)')+' nm] | Window: '+$
+             n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
              xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd2_freq,cmd2_psd,color=3
         oplot,mes2_freq,mes2_int,linestyle=3
@@ -359,11 +394,13 @@ pro livepsd_event, ev
      endif else begin
         ;;Time series plots
         plot,time,mes1,/xs,/ys,position=lyt1pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt1)+'] nm',charsize=charsize,yrange=[tar1[0]-lytyr,tar1[0]+lytyr],$
-             title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
+             title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm ['+n2s(zreq_rms[zlyt1],format='(F10.2)')+' nm] | Window: '+$
+             n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd1,color=3
         oplot,time,tar1,color=1
         plot,time,mes2,/xs,/ys,position=lyt2pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt2)+'] nm',charsize=charsize,yrange=[tar2[0]-lytyr,tar2[0]+lytyr],$
-             title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm | Window: '+n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
+             title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm ['+n2s(zreq_rms[zlyt2],format='(F10.2)')+' nm] | Window: '+$
+             n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd2,color=3
         oplot,time,tar2,color=1
      endelse
