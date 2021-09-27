@@ -82,7 +82,8 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP +TILT',cmd:'shk target 0 1',tooltip:'Set SHK Z0 target to 1 micron',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP -TILT',cmd:'shk target 0 0',tooltip:'Set SHK Z0 target to 0',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI SET',cmd:'sci set origin',tooltip:'Set SCI image origins',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI FIND',cmd:'sci find origin',tooltip:'Find SCI image origins',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'other',type2:'',name:'LYT SET',cmd:'lyt set ref',tooltip:'Set LYT reference image',igse:0,vgse:0}
+  ;b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI FIND',cmd:'sci find origin',tooltip:'Find SCI image origins',igse:0,vgse:0}
   cmd = 'circbuf shkfull write on'+cr+'circbuf shkfull read new'+cr+'circbuf shkfull save on'+cr+'circbuf shkfull send on'+cr+ $
         'sleep 5'+cr+'circbuf shkfull send off'+cr+'circbuf shkfull save off'+cr+'circbuf shkfull read off'+cr+'circbuf shkfull write off'
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'SHK SAVE',cmd:cmd,tooltip:'Save raw SHK frames onboard',igse:0,vgse:0}
