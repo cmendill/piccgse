@@ -57,6 +57,7 @@ while 1 do begin
    window,1,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
    !P.MULTI = [0,2,2]
    loadct,39
+   thick=3
 
    ;;Make 2x2 plots
    for iplot=0,3 do begin
@@ -85,13 +86,13 @@ while 1 do begin
            background=255,color=0,xmargin=[4,4],ymargin=[2,2],charsize=1.5,title=title
       axis,yaxis=1,/ys,color=0,charsize=1.5
       for i=0,nsel-1 do begin
-         oplot,time,data[sel[i],*],color=color[i],thick=3
+         oplot,time,smooth(data[sel[i],*],10<npoints),color=color[i],thick=thick
       endfor
       ;;--plot legend
       lsel = indgen(nsel/2) ;;divide into 2 columns
-      cbmlegend,items[lsel],lines[lsel],color[lsel],[!x.window[0],!y.window[1]],charthick=1,thick=3,corners=corners
+      cbmlegend,items[lsel],lines[lsel],color[lsel],[!x.window[0],!y.window[1]],charthick=1,thick=thick,corners=corners
       lsel = indgen(nsel - nsel/2) + nsel/2
-      cbmlegend,items[lsel],lines[lsel],color[lsel],[corners[2],!y.window[1]],charthick=1,thick=3
+      cbmlegend,items[lsel],lines[lsel],color[lsel],[corners[2],!y.window[1]],charthick=1,thick=thick
    endfor
 
    ;;Get window and display
