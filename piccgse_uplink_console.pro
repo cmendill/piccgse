@@ -157,9 +157,14 @@ pro gse_command_buttons_event, ev
      
      ;;set command
      shm_var[buttondb[sel].igse]=buttondb[sel].vgse
-
+     
      ;;trigger update
      shm_var[settings.shm_cmd]=1
+
+     ;;close logfile on reset command
+     if (buttondb[sel].igse eq settings.shm_reset) AND (buttondb[sel].vgse eq 1) then begin
+        if n_elements(cmdlogfd) gt 0 then free_lun,cmdlogfd
+     endif
      
   endif else print,'GSE Command ['+n2s(uval)+'] Not Recognized'
 
