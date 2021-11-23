@@ -388,8 +388,8 @@ pro piccgse_processData, hed, pkt, tag
            oplot,[trx,trx],[bly,try]
            ;;plot centroid
            if pkt.cells[i].spot_found then begin
-              xcentroid = (double(pkt.cells[i].xtarget) + double(pkt.cells[i].xtarget_deviation[0]))/SHKBIN
-              ycentroid = (double(pkt.cells[i].ytarget) + double(pkt.cells[i].ytarget_deviation[0]))/SHKBIN
+              xcentroid = (double(pkt.cells[i].xtarget) + mean(pkt.cells[i].xtarget_deviation[0:pkt.nsamples-1]))/SHKBIN
+              ycentroid = (double(pkt.cells[i].ytarget) + mean(pkt.cells[i].ytarget_deviation[0:pkt.nsamples-1]))/SHKBIN
               if pkt.cells[i].maxval eq 255 then color = 1 else color = 255
               oplot,[xcentroid],[ycentroid],color=color,psym=8,symsize=0.5
            endif
@@ -464,8 +464,8 @@ pro piccgse_processData, hed, pkt, tag
         sy = !D.Y_SIZE - dy
         c  = 0
         ;;calc zernike values
-        zavg = mean(pkt.zernike_measured,dimension=2)
-        zstd = stddev(pkt.zernike_measured,dimension=2)
+        zavg = mean(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)
+        zstd = stddev(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)
         ztar = pkt.zernike_target
         ;;set zernike colors
         zclr = intarr(n_elements(ztar)) + white
@@ -583,9 +583,11 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx,sy-dy*c++,'Avg Pixel: '+n2s(mean(pkt.image.data),format='(I5)'),/device
         xyouts,sx,sy-dy*c++,'Bkg Pixel: '+n2s(pkt.background,format='(I5)'),/device
         ;;NOTE: we are transposing the centroids to match displayed image coordinates
-        r = sqrt(pkt.xcentroid^2 + pkt.ycentroid^2)
+        xcentroid = pkt.xcentroid[0:pkt.nsamples-1]
+        ycentroid = pkt.ycentroid[0:pkt.nsamples-1]
+        r = sqrt(xcentroid^2 + ycentroid^2)
         dummy = max(r,rmax)
-        xyouts,sx,sy-dy*c++,'Max Centroid: '+n2s(pkt.ycentroid[rmax],format='(F0.2)')+'  '+n2s(pkt.xcentroid[rmax],format='(F0.2)'),/device
+        xyouts,sx,sy-dy*c++,'Max Centroid: '+n2s(ycentroid[rmax],format='(F0.2)')+'  '+n2s(xcentroid[rmax],format='(F0.2)'),/device
         if pkt.locked then locked='YES' else locked='NO'
         xyouts,sx,sy-dy*c++,'Locked: '+locked,/device
         ;;take snapshot
@@ -617,8 +619,8 @@ pro piccgse_processData, hed, pkt, tag
         sy = !D.Y_SIZE - dy
         c  = 0
         ;;calc zernike values
-        zavg = mean(pkt.zernike_measured,dimension=2)*1000
-        zstd = stddev(pkt.zernike_measured,dimension=2)*1000
+        zavg = mean(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)*1000
+        zstd = stddev(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)*1000
         ztar = pkt.zernike_target*1000
         ;;set zernike colors
         zclr = intarr(n_elements(ztar)) + white
