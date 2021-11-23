@@ -464,8 +464,13 @@ pro piccgse_processData, hed, pkt, tag
         sy = !D.Y_SIZE - dy
         c  = 0
         ;;calc zernike values
-        zavg = mean(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)
-        zstd = stddev(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)
+        if pkt.nsamples ge 2 then begin
+           zavg = mean(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)
+           zstd = stddev(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)
+        endif else begin
+           zavg = pkt.zernike_measured[*,0]
+           zstd = 0
+        endelse
         ztar = pkt.zernike_target
         ;;set zernike colors
         zclr = intarr(n_elements(ztar)) + white
