@@ -79,8 +79,8 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'LED OFF',cmd:'led off',tooltip:'Turn LED off',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'BMC FLAT',cmd:'bmc load flat',tooltip:'Reload BMC flat',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP FLAT',cmd:'alp load flat',tooltip:'Reload ALP flat',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP +TILT',cmd:'shk target 0 1',tooltip:'Set SHK Z0 target to 1 micron',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP -TILT',cmd:'shk target 0 0',tooltip:'Set SHK Z0 target to 0',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP +TILT',cmd:'shk inc target 0 1',tooltip:'Increment SHK Z0 target by +1 micron',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP -TILT',cmd:'shk inc target 0 -1',tooltip:'Increment SHK Z0 target by -1 micron',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI SET',cmd:'sci set origin',tooltip:'Set SCI image origins',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'LYT SET',cmd:'lyt set ref',tooltip:'Set LYT reference image',igse:0,vgse:0}
   ;b[i++]={id:i,show:1,type1:'other',type2:'',name:'SCI FIND',cmd:'sci find origin',tooltip:'Find SCI image origins',igse:0,vgse:0}
