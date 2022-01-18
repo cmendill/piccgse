@@ -230,7 +230,7 @@ pro piccgse_processData, hed, pkt, tag
   common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,scidark,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, tdb, tsort
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
-  common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat, actuator_alp, actuator_hex
+  common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat, actuator_alp, actuator_hex, contrast_array
   
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -690,12 +690,22 @@ pro piccgse_processData, hed, pkt, tag
            xyouts,sx,sy-dy*c++,'Origin: '+origin,/device
            xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
            xyouts,sx,sy-dy*c++,'iHOWFS: '+n2s(fix(pkt.ihowfs)),/device
+
            ;;display image
-           for i=0,n_elements(pkt.bands.band)-1 do begin
+           nbands = n_elements(pkt.bands.band)
+           contrast = dblarr(nbands)
+           update_contrast = 0
+           for i=0,nbands-1 do begin
               image  = double(transpose(reform(pkt.bands.band[i].data)))
+              ;;only update darkhole numbers when running EFC
               if (pkt.ihowfs eq 0) AND ((states[hed.state] eq 'STATE_EFC') OR $
                                         (states[hed.state] eq 'STATE_SHK_EFC') OR $
-                                        (states[hed.state] eq 'STATE_HYB_EFC'))  then scidark = image ;;only update darkhole numbers when running EFC
+                                        (states[hed.state] eq 'STATE_HYB_EFC'))  then begin
+                 scidark = image
+                 contrast[i] = (mean(image[scisel]) / hed.exptime) / pkt.refmax[i]
+                 if finite(contrast[i]) eq 0 then contrast[i]=1 
+                 update_contrast = 1
+              endif
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] Full: ',min(image),max(image),mean(image),format='(A,I8,I8,I8)'),/device
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] DrkH: ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),mean(scidark[scisel]),$
                                          format='(A,I8,I8,I8,I8)'),/device
@@ -718,6 +728,22 @@ pro piccgse_processData, hed, pkt, tag
               xsize = !D.X_SIZE/n_elements(pkt.bands.band)
               tv,simage,i*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
            endfor
+
+           ;;plot live contrast
+           if update_contrast then if n_elements(contrast_array) eq 0 then contrast_array = contrast else contrast_array = [[contrast_array],[contrast]]
+           if n_elements(contrast_array) gt 0 then begin
+              ncon = n_elements(contrast_array[0,*])
+              ndisp = 10
+              pdisp = ndisp < ncon
+              title='Contrast: '
+              for i=0,nbands-1 do title+=n2s(contrast_array[i,-1],format='(E10.1)')+' '
+              plot,[0],[0],xrange=[0,ndisp+1],yrange=[1e-10,1],/ylog,position=[0,0,0.3,0.5],/nodata,/noerase,/xs,/ys,title=title
+              linecolor
+              for i=0,nbands-1 do begin
+                 oplot,contrast_array[i,-pdisp:*],color=i+1
+              endfor
+              oplot,!X.CRANGE,[1e-7,1e-7],color=255,linestyle=2
+           endif
            
            ;;take snapshot
            snap = TVRD(true=1)
