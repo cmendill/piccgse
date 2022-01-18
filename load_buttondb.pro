@@ -102,10 +102,10 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'shk',type2:'arrow',name:'bmp/down.bmp',cmd:'shk inc target 1 +0.01',tooltip:'Move star down on VVC',igse:0,vgse:0}
 
   ;;SCI image position
-  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/left.bmp',cmd:'sci shift origin +x',tooltip:'Move SCI window 1px left',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/right.bmp',cmd:'sci shift origin -x',tooltip:'Move SCI window 1px right',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/up.bmp',cmd:'sci shift origin -y',tooltip:'Move SCI window 1px up',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/down.bmp',cmd:'sci shift origin +y',tooltip:'Move SCI window 1px down',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/left.bmp',cmd:'sci shift origin 0 x 1',tooltip:'Move SCI window 1px left',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/right.bmp',cmd:'sci shift origin 0 x -1',tooltip:'Move SCI window 1px right',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/up.bmp',cmd:'sci shift origin 0 y -1',tooltip:'Move SCI window 1px up',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'sci',type2:'arrow',name:'bmp/down.bmp',cmd:'sci shift origin 0 y 1',tooltip:'Move SCI window 1px down',igse:0,vgse:0}
 
   ;;GSE Commands
   b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Exit',cmd:'',tooltip:'Close GSE',igse:settings.shm_run,vgse:0}

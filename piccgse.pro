@@ -323,7 +323,7 @@ pro piccgse_processData, hed, pkt, tag
 
      ;;SCI IWA ring
      xyimage,scixs,sciys,xim,yim,rim,/quadrant,/index
-     sciring = where(fix(rim) eq 6)
+     sciring = where(fix(rim) eq 7)
      image = intarr(scixs,sciys)
      image[sciring] = 1
      image = rebin(image,scirebin,scirebin,/sample)
@@ -685,12 +685,17 @@ pro piccgse_processData, hed, pkt, tag
            xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(hed.ontime,format='(F0.3)')+' | '+n2s(hed.exptime,format='(F0.3)')+' sec',/device
            dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
            xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
+           origin = ''
+           for i=0,n_elements(pkt.xorigin)-1 do origin +='('+n2s(pkt.xorigin[i])+','+n2s(pkt.yorigin[i])+') '
+           xyouts,sx,sy-dy*c++,'Origin: '+origin,/device
            xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
            xyouts,sx,sy-dy*c++,'iHOWFS: '+n2s(fix(pkt.ihowfs)),/device
            ;;display image
            for i=0,n_elements(pkt.bands.band)-1 do begin
               image  = double(transpose(reform(pkt.bands.band[i].data)))
-              if (pkt.ihowfs eq 0) AND (states[hed.state] eq 'STATE_EFC')  then scidark = image ;;only update darkhole numbers when in STATE_EFC
+              if (pkt.ihowfs eq 0) AND ((states[hed.state] eq 'STATE_EFC') OR $
+                                        (states[hed.state] eq 'STATE_SHK_EFC') OR $
+                                        (states[hed.state] eq 'STATE_HYB_EFC'))  then scidark = image ;;only update darkhole numbers when running EFC
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] Full: ',min(image),max(image),mean(image),format='(A,I8,I8,I8)'),/device
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] DrkH: ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),mean(scidark[scisel]),$
                                          format='(A,I8,I8,I8,I8)'),/device
