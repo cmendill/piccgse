@@ -227,10 +227,11 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,scidark,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, tdb, tsort
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
-  common processdata_block5, sci_temp, sci_set, sci_tec, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat, actuator_alp, actuator_hex, contrast_array
+  common processdata_block5, sci_temp, sci_set, sci_tec, sci_temp_init, sci_dark, sci_bias, contrast_array
+  common processdata_block6, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat, actuator_alp, actuator_hex
   
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -250,17 +251,20 @@ pro piccgse_processData, hed, pkt, tag
      for i=0, n_elements(calmodes)-1 do void=execute(bmccalmodes[i]+'='+n2s(i))
           
      ;;Get #defines
-     SHKBIN = read_c_define(header,"SHKBIN")
-     SHKXS  = read_c_define(header,"SHKXS")
-     SHKYS  = read_c_define(header,"SHKYS")
-     LYTXS  = read_c_define(header,"LYTXS")
-     LYTYS  = read_c_define(header,"LYTYS")
-     SCIXS  = read_c_define(header,"SCIXS")
-     SCIYS  = read_c_define(header,"SCIYS")
+     SHKBIN          = read_c_define(header,"SHKBIN")
+     SHKXS           = read_c_define(header,"SHKXS")
+     SHKYS           = read_c_define(header,"SHKYS")
+     LYTXS           = read_c_define(header,"LYTXS")
+     LYTYS           = read_c_define(header,"LYTYS")
+     SCIXS           = read_c_define(header,"SCIXS")
+     SCIYS           = read_c_define(header,"SCIYS")
+     SCI_ROI_XSIZE   = read_c_define(header,"SCI_ROI_XSIZE")
+     SCI_ROI_YSIZE   = read_c_define(header,"SCI_ROI_YSIZE")
+     SCI_TEMP_INC    = read_c_define(header,"SCI_TEMP_INC")
      LOWFS_N_ZERNIKE = read_c_define(header,"LOWFS_N_ZERNIKE")
-     LOWFS_N_PID = read_c_define(header,"LOWFS_N_PID")
-     ACTUATOR_ALP = read_c_define(header,"ACTUATOR_ALP")
-     ACTUATOR_HEX = read_c_define(header,"ACTUATOR_HEX")
+     LOWFS_N_PID     = read_c_define(header,"LOWFS_N_PID")
+     ACTUATOR_ALP    = read_c_define(header,"ACTUATOR_ALP")
+     ACTUATOR_HEX    = read_c_define(header,"ACTUATOR_HEX")
 
      ;;Get process IDs
      procids = read_c_enum(header,'procids')
@@ -333,6 +337,11 @@ pro piccgse_processData, hed, pkt, tag
      sci_temp = 0d
      sci_set  = 0d
      sci_tec  = 0
+     sci_temp_init = 1000
+
+     ;;SCI Calibration images
+     sci_dark = dblarr(SCI_ROI_XSIZE,SCI_ROI_YSIZE)
+     sci_bias = dblarr(SCI_ROI_XSIZE,SCI_ROI_YSIZE)
 
      ;;ACQ positions
      acq_xstar = 0
@@ -664,6 +673,30 @@ pro piccgse_processData, hed, pkt, tag
         sci_temp = pkt.ccd_temp
         sci_set  = pkt.tec_setpoint
         sci_tec  = pkt.tec_enable
+
+        ;;check if we need to reload sci calibration data
+        if (SCI_TEMP_INC * round(sci_temp/SCI_TEMP_INC)) ne sci_temp_init then begin
+           sci_temp_init = SCI_TEMP_INC * round(sci_temp/SCI_TEMP_INC)
+           file = file_search('config/sci_dark_'+n2s(sci_temp_init)+'.idl',count=nfiles)
+           if nfiles eq 1 then begin
+              restore,file
+              print,'Opened '+file
+           endif else begin
+              print,'Dark file not found for '+n2s(sci_temp_init)+'C'
+              sci_dark[*] = 0
+           endelse
+           file = file_search('config/sci_bias_'+n2s(sci_temp_init)+'.idl',count=nfiles)
+           if nfiles eq 1 then begin
+              restore,file
+              print,'Opened '+file
+           endif else begin
+              print,'Bias file not found for '+n2s(sci_temp_init)+'C'
+              sci_bias[*] = 0
+           endelse
+              
+              
+        endif
+        ;;display scievent
         if (shm_var[settings.shm_scitype] eq settings.scitype_image) OR (shm_var[settings.shm_scitype] eq settings.scitype_log) then begin
            ;;set window
            wset,wsci
@@ -682,7 +715,7 @@ pro piccgse_processData, hed, pkt, tag
            
            ;;print data
            xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
-           xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(hed.ontime,format='(F0.3)')+' | '+n2s(hed.exptime,format='(F0.3)')+' sec',/device
+           xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(hed.frmtime,format='(F0.3)')+' | '+n2s(hed.exptime,format='(F0.3)')+' sec',/device
            dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
            xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
            origin = ''
@@ -695,19 +728,23 @@ pro piccgse_processData, hed, pkt, tag
            nbands = n_elements(pkt.bands.band)
            contrast = dblarr(nbands)
            update_contrast = 0
-           for i=0,nbands-1 do begin
-              image  = double(transpose(reform(pkt.bands.band[i].data)))
+           for iband=0,nbands-1 do begin
+              image  = double(transpose(reform(pkt.bands.band[iband].data)))
+              blx    = pkt.xorigin[iband] - (SCIXS/2)
+              bly    = pkt.yorigin[iband] - (SCIYS/2)
+              bkg    = sci_bias[blx:blx+SCIXS-1,bly:bly+SCIYS-1] + sci_dark[blx:blx+SCIXS-1,bly:bly+SCIYS-1] * hed.exptime
+              
               ;;only update darkhole numbers when running EFC
               if (pkt.ihowfs eq 0) AND ((states[hed.state] eq 'STATE_EFC') OR $
                                         (states[hed.state] eq 'STATE_SHK_EFC') OR $
                                         (states[hed.state] eq 'STATE_HYB_EFC'))  then begin
                  scidark = image
-                 contrast[i] = (mean(image[scisel]) / hed.exptime) / pkt.refmax[i]
-                 if finite(contrast[i]) eq 0 then contrast[i]=1 
+                 contrast[iband] = (mean(scidark[scisel] - mean(bkg[scisel])) / hed.exptime) / pkt.refmax[iband]
+                 if finite(contrast[iband]) eq 0 then contrast[iband]=1 
                  update_contrast = 1
               endif
-              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] Full: ',min(image),max(image),mean(image),format='(A,I8,I8,I8)'),/device
-              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(i)+'] DrkH: ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),mean(scidark[scisel]),$
+              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] Full: ',min(image),max(image),mean(image),format='(A,I8,I8,I8)'),/device
+              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] DrkH: ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),mean(scidark[scisel]),$
                                          format='(A,I8,I8,I8,I8)'),/device
               simage = rebin(image,scirebin,scirebin,/sample)
               sat = where(simage ge 65535,nsat)
@@ -726,7 +763,7 @@ pro piccgse_processData, hed, pkt, tag
               ;;display
               greygr
               xsize = !D.X_SIZE/n_elements(pkt.bands.band)
-              tv,simage,i*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
+              tv,simage,iband*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
            endfor
 
            ;;plot live contrast
@@ -736,11 +773,11 @@ pro piccgse_processData, hed, pkt, tag
               ndisp = 10
               pdisp = ndisp < ncon
               title='Contrast: '
-              for i=0,nbands-1 do title+=n2s(contrast_array[i,-1],format='(E10.1)')+' '
+              for iband=0,nbands-1 do title+=n2s(contrast_array[iband,-1],format='(E10.1)')+' '
               plot,[0],[0],xrange=[0,ndisp+1],yrange=[1e-10,1],/ylog,position=[0,0,0.3,0.5],/nodata,/noerase,/xs,/ys,title=title
               linecolor
-              for i=0,nbands-1 do begin
-                 oplot,contrast_array[i,-pdisp:*],color=i+1
+              for iband=0,nbands-1 do begin
+                 oplot,contrast_array[iband,-pdisp:*],color=iband+1
               endfor
               oplot,!X.CRANGE,[1e-7,1e-7],color=255,linestyle=2
            endif
