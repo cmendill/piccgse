@@ -230,7 +230,7 @@ pro piccgse_processData, hed, pkt, tag
   common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, tdb, tsort
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
-  common processdata_block5, sci_temp, sci_set, sci_tec, sci_temp_init, sci_dark, sci_bias, contrast_array
+  common processdata_block5, sci_temp, sci_set, sci_tec, sci_pow, sci_temp_init, sci_dark, sci_bias, contrast_array
   common processdata_block6, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat, actuator_alp, actuator_hex
   
   ;;Initialize common block
@@ -337,6 +337,7 @@ pro piccgse_processData, hed, pkt, tag
      sci_temp = 0d
      sci_set  = 0d
      sci_tec  = 0
+     sci_pow  = 0d
      sci_temp_init = 1000
 
      ;;SCI Calibration images
@@ -673,6 +674,7 @@ pro piccgse_processData, hed, pkt, tag
         sci_temp = pkt.ccd_temp
         sci_set  = pkt.tec_setpoint
         sci_tec  = pkt.tec_enable
+        sci_pow  = pkt.tec_power
 
         ;;check if we need to reload sci calibration data
         if (SCI_TEMP_INC * round(sci_temp/SCI_TEMP_INC)) ne sci_temp_init then begin
@@ -1068,7 +1070,7 @@ pro piccgse_processData, hed, pkt, tag
         c++
         ;;print SCI temps
         if sci_tec then tec=green else tec=red
-        xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string('SCI',sci_temp,'/',sci_set,format='(A5,F7.1,A,F-7.1)'),/device,color=tec
+        xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string('SCI',sci_temp,'/',sci_set,sci_pow,'%',format='(A5,F7.1,A,F-5.1,I3,A)'),/device,color=tec
         c++
         ;;print state
         bxs=204
