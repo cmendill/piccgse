@@ -227,7 +227,7 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,censel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, tdb, tsort
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
   common processdata_block5, sci_temp, sci_set, sci_tec, sci_pow, sci_temp_init, sci_dark, sci_bias, contrast_array
@@ -291,7 +291,7 @@ pro piccgse_processData, hed, pkt, tag
      ;;SCI Image Pixel Selection
      restore,'config/howfs_scimask.idl' ;;built by picctest/export_howfc.pro
      scisel = where(scimask,complement=scinotsel)
-
+     
      ;;Init scidark
      scidark = dblarr(SCIXS,SCIYS)
      
@@ -327,12 +327,13 @@ pro piccgse_processData, hed, pkt, tag
 
      ;;SCI IWA ring
      xyimage,scixs,sciys,xim,yim,rim,/quadrant,/index
+     censel = where(rim le 7)
      sciring = where(fix(rim) eq 7)
      image = intarr(scixs,sciys)
      image[sciring] = 1
      image = rebin(image,scirebin,scirebin,/sample)
      sciring = where(round(image) eq 1)
-
+     
      ;;SCI Temperatures
      sci_temp = 0d
      sci_set  = 0d
@@ -343,7 +344,7 @@ pro piccgse_processData, hed, pkt, tag
      ;;SCI Calibration images
      sci_dark = dblarr(SCI_ROI_XSIZE,SCI_ROI_YSIZE)
      sci_bias = dblarr(SCI_ROI_XSIZE,SCI_ROI_YSIZE)
-
+     
      ;;ACQ positions
      acq_xstar = 0
      acq_ystar = 0
@@ -695,9 +696,8 @@ pro piccgse_processData, hed, pkt, tag
               print,'Bias file not found for '+n2s(sci_temp_init)+'C'
               sci_bias[*] = 0
            endelse
-              
-              
         endif
+
         ;;display scievent
         if (shm_var[settings.shm_scitype] eq settings.scitype_image) OR (shm_var[settings.shm_scitype] eq settings.scitype_log) then begin
            ;;set window
@@ -708,7 +708,8 @@ pro piccgse_processData, hed, pkt, tag
            ;;create pixmap window
            window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
            wset,wpix
-
+        
+           
            ;;set text origin
            dy  = 16
            sx = 5
@@ -735,7 +736,7 @@ pro piccgse_processData, hed, pkt, tag
               blx    = pkt.xorigin[iband] - (SCIXS/2)
               bly    = pkt.yorigin[iband] - (SCIYS/2)
               bkg    = sci_bias[blx:blx+SCIXS-1,bly:bly+SCIYS-1] + sci_dark[blx:blx+SCIXS-1,bly:bly+SCIYS-1] * hed.exptime
-              
+
               ;;only update darkhole numbers when running EFC
               if (pkt.ihowfs eq 0) AND ((states[hed.state] eq 'STATE_EFC') OR $
                                         (states[hed.state] eq 'STATE_SHK_EFC') OR $
@@ -745,8 +746,10 @@ pro piccgse_processData, hed, pkt, tag
                  if finite(contrast[iband]) eq 0 then contrast[iband]=1 
                  update_contrast = 1
               endif
-              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] Full: ',min(image),max(image),mean(image),format='(A,I8,I8,I8)'),/device
-              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] DrkH: ',min(image[scisel]),max(image[scisel]),mean(image[scisel]),mean(scidark[scisel]),$
+              bgsub = image - bkg
+              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] Full: ',min(bgsub),max(bgsub),mean(bgsub),format='(A,I8,I8,I8)'),/device
+              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] Cent: ',min(bgsub[censel]),max(bgsub[censel]),mean(bgsub[censel]),format='(A,I8,I8,I8)'),/device
+              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] DrkH: ',min(bgsub[scisel]),max(bgsub[scisel]),mean(bgsub[scisel]),mean(scidark[scisel]),$
                                          format='(A,I8,I8,I8,I8)'),/device
               simage = rebin(image,scirebin,scirebin,/sample)
               sat = where(simage ge 65535,nsat)
