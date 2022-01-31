@@ -227,7 +227,7 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,censel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,sci_nbands,censel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, tdb, tsort
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
   common processdata_block5, sci_temp, sci_set, sci_tec, sci_pow, sci_temp_init, sci_dark, sci_bias, contrast_array
@@ -261,6 +261,7 @@ pro piccgse_processData, hed, pkt, tag
      SCI_ROI_XSIZE   = read_c_define(header,"SCI_ROI_XSIZE")
      SCI_ROI_YSIZE   = read_c_define(header,"SCI_ROI_YSIZE")
      SCI_TEMP_INC    = read_c_define(header,"SCI_TEMP_INC")
+     SCI_NBANDS      = read_c_define(header,"SCI_NBANDS")
      LOWFS_N_ZERNIKE = read_c_define(header,"LOWFS_N_ZERNIKE")
      LOWFS_N_PID     = read_c_define(header,"LOWFS_N_PID")
      ACTUATOR_ALP    = read_c_define(header,"ACTUATOR_ALP")
@@ -293,7 +294,7 @@ pro piccgse_processData, hed, pkt, tag
      scisel = where(scimask,complement=scinotsel)
      
      ;;Init scidark
-     scidark = dblarr(SCIXS,SCIYS)
+     scidark = dblarr(SCIXS,SCIYS,SCI_NBANDS)
      
      ;;Temperature database
      tdb = load_tempdb()
@@ -728,28 +729,27 @@ pro piccgse_processData, hed, pkt, tag
            xyouts,sx,sy-dy*c++,'iHOWFS: '+n2s(fix(pkt.ihowfs)),/device
 
            ;;display image
-           nbands = n_elements(pkt.bands.band)
-           contrast = dblarr(nbands)
+           contrast = dblarr(sci_nbands)
            update_contrast = 0
-           for iband=0,nbands-1 do begin
+           for iband=0,sci_nbands-1 do begin
               image  = double(transpose(reform(pkt.bands.band[iband].data)))
               blx    = pkt.xorigin[iband] - (SCIXS/2)
               bly    = pkt.yorigin[iband] - (SCIYS/2)
               bkg    = sci_bias[blx:blx+SCIXS-1,bly:bly+SCIYS-1] + sci_dark[blx:blx+SCIXS-1,bly:bly+SCIYS-1] * hed.exptime
+              bgsub  = image - bkg
 
               ;;only update darkhole numbers when running EFC
               if (pkt.ihowfs eq 0) AND ((states[hed.state] eq 'STATE_EFC') OR $
                                         (states[hed.state] eq 'STATE_SHK_EFC') OR $
                                         (states[hed.state] eq 'STATE_HYB_EFC'))  then begin
-                 scidark = image
-                 contrast[iband] = (mean(scidark[scisel] - mean(bkg[scisel])) / hed.exptime) / pkt.refmax[iband]
+                 scidark[*,*,iband] = bgsub
+                 contrast[iband] = mean(bgsub[scisel]) / hed.exptime / pkt.refmax[iband]
                  if finite(contrast[iband]) eq 0 then contrast[iband]=1 
                  update_contrast = 1
               endif
-              bgsub = image - bkg
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] Full: ',min(bgsub),max(bgsub),mean(bgsub),format='(A,I8,I8,I8)'),/device
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] Cent: ',min(bgsub[censel]),max(bgsub[censel]),mean(bgsub[censel]),format='(A,I8,I8,I8)'),/device
-              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] DrkH: ',min(bgsub[scisel]),max(bgsub[scisel]),mean(bgsub[scisel]),mean(scidark[scisel]),$
+              xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] DrkH: ',min(bgsub[scisel]),max(bgsub[scisel]),mean(bgsub[scisel]),mean((scidark[*,*,iband])[scisel]),$
                                          format='(A,I8,I8,I8,I8)'),/device
               simage = rebin(image,scirebin,scirebin,/sample)
               sat = where(simage ge 65535,nsat)
@@ -778,10 +778,12 @@ pro piccgse_processData, hed, pkt, tag
               ndisp = 10
               pdisp = ndisp < ncon
               title='Contrast: '
-              for iband=0,nbands-1 do title+=n2s(contrast_array[iband,-1],format='(E10.1)')+' '
+              if n_elements(contrast_array[0,*]) gt 1 then delta = contrast_array[*,-1] - contrast_array[*,-2] else delta=dblarr(sci_nbands)
+              for iband=0,sci_nbands-1 do title+=n2s(contrast_array[iband,-1],format='(E10.1)')+' ('+n2s(delta[iband],format='(E10.2)')+')'
+              
               plot,[0],[0],xrange=[0,ndisp+1],yrange=[1e-10,1],/ylog,position=[0,0,0.3,0.5],/nodata,/noerase,/xs,/ys,title=title
               linecolor
-              for iband=0,nbands-1 do begin
+              for iband=0,sci_nbands-1 do begin
                  oplot,contrast_array[iband,-pdisp:*],color=iband+1
               endfor
               oplot,!X.CRANGE,[1e-7,1e-7],color=255,linestyle=2
