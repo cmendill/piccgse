@@ -227,7 +227,7 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,sci_nbands,censel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,lytmasksel,lytmasknotsel
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,sci_nbands,censel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,scidz,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, tdb, tsort
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
   common processdata_block5, sci_temp, sci_set, sci_tec, sci_pow, sci_temp_init, sci_dark, sci_bias, contrast_array
@@ -334,6 +334,12 @@ pro piccgse_processData, hed, pkt, tag
      image[sciring] = 1
      image = rebin(image,scirebin,scirebin,/sample)
      sciring = where(round(image) eq 1)
+
+     ;;SCI Dark Zone
+     scidz = scimask
+     outline,scidz
+     scidz = rebin(scidz,scirebin,scirebin,/sample)
+     scidz = where(round(scidz) eq 1)
      
      ;;SCI Temperatures
      sci_temp = 0d
@@ -739,9 +745,7 @@ pro piccgse_processData, hed, pkt, tag
               bgsub  = image - bkg
 
               ;;only update darkhole numbers when running EFC
-              if (pkt.ihowfs eq 0) AND ((states[hed.state] eq 'STATE_EFC') OR $
-                                        (states[hed.state] eq 'STATE_SHK_EFC') OR $
-                                        (states[hed.state] eq 'STATE_HYB_EFC'))  then begin
+              if pkt.ihowfs eq 0 then begin
                  scidark[*,*,iband] = bgsub
                  contrast[iband] = mean(bgsub[scisel]) / hed.exptime / pkt.refmax[iband]
                  if finite(contrast[iband]) eq 0 then contrast[iband]=1 
@@ -765,6 +769,7 @@ pro piccgse_processData, hed, pkt, tag
                             
               ;;add IWA ring
               simage[sciring] = 253
+              simage[scidz] = 253
               ;;display
               greygr
               xsize = !D.X_SIZE/n_elements(pkt.bands.band)
@@ -919,6 +924,7 @@ pro piccgse_processData, hed, pkt, tag
               greygrscale,simage,1e9
               ;;add IWA ring
               simage[sciring] = 253
+              simage[scidz] = 253
               ;;display
               greygr
               xsize = !D.X_SIZE/n_elements(pkt.field)
