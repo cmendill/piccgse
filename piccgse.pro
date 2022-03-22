@@ -747,8 +747,7 @@ pro piccgse_processData, hed, pkt, tag
               ;;only update darkhole numbers when running EFC
               if pkt.ihowfs eq 0 then begin
                  scidark[*,*,iband] = bgsub
-                 contrast[iband] = mean(bgsub[scisel]) / hed.exptime / pkt.refmax[iband]
-                 if finite(contrast[iband]) eq 0 then contrast[iband]=1 
+                 if pkt.refmax[iband] gt 0 then contrast[iband] = mean(bgsub[scisel]) / hed.exptime / pkt.refmax[iband] else contrast[iband]=1
                  update_contrast = 1
               endif
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] Full: ',min(bgsub),max(bgsub),mean(bgsub),format='(A,I8,I8,I8)'),/device
