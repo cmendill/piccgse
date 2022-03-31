@@ -678,6 +678,27 @@ pro piccgse_processData, hed, pkt, tag
   if tag eq 'scievent' then begin
      ;;Display Image
      if set.w[wsci].show then begin
+        ;;TEMPORARY----------------------------------------
+        ;;SCI Image Pixel Selection
+        restore,'config/howfs_scimask.idl' ;;built by picctest/export_howfc.pro
+        scisel = where(scimask,complement=scinotsel)
+
+        ;;SCI IWA ring
+        xyimage,scixs,sciys,xim,yim,rim,/quadrant,/index
+        censel = where(rim le 7)
+        sciring = where(fix(rim) eq 7)
+        image = intarr(scixs,sciys)
+        image[sciring] = 1
+        image = rebin(image,scirebin,scirebin,/sample)
+        sciring = where(round(image) eq 1)
+
+        ;;SCI Dark Zone
+        scidz = scimask
+        outline,scidz
+        scidz = rebin(scidz,scirebin,scirebin,/sample)
+        scidz = where(round(scidz) eq 1)
+        ;;--------------------------------------------------
+        
         ;;save SCI temps to common block
         sci_temp = pkt.ccd_temp
         sci_set  = pkt.tec_setpoint
