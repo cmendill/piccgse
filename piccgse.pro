@@ -544,7 +544,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;set font
         !P.FONT = 0
         device,set_font=set.w[wlyt].font
-        simage = transpose(pkt.image.data)
+        simage = pkt.image.data
         simage[lytxs/2,lytys/2] = max(simage) ;; max out center pixel
         ;;mask image (make this switchable)
         ;simage[lytmasknotsel]=min(simage[lytmasksel])
@@ -605,12 +605,11 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx,sy-dy*c++,'Max Pixel: '+n2s(max(pkt.image.data),format='(I5)'),/device
         xyouts,sx,sy-dy*c++,'Avg Pixel: '+n2s(mean(pkt.image.data),format='(I5)'),/device
         xyouts,sx,sy-dy*c++,'Bkg Pixel: '+n2s(pkt.background,format='(I5)'),/device
-        ;;NOTE: we are transposing the centroids to match displayed image coordinates
         xcentroid = pkt.xcentroid[0:pkt.nsamples-1]
         ycentroid = pkt.ycentroid[0:pkt.nsamples-1]
         r = sqrt(xcentroid^2 + ycentroid^2)
         dummy = max(r,rmax)
-        xyouts,sx,sy-dy*c++,'Max Centroid: '+n2s(ycentroid[rmax],format='(F0.2)')+'  '+n2s(xcentroid[rmax],format='(F0.2)'),/device
+        xyouts,sx,sy-dy*c++,'Max Centroid: '+n2s(xcentroid[rmax],format='(F0.2)')+'  '+n2s(ycentroid[rmax],format='(F0.2)'),/device
         if pkt.locked then locked='YES' else locked='NO'
         xyouts,sx,sy-dy*c++,'Locked: '+locked,/device
         ;;take snapshot
@@ -759,7 +758,7 @@ pro piccgse_processData, hed, pkt, tag
            contrast = dblarr(sci_nbands)
            update_contrast = 0
            for iband=0,sci_nbands-1 do begin
-              image  = double(transpose(reform(pkt.bands.band[iband].data)))
+              image  = double(reform(pkt.bands.band[iband].data))
               blx    = pkt.xorigin[iband] - (SCIXS/2)
               bly    = pkt.yorigin[iband] - (SCIYS/2)
               bkg    = sci_bias[blx:blx+SCIXS-1,bly:bly+SCIYS-1] + sci_dark[blx:blx+SCIXS-1,bly:bly+SCIYS-1] * hed.exptime
@@ -786,7 +785,13 @@ pro piccgse_processData, hed, pkt, tag
                  ;;scale image
                  greygrscale,simage,65535
               endelse
-                            
+
+              ;;add box
+              simage[*,0]  = 252
+              simage[*,-1] = 252
+              simage[0,*]  = 252
+              simage[-1,*] = 252
+              
               ;;add IWA ring
               simage[sciring] = 253
               simage[scidz] = 253
