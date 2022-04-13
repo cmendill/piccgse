@@ -187,7 +187,8 @@ while 1 do begin
                      gotdata=1
                      readu,TMUNIT,scievent
                      read_time = systime(1)
-
+                     struct_swap_majority,scievent
+                     
                      ;;Check if we should ignore these packets
                      if keyword_set(NOSCI) then continue
                      
@@ -242,7 +243,8 @@ while 1 do begin
                      gotdata=1
                      readu,TMUNIT,shkfull
                      read_time = systime(1)
-                     
+                     struct_swap_majority,shkfull
+  
                      ;;Check if we should ignore these packets
                      if keyword_set(NOSHK) then continue
 
@@ -393,7 +395,8 @@ while 1 do begin
                      gotdata=1
                      readu,TMUNIT,lytevent
                      read_time = systime(1)
-
+                     struct_swap_majority,lytevent
+                     
                      ;;Check if we should ignore these packets
                      if keyword_set(NOLYT) then continue
 
@@ -497,18 +500,22 @@ while 1 do begin
                   if pkthed.type eq BUFFER_SHKPKT then begin
                      gotdata=1
                      readu,TMUNIT,shkpkt
+                     struct_swap_majority,shkpkt
                   endif
                   if pkthed.type eq BUFFER_LYTPKT then begin
                      gotdata=1
                      readu,TMUNIT,lytpkt
+                     struct_swap_majority,lytpkt
                   endif
                   if pkthed.type eq BUFFER_ACQEVENT then begin
                      gotdata=1
                      readu,TMUNIT,acqevent
-                  endif
+                     struct_swap_majority,acqevent
+                 endif
                   if pkthed.type eq BUFFER_WFSEVENT then begin
                      gotdata=1
                      readu,TMUNIT,wfsevent
+                     struct_swap_majority,wfsevent
                   endif
                   if pkthed.type eq BUFFER_ACQFULL then begin
                      gotdata=1
@@ -557,7 +564,8 @@ while 1 do begin
                      gotdata=1
                      readu,TMUNIT,thmevent
                      read_time = systime(1)
-
+                     struct_swap_majority,thmevent
+                     
                      ;;Check if we should ignore these packets
                      if keyword_set(NOTHM) then continue
 
@@ -623,7 +631,8 @@ while 1 do begin
                      gotdata=1
                      readu,TMUNIT,mtrevent
                      read_time = systime(1)
-
+                     struct_swap_majority,mtrevent
+                     
                      ;;Check if we should ignore these packets
                      if keyword_set(NOMTR) then continue
 
