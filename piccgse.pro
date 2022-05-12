@@ -226,7 +226,7 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
-  common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid
+  common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid, sciid
   common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,sci_nbands,censel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,scidz,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, tdb, tsort
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
@@ -397,7 +397,7 @@ pro piccgse_processData, hed, pkt, tag
            plot,[0],[0],xrange=[zoom+xoff,shkxs-zoom+xoff],yrange=[zoom+yoff,shkys-zoom+yoff],xstyle=5,ystyle=5,/nodata,position=[0,0,1,1]
            maxval = double(max(pkt.cells.maxval))
            val = double(pkt.cells.maxval)
-           greyrscale,val,255,bot=40
+           greyrscale,val,255,bot=100
            ;;loop over cells
            for i=0,n_elements(pkt.cells)-1 do begin
               ;;draw centroid box
@@ -1053,6 +1053,25 @@ pro piccgse_processData, hed, pkt, tag
         endif
      endif
      
+     ;;Display ALPAO Command
+     if hed.alp_commander eq SCIID then begin
+        if set.w[walp].show then begin
+           ;;set window
+           wset,walp
+           ;;set font
+           !P.FONT = 0
+           device,set_font=set.w[walp].font
+           ;;fill out image
+           alpimg[alpsel] = pkt.alp.acmd
+           ;;set commander tag
+           ctag='SCI'
+           ;;display image
+           implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')',erase=(ctag ne alpctag)
+           alpctag=ctag
+           loadct,0
+        endif
+     endif
+
      if NOT sci_fastmode then begin
         ;;Display BMC Command
         if set.w[wbmc].show then begin
