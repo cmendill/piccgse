@@ -27,8 +27,8 @@ int main(void){
   t.c_cflag = CS8 | CREAD | CLOCAL  ;
   t.c_lflag = 0;
   t.c_line = 0;
-  cfsetospeed(&t,B115200);
-  cfsetispeed(&t,B115200);
+  cfsetospeed(&t,B38400);
+  cfsetispeed(&t,B38400);
   tcsetattr(fdSer,TCSANOW,&t);
   close(fdSer);
 
