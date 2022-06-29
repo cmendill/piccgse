@@ -964,7 +964,7 @@ pro piccgse_processData, hed, pkt, tag
            for i=0,n_elements(pkt.xorigin)-1 do origin +='('+n2s(pkt.xorigin[i])+','+n2s(pkt.yorigin[i])+') '
            xyouts,sx,sy-dy*c++,'Origin: '+origin,/device
            xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
-           xyouts,sx,sy-dy*c++,'iHOWFS: '+n2s(fix(pkt.ihowfs)),/device
+           xyouts,sx,sy-dy*c++,'iHOWFS: '+n2s(fix(pkt.ihowfs))+'  iSPECKLE: '+n2s(fix(pkt.ispeckle)),/device
 
            ;;display image
            contrast = dblarr(sci_nbands)
