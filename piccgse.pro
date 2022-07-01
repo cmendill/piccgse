@@ -1308,7 +1308,13 @@ settings = load_settings()
   tm_last_connected = -1
   tm_last_data      = -1
   TMUNIT = -1
-  sync = 0U
+  LUNIT = -1
+  LPORT = 17482
+  RUNIT = -1
+  sync1 = 0U
+  sync2 = 0U
+  sync3 = 0U
+  sync4 = 0U
 
 ;*************************************************
 ;* SETUP FILES
@@ -1350,6 +1356,18 @@ settings = load_settings()
      set.savedata=0
   endif
   
+;*************************************************
+;* SETUP LISTENER PORT FOR REMOTE
+;*************************************************
+  SOCKET, LUNIT, LPORT, /listen, /get_lun,error=con_error
+  if con_error eq 0 then begin
+     print,'Listening for remote connections on port '+n2s(LPORT) 
+  endif else begin
+     print,'Listening socket failed to open'
+     free_lun,LUNIT
+  endelse
+  
+
 ;*************************************************
 ;* SETUP SHARED MEMORY
 ;*************************************************
@@ -1449,10 +1467,10 @@ settings = load_settings()
               shm_var[settings.shm_data] = 1
               tm_last_data = systime(1)
               ;;Check presync words
-              readu, TMUNIT, sync
-              if sync eq TLM_LPRE then begin
-                 readu, TMUNIT, sync
-                 if sync eq TLM_MPRE then begin
+              readu, TMUNIT, sync1
+              if sync1 eq TLM_LPRE then begin
+                 readu, TMUNIT, sync2
+                 if sync2 eq TLM_MPRE then begin
                     ;;Read header
                     readu, TMUNIT, hed
                     ;;Get frame number
@@ -1472,10 +1490,10 @@ settings = load_settings()
                        ;;read packet
                        readu, TMUNIT, pkt
                        ;;check postsync words 
-                       readu, TMUNIT, sync
-                       if sync eq TLM_LPOST then begin
-                          readu, TMUNIT, sync
-                          if sync eq TLM_MPOST then begin
+                       readu, TMUNIT, sync3
+                       if sync3 eq TLM_LPOST then begin
+                          readu, TMUNIT, sync4
+                          if sync4 eq TLM_MPOST then begin
                              ;;process packet
                              start_time = systime(1)
                              if NOT keyword_set(NOPLOT) then piccgse_processData,hed,pkt,tag
@@ -1483,6 +1501,15 @@ settings = load_settings()
                              if set.savedata then save,hed,pkt,tag,filename=set.datapath+'piccgse.'+gettimestamp('.')+'.'+tag+'.'+n2s(hed.frame_number,format='(I8.8)')+'.idl'
                              end_time = systime(1)
                              msg2 = gettimestamp('.')+': '+'packet.'+tag+'.'+sfn+'.'+n2s((end_time-start_time)*1000,format='(I)')+'ms'
+                             ;;relay packet
+                             if RUNIT ge 0 then begin
+                                writeu,RUNIT,sync1
+                                writeu,RUNIT,sync2
+                                writeu,RUNIT,hed
+                                writeu,RUNIT,pkt
+                                writeu,RUNIT,sync3
+                                writeu,RUNIT,sync4
+                            endif
                           endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps2.' + $
                                             n2s(sync,format='(Z4.4)')+'['+n2s(TLM_MPOST,format='(Z4.4)')+']'
                        endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps1.' + $
@@ -1593,6 +1620,27 @@ settings = load_settings()
         endif
      endif
      
+     ;;----------------------------------------------------------
+     ;; Check for remote connections
+     ;;----------------------------------------------------------
+     res = FILE_POLL_INPUT(LUNIT, TIMEOUT=0)
+     IF res THEN BEGIN
+        ;;establish a connection with the client
+        SOCKET, RUNIT, ACCEPT=LUNIT, /GET_LUN, error=con_error
+        if con_error eq 0 then begin
+           print,'Remote connection established'
+           res = FILE_POLL_INPUT(LUNIT, TIMEOUT=1)
+           if res then begin
+              cmd = 0UL
+              readu,lunit,cmd
+              print,'Got command '+n2s(cmd,format='(Z8.8)')
+           endif
+        endif else begin
+           print,'Remote connection failed'
+           free_lun,RUNIT
+        endelse
+     ENDIF
+
      ;;----------------------------------------------------------
      ;; Save loop time
      ;;----------------------------------------------------------
