@@ -1515,9 +1515,9 @@ settings = load_settings()
                                 writeu,RUNIT,sync4
                             endif
                           endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps2.' + $
-                                            n2s(sync,format='(Z4.4)')+'['+n2s(TLM_MPOST,format='(Z4.4)')+']'
+                                            n2s(sync3,format='(Z4.4)')+'['+n2s(TLM_MPOST,format='(Z4.4)')+']'
                        endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps1.' + $
-                                         n2s(sync,format='(Z4.4)')+'['+n2s(TLM_LPOST,format='(Z4.4)')+']'
+                                         n2s(sync4,format='(Z4.4)')+'['+n2s(TLM_LPOST,format='(Z4.4)')+']'
                        printf,set.pktlogunit,msg2
                        first = strpos(msg2,'dropped')
                        if(first ge 0) then print,msg2
