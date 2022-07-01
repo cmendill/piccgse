@@ -1629,11 +1629,11 @@ settings = load_settings()
         SOCKET, RUNIT, ACCEPT=LUNIT, /GET_LUN, error=con_error
         if con_error eq 0 then begin
            print,'Remote connection established'
-           res = FILE_POLL_INPUT(LUNIT, TIMEOUT=1)
+           res = FILE_POLL_INPUT(RUNIT, TIMEOUT=1)
            if res then begin
               cmd = 0UL
-              readu,lunit,cmd
-              print,'Got command '+n2s(cmd,format='(Z8.8)')
+              readu,runit,cmd
+              print,'Got remote command '+n2s(cmd,format='(Z8.8)')
            endif
         endif else begin
            print,'Remote connection failed'
