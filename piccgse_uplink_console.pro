@@ -31,7 +31,7 @@ pro uplink, fd, cmd
 end
 
 pro command_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   ;;command line event
   widget_control,ev.id,GET_VALUE=cmd_array
@@ -80,7 +80,7 @@ end
 
 
 pro serial_command_buttons_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
  
   ;;get command
   widget_control,ev.id,GET_UVALUE=uval
@@ -148,7 +148,7 @@ pro serial_command_buttons_event, ev
 end
 
 pro gse_command_buttons_event, ev 
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   event_type = TAG_NAMES(ev, /STRUCTURE_NAME) 
   
@@ -180,6 +180,11 @@ pro gse_command_buttons_event, ev
   if NOT shm_var[settings.shm_run] then begin
      ;;unmap shared memory
      shmunmap,'shm'
+     if(upfd gt 0) then free_lun,upfd
+     if(dnfd gt 0) then free_lun,dnfd
+     if(cmdlogfd gt 0) then free_lun,cmdlogfd
+     if(remotefd gt 0) then free_lun,remotefd
+     if(lunit gt 0) then free_lun,lunit
      ;;close files
      close,/all
      ;;exit
@@ -189,7 +194,7 @@ pro gse_command_buttons_event, ev
 end
 
 pro gsepath_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
   common gsepath_block, path
  
   temp='piccgse.'+strcompress(string(shm_var[settings.shm_timestamp:*]),/REMOVE_ALL)
@@ -206,7 +211,7 @@ pro gsepath_event, ev
 end
 
 pro connstat_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   ;;get light bitmaps
   red_light = read_bmp('bmp/red.bmp',/rgb)
@@ -235,16 +240,17 @@ pro connstat_event, ev
 end
 
 pro remote_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
   
   ;;setup listener port for remote control
   lport = 10001
-  socket, luint, lport, /listen, /get_lun,error=con_error
+  lunit = -1
+  socket, lunit, lport, /listen, /get_lun,error=con_error
   if con_error eq 0 then begin
      print,'piccgse_uplink_console: Listening for remote connections on port '+n2s(lport) 
   endif else begin
-     print,'Listening socket failed to open'
-     free_lun,lunit
+     print,'piccgse_uplink_console: Listening socket failed to open'
+     if lunit gt 0 then free_lun,lunit
   endelse
 
   ;;enter loop
@@ -272,7 +278,7 @@ pro remote_event, ev
 end
 
 pro piccgse_uplink_console
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   ;;load settings
   settings = load_settings()
@@ -288,6 +294,13 @@ pro piccgse_uplink_console
   shm_var = shmvar('shm')
   print,'Shared memory mapped'
 
+  ;;init file descriptors
+  upfd = -1
+  dnfd = -1
+  cmdlogfd = -1
+  remotefd = -1
+  lunit = -1
+  
   if shm_var[settings.shm_remote] then begin
      ;;We are the remote, open socket to the server
      lport = 10001

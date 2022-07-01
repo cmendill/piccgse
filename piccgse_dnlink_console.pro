@@ -59,24 +59,27 @@ pro piccgse_dnlink_console
   ;;load settings
   settings = load_settings()
   
-  ;;open serial connection
-  openr,dnfd,settings.dnlink_dev,/get_lun,error=error
-  if error ne 0 then begin
-     print,'ERROR (piccgse_dnlink_console): Could not open '+settings.dnlink_dev
-     dnfd = -1
-  endif else print,'DNLINK: Opened '+settings.dnlink_dev+' for reading'
-
-  ;;configure serial port
-  if dnfd ge 0 then begin
-     cmd = 'serial/serial_setup'
-     spawn, cmd
-  endif
-  
   ;;setup shared memory
   shmmap, 'shm', /byte, settings.shm_size
   shm_var = shmvar('shm')
   print,'Shared memory mapped'
 
+  dnfd = -1
+  if NOT shm_var[settings.shm_remote] then begin
+     ;;open serial connection
+     openr,dnfd,settings.dnlink_dev,/get_lun,error=error
+     if error ne 0 then begin
+        print,'ERROR (piccgse_dnlink_console): Could not open '+settings.dnlink_dev
+        dnfd = -1
+     endif else print,'DNLINK: Opened '+settings.dnlink_dev+' for reading'
+     
+     ;;configure serial port
+     if dnfd ge 0 then begin
+        cmd = 'serial/serial_setup'
+        spawn, cmd
+     endif
+  endif
+  
   ;;setup base widget
   wxs = 504
   wys = 291
