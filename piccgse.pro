@@ -1368,6 +1368,7 @@ settings = load_settings()
   endif else begin
      print,'Listening socket failed to open'
      if LUNIT gt 0 then free_lun,LUNIT
+     lunit=-1
   endelse
   
 
@@ -1627,23 +1628,25 @@ settings = load_settings()
      ;;----------------------------------------------------------
      ;; Check for remote connections
      ;;----------------------------------------------------------
-     res = FILE_POLL_INPUT(LUNIT, TIMEOUT=0)
-     IF res THEN BEGIN
-        ;;establish a connection with the client
-        SOCKET, RUNIT, ACCEPT=LUNIT, /GET_LUN, error=con_error
-        if con_error eq 0 then begin
-           print,'Remote connection established'
-           res = FILE_POLL_INPUT(RUNIT, TIMEOUT=1)
-           if res then begin
-              cmd = 0UL
-              readu,runit,cmd
-              print,'Got remote command '+n2s(cmd,format='(Z8.8)')
-           endif
-        endif else begin
-           print,'Remote connection failed'
-           if RUNIT gt 0 then free_lun,RUNIT
-        endelse
-     ENDIF
+     if lunit gt 0 then begin
+        res = FILE_POLL_INPUT(LUNIT, TIMEOUT=0)
+        IF res THEN BEGIN
+           ;;establish a connection with the client
+           SOCKET, RUNIT, ACCEPT=LUNIT, /GET_LUN, error=con_error
+           if con_error eq 0 then begin
+              print,'Remote connection established'
+              res = FILE_POLL_INPUT(RUNIT, TIMEOUT=1)
+              if res then begin
+                 cmd = 0UL
+                 readu,runit,cmd
+                 print,'Got remote command '+n2s(cmd,format='(Z8.8)')
+              endif
+           endif else begin
+              print,'Remote connection failed'
+              if RUNIT gt 0 then free_lun,RUNIT
+           endelse
+        ENDIF
+     endif
 
      ;;----------------------------------------------------------
      ;; Save loop time
