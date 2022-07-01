@@ -1367,7 +1367,7 @@ settings = load_settings()
      print,'Listening for remote connections on port '+n2s(LPORT) 
   endif else begin
      print,'Listening socket failed to open'
-     free_lun,LUNIT
+     if LUNIT gt 0 then free_lun,LUNIT
   endelse
   
 
@@ -1641,7 +1641,7 @@ settings = load_settings()
            endif
         endif else begin
            print,'Remote connection failed'
-           free_lun,RUNIT
+           if RUNIT gt 0 then free_lun,RUNIT
         endelse
      ENDIF
 

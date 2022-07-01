@@ -68,7 +68,7 @@ pro command_event, ev
      logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
      if not file_test(logfile) then begin
         ;;close logfile if it is open
-        if n_elements(cmdlogfd) gt 0 then free_lun,cmdlogfd
+        if cmdlogfd gt 0 then free_lun,cmdlogfd
         ;;open logfile
         openw,cmdlogfd,logfile,/get_lun
         print,'Widget opened: '+file_basename(logfile)
@@ -137,7 +137,7 @@ pro serial_command_buttons_event, ev
      logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
      if not file_test(logfile) then begin
         ;;close logfile if it is open
-        if n_elements(cmdlogfd) gt 0 then free_lun,cmdlogfd
+        if cmdlogfd gt 0 then free_lun,cmdlogfd
         ;;open logfile
         openw,cmdlogfd,logfile,/get_lun
         print,'Widget opened: '+file_basename(logfile)
@@ -171,7 +171,7 @@ pro gse_command_buttons_event, ev
 
      ;;close logfile on reset command
      if (buttondb[sel].igse eq settings.shm_reset) AND (buttondb[sel].vgse eq 1) then begin
-        if n_elements(cmdlogfd) gt 0 then free_lun,cmdlogfd
+        if cmdlogfd gt 0 then free_lun,cmdlogfd
      endif
      
   endif else print,'GSE Command ['+n2s(uval)+'] Not Recognized'
@@ -241,22 +241,25 @@ end
 
 pro remote_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
-  
+  common remote_block,init
   ;;setup listener port for remote control
   lport = 10001
   lunit = -1
-  socket, lunit, lport, /listen, /get_lun,error=con_error
-  if con_error eq 0 then begin
-     print,'piccgse_uplink_console: Listening for remote connections on port '+n2s(lport) 
-  endif else begin
-     print,'piccgse_uplink_console: Listening socket failed to open'
-     if lunit gt 0 then free_lun,lunit
-  endelse
+  if n_elements(init) eq 0 then begin
+     socket, lunit, lport, /listen, /get_lun,error=con_error
+     if con_error eq 0 then begin
+        print,'piccgse_uplink_console: Listening for remote connections on port '+n2s(lport) 
+     endif else begin
+        print,'piccgse_uplink_console: Listening socket failed to open'
+        if lunit gt 0 then free_lun,lunit
+     endelse
+     init=1
+  endif
 
-  ;;enter loop
-  while 1 do begin
-     ;;listen for remote commands
-     if file_poll_input(lunit, timeout=1) then begin
+  ;;listen for remote commands
+  if lunit gt 0 then begin
+     if file_poll_input(lunit, timeout=0) then begin
+        print,'piccgse_uplink_console: got remote command'
         cmd=''
         ;;read command from remote client
         read,lunit,cmd
@@ -273,8 +276,10 @@ pro remote_event, ev
            endif
         endelse
      endif
-  endwhile
+  endif 
   
+  ;;trigger self
+  widget_control,ev.id,timer=1
 end
 
 pro piccgse_uplink_console
@@ -591,7 +596,7 @@ pro piccgse_uplink_console
   xmanager,'connstat',connstat,/no_block
 
   ;;Remote commands
-  remote = widget_base(base)
+  remote = widget_base(col6,/row)
   xmanager,'remote',remote,/no_block
   
   ;;create widgets
