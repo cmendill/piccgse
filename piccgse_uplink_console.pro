@@ -31,7 +31,7 @@ pro uplink, fd, cmd
 end
 
 pro command_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   ;;command line event
   widget_control,ev.id,GET_VALUE=cmd_array
@@ -40,16 +40,20 @@ pro command_event, ev
   for icmd=0,n_elements(cmd_array)-1 do begin
      cmd = cmd_array[icmd]
      ;;send command
-     if shm_var[settings.shm_uplink] then begin
-        if upfd ge 0 then begin
-           ;;use uplink port
-           if strlen(cmd) eq 0 then uplink,upfd,string(10B) else uplink,upfd,cmd+string(10B)
-        endif
+     if shm_var[settings.shm_remote] then begin
+        printf,remotefd,cmd
      endif else begin
-        if dnfd ge 0 then begin
-           ;;use downlink port
-           if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
-        endif
+        if shm_var[settings.shm_uplink] then begin
+           if upfd ge 0 then begin
+              ;;use uplink port
+              if strlen(cmd) eq 0 then uplink,upfd,string(10B) else uplink,upfd,cmd+string(10B)
+           endif
+        endif else begin
+           if dnfd ge 0 then begin
+              ;;use downlink port
+              if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
+           endif
+        endelse
      endelse
      
      ;;print command to screen
@@ -76,7 +80,7 @@ end
 
 
 pro serial_command_buttons_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
  
   ;;get command
   widget_control,ev.id,GET_UVALUE=uval
@@ -107,16 +111,20 @@ pro serial_command_buttons_event, ev
      endif
      
      ;;send command
-     if shm_var[settings.shm_uplink] then begin
-        ;;use uplink port
-        if upfd ge 0 then begin
-           uplink,upfd,cmd+string(10B)
-        endif
+     if shm_var[settings.shm_remote] then begin
+        printf,remotefd,cmd
      endif else begin
-        ;;use downlink port
-        if dnfd ge 0 then begin
-           if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
-        endif
+        if shm_var[settings.shm_uplink] then begin
+           ;;use uplink port
+           if upfd ge 0 then begin
+              uplink,upfd,cmd+string(10B)
+           endif
+        endif else begin
+           ;;use downlink port
+           if dnfd ge 0 then begin
+              if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
+           endif
+        endelse
      endelse
      
      ;;print command to screen
@@ -140,7 +148,7 @@ pro serial_command_buttons_event, ev
 end
 
 pro gse_command_buttons_event, ev 
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   event_type = TAG_NAMES(ev, /STRUCTURE_NAME) 
   
@@ -181,7 +189,7 @@ pro gse_command_buttons_event, ev
 end
 
 pro gsepath_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
   common gsepath_block, path
  
   temp='piccgse.'+strcompress(string(shm_var[settings.shm_timestamp:*]),/REMOVE_ALL)
@@ -198,7 +206,7 @@ pro gsepath_event, ev
 end
 
 pro connstat_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   ;;get light bitmaps
   red_light = read_bmp('bmp/red.bmp',/rgb)
@@ -226,40 +234,92 @@ pro connstat_event, ev
   widget_control,ev.id,timer=0.5
 end
 
+pro remote_event, ev
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  
+  ;;setup listener port for remote control
+  lport = 10001
+  socket, luint, lport, /listen, /get_lun,error=con_error
+  if con_error eq 0 then begin
+     print,'piccgse_uplink_console: Listening for remote connections on port '+n2s(lport) 
+  endif else begin
+     print,'Listening socket failed to open'
+     free_lun,lunit
+  endelse
+
+  ;;enter loop
+  while 1 do begin
+     ;;listen for remote commands
+     if file_poll_input(lunit, timeout=1) then begin
+        cmd=''
+        ;;read command from remote client
+        read,lunit,cmd
+        ;;send command
+        if shm_var[settings.shm_uplink] then begin
+           ;;use uplink port
+           if upfd ge 0 then begin
+              uplink,upfd,cmd+string(10B)
+           endif
+        endif else begin
+           ;;use downlink port
+           if dnfd ge 0 then begin
+              if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
+           endif
+        endelse
+     endif
+  endwhile
+  
+end
+
 pro piccgse_uplink_console
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   ;;load settings
   settings = load_settings()
   
   ;;load buttons
   buttondb = load_buttondb()
+
+  ;;get piccgse settings
+  restore,'.piccgse_set.idl'
   
   ;;setup shared memory
   shmmap, 'shm', /byte, settings.shm_size
   shm_var = shmvar('shm')
   print,'Shared memory mapped'
 
-  ;;Open uplink console (write-only)
-  openw,upfd,settings.uplink_dev,/get_lun,error=error
-  if error ne 0 then begin
-     print,'ERROR (piccgse_uplink_console): Could not open '+settings.uplink_dev
-     upfd = -1
-  endif else print,'UPLINK: Opened '+settings.uplink_dev+' for writing'
+  if shm_var[settings.shm_remote] then begin
+     ;;We are the remote, open socket to the server
+     lport = 10001
+     SOCKET, remotefd, set.tmserver_addr, lport, /GET_LUN, CONNECT_TIMEOUT=3, ERROR=con_status, READ_TIMEOUT=2
+     if con_status eq 0 then begin
+        print,'UPLINK: Opened socket to '+set.tmserver_addr+':'+n2s(lport) 
+     endif else begin
+        MESSAGE, !ERR_STRING, /INFORM
+     endelse 
 
-  ;;Open dnlink console (write-only)
-  openw,dnfd,settings.dnlink_dev,/get_lun,error=error
-  if error ne 0 then begin
-     print,'ERROR (piccgse_uplink_console): Could not open '+settings.dnlink_dev
-     dnfd = -1
-  endif else print,'UPLINK: Opened '+settings.dnlink_dev+' for writing'
-  
-  ;;configure serial ports
-  if (upfd ge 0) OR (dnfd ge 0) then begin
-     cmd = 'serial/serial_setup'
-     spawn, cmd
-  endif
-  
+  endif else begin
+     ;;Open uplink console (write-only)
+     openw,upfd,settings.uplink_dev,/get_lun,error=error
+     if error ne 0 then begin
+        print,'ERROR (piccgse_uplink_console): Could not open '+settings.uplink_dev
+        upfd = -1
+     endif else print,'UPLINK: Opened '+settings.uplink_dev+' for writing'
+     
+     ;;Open dnlink console (write-only)
+     openw,dnfd,settings.dnlink_dev,/get_lun,error=error
+     if error ne 0 then begin
+        print,'ERROR (piccgse_uplink_console): Could not open '+settings.dnlink_dev
+        dnfd = -1
+     endif else print,'UPLINK: Opened '+settings.dnlink_dev+' for writing'
+     
+     ;;configure serial ports
+     if (upfd ge 0) OR (dnfd ge 0) then begin
+        cmd = 'serial/serial_setup'
+        spawn, cmd
+     endif
+  endelse
+    
   ;;setup base widget
   wxs = 814
   wys = 291
@@ -516,12 +576,19 @@ pro piccgse_uplink_console
   uplk_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light, UVALUE='uplink', TOOLTIP='Toggle Uplink Command',/align_center)
   ;;install event handler
   xmanager,'connstat',connstat,/no_block
- 
+
+  ;;Remote commands
+  remote = widget_base(base)
+  xmanager,'remote',remote,/no_block
+  
   ;;create widgets
   widget_control,base,/realize
 
   ;;update gsepath
   widget_control,gsepath_text,timer=0
+
+  ;;start remote
+  widget_control,remote,timer=0
 
   ;;start status icons
   widget_control,connstat,timer=0,set_uval='timer'

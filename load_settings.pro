@@ -20,6 +20,7 @@ settings = {uplink_dev: '/dev/ttyUSB1',$
             SHM_ACQ_DY:     7,$  ;;7-8    --> ACQ camera star-hole delta x [px]
             SHM_SCITYPE:    9,$  ;;9      --> SCI camera display type [0:images, 1:real, 2:imaginary, 3:amplitude, 4:phase]
             SHM_BMCTYPE:   10,$  ;;10     --> BMC display type [0:cmd, 1:difference]
+            SHM_REMOTE:    11,$  ;;11     --> piccgse running in remote mode
             SHM_CMD:        27,$ ;;27     --> Command has been given
             SHM_TIMESTAMP:  28}  ;;28-127 --> File timestamp
 ;;Shared Memory

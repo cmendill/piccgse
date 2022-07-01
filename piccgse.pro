@@ -163,6 +163,9 @@ pro piccgse_loadConfig, path
 
   ;;Close the config file
   free_lun,unit
+
+  ;;Save settings structure
+  save,set,filename='.piccgse_set.idl'
   
 end
 
@@ -1221,7 +1224,7 @@ end
 ;;   NOUPLINK
 ;;      Use bidirectional downlink for commands instead of uplink
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-pro piccgse, NOSAVE=NOSAVE, NOUPLINK=NOUPLINK, NOPLOT=NOPLOT
+pro piccgse, NOSAVE=NOSAVE, NOUPLINK=NOUPLINK, NOPLOT=NOPLOT, REMOTE=REMOTE
   common piccgse_block, settings, set, shm_var
 
 ;*************************************************
@@ -1380,6 +1383,7 @@ settings = load_settings()
   shm_var[*] = bytarr(settings.shm_size)
   shm_var[settings.shm_run] = 1
   shm_var[settings.shm_uplink] = NOT keyword_set(NOUPLINK)
+  shm_var[settings.shm_remote] = keyword_set(REMOTE)
   shm_var[settings.shm_timestamp:settings.shm_timestamp+strlen(STARTUP_TIMESTAMP)-1]=byte(STARTUP_TIMESTAMP)
   print,'Shared memory mapped'
   
