@@ -1170,16 +1170,19 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 function piccgse_tmConnect
   common piccgse_block, settings, set, shm_var
+  unit=-1
   
   ;;Check if we are reading from a file
   if set.tmserver_type eq 'tmfile' then begin
-     openr,TMUNIT,set.tmserver_tmfile,/GET_LUN,ERROR=con_status
-     
+     print,'Opening tmfile: '+set.tmserver_tmfile
+     openr,unit,set.tmserver_tmfile,/GET_LUN,ERROR=con_status
      if con_status eq 0 then begin
-        MESSAGE, 'File opened.', /INFORM
-        return, TMUNIT
+        print, 'File opened.', /INFORM
+        return, unit
      endif else begin
-        MESSAGE, !ERR_STRING, /INFORM
+        print, !ERR_STRING, /INFORM
+        if unit gt 0 then free_lun,unit
+        return,-1
      endelse
   endif
   
@@ -1187,32 +1190,52 @@ function piccgse_tmConnect
   if set.tmserver_type eq 'network' then begin
      ;;Command to ask server for data
      ;;NOTE: Investigate why the endian is different, both are x86 PCs
-     CMD_SENDDATA = swap_endian('0ABACABB'XUL)
-     if set.tmserver_addr eq 'picture'   then CMD_SENDDATA = swap_endian('0ABACABB'XUL)
-     if set.tmserver_addr eq 'localhost' then CMD_SENDDATA = swap_endian('0ABACABB'XUL)
-     if set.tmserver_addr eq 'tmserver'  then CMD_SENDDATA = '22220001'XUL
+     cmd_senddata = swap_endian('0ABACABB'XUL)
+     if set.tmserver_addr eq 'picture'   then cmd_senddata = swap_endian('0ABACABB'XUL)
+     if set.tmserver_addr eq 'localhost' then cmd_senddata = swap_endian('0ABACABB'XUL)
+     if set.tmserver_addr eq 'tmserver'  then cmd_senddata = '22220001'XUL
      
      ;;Create Socket connection
-     PRINT, 'Attempting to create Socket connection Image Server to >'+set.tmserver_addr+'< on port '+n2s(set.tmserver_port)
-     SOCKET, TMUNIT, set.tmserver_addr, set.tmserver_port, /GET_LUN, CONNECT_TIMEOUT=3, ERROR=con_status, READ_TIMEOUT=2
+     print, 'Opening TM socket to '+set.tmserver_addr+' on port '+n2s(set.tmserver_port)
+     socket, unit, set.tmserver_addr, set.tmserver_port, /GET_LUN, CONNECT_TIMEOUT=3, ERROR=con_status, READ_TIMEOUT=2
      if con_status eq 0 then begin
-        PRINT, 'Socket created'
+        print, 'Socket created, requesting data'
         ;;Ask for images
         ON_IOERROR, WRITE_ERROR
-        WRITEU,TMUNIT,CMD_SENDDATA
-        return,TMUNIT
+        writeu,unit,cmd_senddata
+        return,unit
      endif else begin
+        print,'TM socket failed to open'
         MESSAGE, !ERR_STRING, /INFORM
+        if unit gt 0 then free_lun,unit
+        return,-1
      endelse
      WRITE_ERROR:PRINT, 'WRITE_ERROR: '+!ERR_STRING  ;;jump here on writeu error
+     if unit gt 0 then free_lun,unit
      return,-1
   endif
-  
-  ;;Should never get to this point
-  return,-1
 end
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; function piccgse_remoteListen
+;;  - function to listen for remote connections
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+function piccgse_remoteListen
+  common piccgse_block, settings, set, shm_var
+  unit=-1
+  print, 'Opening listening socket on port '+n2s(settings.remote_port)
+  socket, unit, settings.remote_port, /listen, /get_lun,error=con_error
+  if con_error eq 0 then begin
+     print,'Listening for remote connections on port '+n2s(settings.remote_port)
+     return, unit
+  endif else begin
+     print,'Listening socket failed to open'
+     MESSAGE, !ERR_STRING, /INFORM
+     if unit gt 0 then free_lun,unit
+     return, -1
+  endelse
+end
+  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;piccgse
 ;; -- Main program
@@ -1307,7 +1330,6 @@ settings = load_settings()
 ;*************************************************
 ;* INIT CONNECTIONS
 ;*************************************************
-  tm_connected = 0
   tm_last_connected = -1
   tm_last_data      = -1
   tmunit = -1
@@ -1357,20 +1379,6 @@ settings = load_settings()
   if(set.tmserver_type eq 'tmfile') then begin
      set.savedata=0
   endif
-  
-;*************************************************
-;* SETUP LISTENER PORT FOR REMOTE
-;*************************************************
-  socket, lunit, settings.remote_port, /listen, /get_lun,error=con_error
-  if con_error eq 0 then begin
-     print,'Listening for remote connections on port '+n2s(settings.remote_port) 
-  endif else begin
-     print,'Listening socket failed to open'
-     MESSAGE, !ERR_STRING, /INFORM
-     if lunit gt 0 then free_lun,lunit
-     lunit = -1
-  endelse
-  
 
 ;*************************************************
 ;* SETUP SHARED MEMORY
@@ -1425,8 +1433,12 @@ settings = load_settings()
      ;;READU EOF errors
      if error_status eq -262 then begin
         print,'Resetting TM connection'
-        free_lun,tmunit
-        tm_connected=0
+        if tmunit gt 0 then free_lun,tmunit
+        if lunit gt 0 then free_lun,lunit
+        if runit gt 0 then free_lun,runit
+        tmunit = -1
+        lunit  = -1
+        runit  = -1
      endif
      CATCH, /CANCEL
   endif
@@ -1461,7 +1473,7 @@ settings = load_settings()
      ;;READ DATA FROM NETWORK OR TMFILE
      ;;-- Expected data: experiment data with empty codes (0xFADE) stripped out
      if set.tmserver_type eq 'network' OR set.tmserver_type eq 'tmfile' then begin
-        if tm_connected then begin
+        if tmunit gt 0 then begin
            ;;Install error handler
            ON_IOERROR, RESET_CONNECTION
            ;;Set link status
@@ -1539,12 +1551,12 @@ settings = load_settings()
                  print,'IMAGE SERVER TIMEOUT!'
                  RESET_CONNECTION: PRINT, 'IO ERROR: '+!ERR_STRING ;;Jump here if an IO error occured
                  print,'RESETTING CONNECTION'
-                 ON_IOERROR,FREE_LUN_ERROR
-                 free_lun,tmunit
-                 if 0 then begin
-                    FREE_LUN_ERROR: PRINT, 'FREE_LUN_ERROR: '+!ERR_STRING
-                 endif
-                 tm_connected = 0
+                 if tmunit gt 0 then free_lun,tmunit
+                 if lunit gt 0 then free_lun,lunit
+                 if runit gt 0 then free_lun,runit
+                 tmunit=-1
+                 lunit=-1
+                 runit=-1
                  shm_var[settings.shm_link] = 0
                  shm_var[settings.shm_data] = 0
                  wait,1
@@ -1553,8 +1565,9 @@ settings = load_settings()
         endif else begin
            ;;if not connected, reconnect
            tmunit = piccgse_tmConnect()
+           if lunit gt 0 then free_lun,lunit
+           lunit  = piccgse_remoteListen()
            if tmunit GT 0 then begin 
-              tm_connected = 1 
               tm_last_connected = systime(1)
               tm_last_data      = systime(1)
            endif else wait,1
