@@ -1247,7 +1247,7 @@ end
 ;;   NOUPLINK
 ;;      Use bidirectional downlink for commands instead of uplink
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-pro piccgse, NOSAVE=NOSAVE, NOUPLINK=NOUPLINK, NOPLOT=NOPLOT, REMOTE=REMOTE
+pro piccgse, NOSAVE=NOSAVE, NOUPLINK=NOUPLINK, NOPLOT=NOPLOT, REMOTE=REMOTE, TMADDR=TMADDR, TMPORT=TMPORT
   common piccgse_block, settings, set, shm_var
 
 ;*************************************************
@@ -1326,6 +1326,11 @@ settings = load_settings()
   cfg_mod_sec = config_props.mtime
   piccgse_loadConfig, config_file
  
+;*************************************************
+;* TMADDR & TMPORT KEYWORDS
+;*************************************************
+  if keyword_set(tmaddr) then set.tmserver_addr = tmaddr
+  if keyword_set(tmport) then set.tmserver_port = tmport
   
 ;*************************************************
 ;* INIT CONNECTIONS
