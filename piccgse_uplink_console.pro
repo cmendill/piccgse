@@ -33,6 +33,9 @@ end
 pro command_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
+  ;;Install error handler
+  ON_IOERROR, RESET_CONNECTION
+
   ;;command line event
   widget_control,ev.id,GET_VALUE=cmd_array
 
@@ -77,6 +80,16 @@ pro command_event, ev
      endif
      printf,cmdlogfd,cmdstr
   endfor
+
+  if 0 then begin
+     RESET_CONNECTION:
+     if lunit gt 0 then free_lun,lunit
+     if runit gt 0 then free_lun,runit
+     if remotefd gt 0 then free_lun,remotefd
+     lunit = -1
+     runit = -1
+     remotefd = -1
+  endif
   
 end
 
@@ -84,6 +97,9 @@ end
 pro serial_command_buttons_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
  
+  ;;Install error handler
+  ON_IOERROR, RESET_CONNECTION
+
   ;;get command
   widget_control,ev.id,GET_UVALUE=uval
   sel = where(buttondb.id eq uval,nsel)
@@ -149,38 +165,23 @@ pro serial_command_buttons_event, ev
      printf,cmdlogfd,cmdstr
      
   endif
+  
+  if 0 then begin
+     RESET_CONNECTION:
+     if lunit gt 0 then free_lun,lunit
+     if runit gt 0 then free_lun,runit
+     if remotefd gt 0 then free_lun,remotefd
+     lunit = -1
+     runit = -1
+     remotefd = -1
+  endif
 end
 
 pro remote_command_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
-  ;;setup listener port for remote control
-  if lunit lt 0 then begin
-     socket, lunit, settings.uplink_port, /listen, /get_lun, error=con_error
-     if con_error eq 0 then begin
-        print,'UPLINK: Listening for remote connections on port '+n2s(settings.uplink_port) 
-     endif else begin
-        print,'UPLINK: Listening socket failed to open'
-        MESSAGE, !ERR_STRING, /INFORM
-       if lunit gt 0 then free_lun,lunit
-        lunit=-1
-     endelse
-  endif
-
-  ;;listen for remote commands
-  if lunit gt 0 then begin
-     if file_poll_input(lunit, timeout=0) then begin
-        socket, runit, accept=lunit, /get_lun, error=con_error
-        if con_error eq 0 then begin
-           print,'UPLINK: Remote connection established'
-        endif else begin
-           print,'UPLINK: Remote connection failed'
-           MESSAGE, !ERR_STRING, /INFORM
-           if runit gt 0 then free_lun,runit
-           runit=-1
-        endelse
-     endif
-  endif
+  ;;Install error handler
+  ON_IOERROR, RESET_CONNECTION
 
   if runit gt 0 then begin
      if file_poll_input(runit, timeout=0) then begin
@@ -221,6 +222,16 @@ pro remote_command_event, ev
      endif
   endif 
   
+  if 0 then begin
+     RESET_CONNECTION:
+     if lunit gt 0 then free_lun,lunit
+     if runit gt 0 then free_lun,runit
+     if remotefd gt 0 then free_lun,remotefd
+     lunit = -1
+     runit = -1
+     remotefd = -1
+  endif
+
   ;;trigger self
   widget_control,ev.id,timer=0.5
 end
@@ -320,6 +331,61 @@ pro connstat_event, ev
   widget_control,ev.id,timer=0.5
 end
 
+pro socket_event, ev
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+
+  ;;get piccgse settings
+  restore,'.piccgse_set.idl'
+
+  ;;remote setup
+  if shm_var[settings.shm_remote] then begin
+     if remotefd lt 0 then begin
+        ;;We are the remote, open socket to the server (remote_event)
+        socket, remotefd, set.tmserver_addr, settings.uplink_port, /get_lun, error=con_status, connect_timeout=3, write_timeout=2
+        if con_status eq 0 then begin
+           print,'UPLINK: Opened socket to '+set.tmserver_addr+':'+n2s(settings.uplink_port) 
+        endif else begin
+           print,'UPLINK: ERROR Remote socket failed to open'
+           MESSAGE, !ERR_STRING, /INFORM
+           if remotefd gt 0 then free_lun,remotefd
+           remotefd = -1
+        endelse
+     endif
+  endif
+
+  ;;setup listener for remote connections
+  if lunit lt 0 then begin
+     socket, lunit, settings.uplink_port, /listen, /get_lun, error=con_error
+     if con_error eq 0 then begin
+        print,'UPLINK: Listening for remote connections on port '+n2s(settings.uplink_port) 
+     endif else begin
+        print,'UPLINK: Listening socket failed to open'
+        MESSAGE, !ERR_STRING, /INFORM
+        if lunit gt 0 then free_lun,lunit
+        lunit=-1
+     endelse
+  endif
+  
+  ;;listen for remote connections
+  if (lunit gt 0) AND (runit lt 0) then begin
+     if file_poll_input(lunit, timeout=0) then begin
+        socket, runit, accept=lunit, /get_lun, error=con_error
+        if con_error eq 0 then begin
+           print,'UPLINK: Remote connection established'
+        endif else begin
+           print,'UPLINK: Remote connection failed'
+           MESSAGE, !ERR_STRING, /INFORM
+           if runit gt 0 then free_lun,runit
+           runit=-1
+        endelse
+     endif
+  endif
+
+  ;;re-trigger this loop automatically
+  widget_control,ev.id,timer=1
+
+end
+
 pro piccgse_uplink_console
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
@@ -346,18 +412,7 @@ pro piccgse_uplink_console
   runit = -1
 
   ;;Check if we are remote or main interface
-  if shm_var[settings.shm_remote] then begin
-     ;;We are the remote, open socket to the server (remote_event)
-     socket, remotefd, set.tmserver_addr, settings.uplink_port, /get_lun, error=con_status, connect_timeout=3, write_timeout=2
-     if con_status eq 0 then begin
-        print,'UPLINK: Opened socket to '+set.tmserver_addr+':'+n2s(settings.uplink_port) 
-     endif else begin
-        print,'UPLINK: ERROR Remote socket failed to open'
-        MESSAGE, !ERR_STRING, /INFORM
-        if remotefd gt 0 then free_lun,remotefd
-        remotefd = -1
-     endelse 
-  endif else begin
+  if NOT shm_var[settings.shm_remote] then begin
      ;;Open uplink console (write-only)
      openw,upfd,settings.uplink_dev,/get_lun,error=error
      if error ne 0 then begin
@@ -379,7 +434,7 @@ pro piccgse_uplink_console
         cmd = 'serial/serial_setup'
         spawn, cmd
      endif
-  endelse
+  endif
     
   ;;setup base widget
   wxs = 814
@@ -641,6 +696,10 @@ pro piccgse_uplink_console
   ;;Remote commands
   remote = widget_base(col6,/row)
   xmanager,'remote_command',remote,/no_block
+
+  ;;socket widget
+  soc = widget_base(base)
+  xmanager,'socket',soc,/no_block
   
   ;;create widgets
   widget_control,base,/realize
@@ -654,4 +713,6 @@ pro piccgse_uplink_console
   ;;start status icons
   widget_control,connstat,timer=0,set_uval='timer'
   
+  ;;start socket
+  widget_control,soc,timer=0
 end

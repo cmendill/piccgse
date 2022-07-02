@@ -1,6 +1,9 @@
 pro console_event, ev
   common dnlink_block,settings,dnfd,conlogfd,lunit,runit,remotefd,base,con_text,shm_var,nchar
 
+  ;;Install error handler
+  ON_IOERROR, RESET_CONNECTION
+
   ;;check for exit
   if NOT shm_var[settings.shm_run] then begin
      print,'DNLINK: exiting'
@@ -17,36 +20,6 @@ pro console_event, ev
      ;;exit
      widget_control,base,/destroy
      return
-  endif
-
-  ;;remote setup: we are listeing for remote connections to send them dnlink data
-  
-  ;;setup listener for remote connections
-  if lunit lt 0 then begin
-     socket, lunit, settings.dnlink_port, /listen, /get_lun, error=con_error
-     if con_error eq 0 then begin
-        print,'DNLINK: Listening for remote connections on port '+n2s(settings.dnlink_port) 
-     endif else begin
-        print,'DNLINK: Listening socket failed to open'
-        MESSAGE, !ERR_STRING, /INFORM
-        if lunit gt 0 then free_lun,lunit
-        lunit=-1
-     endelse
-  endif
-  
-  ;;listen for remote connections
-  if lunit gt 0 then begin
-     if file_poll_input(lunit, timeout=0) then begin
-        socket, runit, accept=lunit, /get_lun, error=con_error
-        if con_error eq 0 then begin
-           print,'DNLINK: Remote connection established'
-        endif else begin
-           print,'DNLINK: Remote connection failed'
-           MESSAGE, !ERR_STRING, /INFORM
-           if runit gt 0 then free_lun,runit
-           runit=-1
-        endelse
-     endif
   endif
 
   ;;console event
@@ -96,11 +69,77 @@ pro console_event, ev
      ts=gettimestamp('.')
      printf,conlogfd,ts+': '+newline
   endif
+
+  if 0 then begin
+     RESET_CONNECTION:
+     if lunit gt 0 then free_lun,lunit
+     if runit gt 0 then free_lun,runit
+     if remotefd gt 0 then free_lun,remotefd
+     lunit = -1
+     runit = -1
+     remotefd = -1
+  endif
     
   ;;re-trigger this loop immidiately
   widget_control,ev.id,timer=0
   
 end
+
+pro socket_event, ev
+  common dnlink_block,settings,dnfd,conlogfd,lunit,runit,remotefd,base,con_text,shm_var,nchar
+
+  ;;get piccgse settings
+  restore,'.piccgse_set.idl'
+
+  ;;remote setup
+  if shm_var[settings.shm_remote] then begin
+     if remotefd lt 0 then begin
+        ;;We are the remote, open socket to the server (remote_event)
+        socket, remotefd, set.tmserver_addr, settings.dnlink_port, /get_lun, error=con_status, connect_timeout=3, write_timeout=2
+        if con_status eq 0 then begin
+           print,'DNLINK: Opened socket to '+set.tmserver_addr+':'+n2s(settings.dnlink_port) 
+        endif else begin
+           print,'DNLINK: ERROR Remote socket failed to open'
+           MESSAGE, !ERR_STRING, /INFORM
+           if remotefd gt 0 then free_lun,remotefd
+           remotefd = -1
+        endelse
+     endif
+  endif
+
+  ;;setup listener for remote connections
+  if lunit lt 0 then begin
+     socket, lunit, settings.dnlink_port, /listen, /get_lun, error=con_error
+     if con_error eq 0 then begin
+        print,'DNLINK: Listening for remote connections on port '+n2s(settings.dnlink_port) 
+     endif else begin
+        print,'DNLINK: Listening socket failed to open'
+        MESSAGE, !ERR_STRING, /INFORM
+        if lunit gt 0 then free_lun,lunit
+        lunit=-1
+     endelse
+  endif
+  
+  ;;listen for remote connections
+  if (lunit gt 0) AND (runit lt 0) then begin
+     if file_poll_input(lunit, timeout=0) then begin
+        socket, runit, accept=lunit, /get_lun, error=con_error
+        if con_error eq 0 then begin
+           print,'DNLINK: Remote connection established'
+        endif else begin
+           print,'DNLINK: Remote connection failed'
+           MESSAGE, !ERR_STRING, /INFORM
+           if runit gt 0 then free_lun,runit
+           runit=-1
+        endelse
+     endif
+  endif
+
+  ;;re-trigger this loop automatically
+  widget_control,ev.id,timer=1
+
+end
+
 
 pro piccgse_dnlink_console
   common dnlink_block,settings,dnfd,conlogfd,lunit,runit,remotefd,base,con_text,shm_var,nchar
@@ -113,9 +152,6 @@ pro piccgse_dnlink_console
   shm_var = shmvar('shm')
   print,'DNLINK: Shared memory mapped'
 
-  ;;get piccgse settings
-  restore,'.piccgse_set.idl'
-
   ;;init file descriptors
   dnfd = -1
   conlogfd = -1
@@ -124,18 +160,7 @@ pro piccgse_dnlink_console
   remotefd = -1
 
   ;;Check if we are remote or main interface
-  if shm_var[settings.shm_remote] then begin
-     ;;We are the remote, open socket to the server (remote_event)
-     socket, remotefd, set.tmserver_addr, settings.dnlink_port, /get_lun, error=con_status, connect_timeout=3, write_timeout=2
-     if con_status eq 0 then begin
-        print,'DNLINK: Opened socket to '+set.tmserver_addr+':'+n2s(settings.dnlink_port) 
-     endif else begin
-        print,'DNLINK: ERROR Remote socket failed to open'
-        MESSAGE, !ERR_STRING, /INFORM
-        if remotefd gt 0 then free_lun,remotefd
-        remotefd = -1
-     endelse 
-  endif else begin
+  if NOT shm_var[settings.shm_remote] then begin
      ;;open serial connection
      openr,dnfd,settings.dnlink_dev,/get_lun,error=error
      if error ne 0 then begin
@@ -148,7 +173,7 @@ pro piccgse_dnlink_console
         cmd = 'serial/serial_setup'
         spawn, cmd
      endif
-  endelse
+  endif
   
   ;;setup base widget
   wxs = 504
@@ -164,10 +189,17 @@ pro piccgse_dnlink_console
   ;con_label = widget_label(sub1,value='Downlink',/align_left)
   con_text  = widget_text(sub1,xsize=nchar,ysize=21)
   xmanager,'console',sub1,/no_block
+
+  ;;socket widget
+  soc = widget_base(base)
+  xmanager,'socket',soc,/no_block
   
   ;;create widgets
   widget_control,base,/realize
   
   ;;start console
   widget_control,con_text,timer=0
+
+  ;;start socket
+  widget_control,soc,timer=0
 end
