@@ -1553,6 +1553,7 @@ settings = load_settings()
                  print,'IMAGE SERVER TIMEOUT!'
                  RESET_CONNECTION: PRINT, 'IO ERROR: '+!ERR_STRING ;;Jump here if an IO error occured
                  print,'RESETTING CONNECTION'
+                 stop
                  if tmunit gt 0 then free_lun,tmunit
                  if lunit gt 0 then free_lun,lunit
                  if runit gt 0 then free_lun,runit
@@ -1561,6 +1562,8 @@ settings = load_settings()
                  runit=-1
                  shm_var[settings.shm_link] = 0
                  shm_var[settings.shm_data] = 0
+                 print,'CONNECTION RESET'
+                 print,''
                  wait,1
               endif
            endelse
