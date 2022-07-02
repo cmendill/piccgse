@@ -53,9 +53,10 @@ pro console_event, ev
   newline=''
   word = 0B
   bytesread=0L
+  bline = bytarr(settings.cmdlength)
   if dnfd ge 0 then begin
      ;;read data until we reach a line feed or read a maximum number of characters
-     while FILE_POLL_INPUT(dnfd,timeout=0.1) AND bytesread lt 200 do begin
+     while FILE_POLL_INPUT(dnfd,timeout=0.1) AND bytesread lt settings.cmdlength do begin
         readu,dnfd,word
         bytesread++
         ;;use only standard ASCII characters
@@ -64,10 +65,11 @@ pro console_event, ev
         if word eq 10B then break        ;;Linefeed
      endwhile
   endif
-  if runit gt 0 then begin
+  if remotefd gt 0 then begin
      ;;we are remote, read data from main interface
-     if file_poll_input(runit,timeout=0.1) then begin
-        read,runit,newline
+     if file_poll_input(remotefd,timeout=0.1) then begin
+        readu,remotefd,bline
+        newline = string(bline)
         bytesread = strlen(newline)
      endif
   endif
@@ -75,6 +77,12 @@ pro console_event, ev
   if bytesread gt 0 then begin
      ;;print console text to screen
      widget_control,ev.id,set_value=strmid(newline,0,nchar),/append
+     ;;send console text to remote
+     if runit gt 0 then begin
+        bline = bytarr(settings.cmdlength)
+        bline[0:strlen(newline)-1]=byte(newline)
+        writeu,runit,bline
+     endif
      ;;print console text to log file
      gsets=strcompress(string(shm_var[settings.shm_timestamp:*]),/REMOVE_ALL)
      logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.conlog.txt'

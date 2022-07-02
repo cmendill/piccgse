@@ -41,7 +41,9 @@ pro command_event, ev
      cmd = cmd_array[icmd]
      ;;send command
      if shm_var[settings.shm_remote] then begin
-        if remotefd gt 0 then printf,remotefd,cmd
+        rcmd = bytarr(settings.cmdlength)
+        rcmd[0:strlen(cmd)-1]=byte(cmd)
+        if remotefd gt 0 then writeu,remotefd,rcmd
      endif else begin
         if shm_var[settings.shm_uplink] then begin
            if upfd ge 0 then begin
@@ -112,7 +114,9 @@ pro serial_command_buttons_event, ev
      
      ;;send command
      if shm_var[settings.shm_remote] then begin
-        printf,remotefd,cmd
+        rcmd = bytarr(settings.cmdlength)
+        rcmd[0:strlen(cmd)-1]=byte(cmd)
+        if remotefd gt 0 then writeu,remotefd,rcmd
      endif else begin
         if shm_var[settings.shm_uplink] then begin
            ;;use uplink port
@@ -181,8 +185,9 @@ pro remote_command_event, ev
   if runit gt 0 then begin
      if file_poll_input(runit, timeout=0) then begin
         ;;read command from remote client
-        cmd=''
-        read,lunit,cmd
+        cmd=bytarr(settings.cmdlength)
+        readu,lunit,cmd
+        cmd = string(cmd)
         print,'UPLINK: Got remote command: '+cmd
         ;;send command
         if shm_var[settings.shm_uplink] then begin
