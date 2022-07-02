@@ -80,7 +80,7 @@ pro console_event, ev
      logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.conlog.txt'
      if not file_test(logfile) then begin
         ;;close logfile if it is open
-        if n_elements(conlogfd) gt 0 then free_lun,conlogfd
+        if conlogfd gt 0 then free_lun,conlogfd
         ;;open logfile
         openw,conlogfd,logfile,/get_lun
         print,'DNLINK: Widget opened: '+file_basename(logfile)
