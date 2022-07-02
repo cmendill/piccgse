@@ -186,7 +186,7 @@ pro remote_command_event, ev
      if file_poll_input(runit, timeout=0) then begin
         ;;read command from remote client
         cmd=bytarr(settings.cmdlength)
-        readu,lunit,cmd
+        readu,runit,cmd
         cmd = string(cmd)
         print,'UPLINK: Got remote command: '+cmd
         ;;send command
