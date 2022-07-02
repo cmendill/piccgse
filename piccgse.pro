@@ -372,7 +372,7 @@ pro piccgse_processData, hed, pkt, tag
   white=255
 
   ;;Swap column/row major for 2D arrays
-  struct_swap_majority,pkt
+  if NOT shm_var[settings.shm_remote] then struct_swap_majority,pkt
      
   ;;SHKPKT
   if tag eq 'shkpkt' then begin
