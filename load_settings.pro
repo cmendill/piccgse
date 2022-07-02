@@ -10,6 +10,9 @@ settings = {uplink_dev: '/dev/ttyUSB1',$
             scitype_log:      5,$
             bmctype_cmd:      0,$
             bmctype_dif:      1,$
+            remote_port:  10000,$
+            uplink_port:  10001,$
+            dnlink_port:  10002,$
             SHM_SIZE:       128,$
             SHM_RUN:        0,$  ;;0      --> Run/Close GSE
             SHM_RESET:      1,$  ;;1      --> Reset

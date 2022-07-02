@@ -8,7 +8,7 @@ pro uplink, fd, cmd
   if len lt lmin then bcmd = [bcmd,bytarr(lmin - len)]
   len  = n_elements(bcmd)
   if len gt lmax then begin
-     print, 'Uplink command failed: length exceedes '+n2s(lmax)+' characters'
+     print, 'UPLINK: Command failed: length exceedes '+n2s(lmax)+' characters'
      return
   endif
   ;;Init packet and add command
@@ -41,7 +41,7 @@ pro command_event, ev
      cmd = cmd_array[icmd]
      ;;send command
      if shm_var[settings.shm_remote] then begin
-        printf,remotefd,cmd
+        if remotefd gt 0 then printf,remotefd,cmd
      endif else begin
         if shm_var[settings.shm_uplink] then begin
            if upfd ge 0 then begin
@@ -71,7 +71,7 @@ pro command_event, ev
         if cmdlogfd gt 0 then free_lun,cmdlogfd
         ;;open logfile
         openw,cmdlogfd,logfile,/get_lun
-        print,'Widget opened: '+file_basename(logfile)
+        print,'UPLINK: Widget opened: '+file_basename(logfile)
      endif
      printf,cmdlogfd,cmdstr
   endfor
@@ -140,12 +140,86 @@ pro serial_command_buttons_event, ev
         if cmdlogfd gt 0 then free_lun,cmdlogfd
         ;;open logfile
         openw,cmdlogfd,logfile,/get_lun
-        print,'Widget opened: '+file_basename(logfile)
+        print,'UPLINK: Widget opened: '+file_basename(logfile)
      endif
      printf,cmdlogfd,cmdstr
      
   endif
 end
+
+pro remote_command_event, ev
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+
+  ;;setup listener port for remote control
+  if lunit lt 0 then begin
+     socket, lunit, settings.uplink_port, /listen, /get_lun, error=con_error
+     if con_error eq 0 then begin
+        print,'UPLINK: Listening for remote connections on port '+n2s(settings.uplink_port) 
+     endif else begin
+        print,'UPLINK: Listening socket failed to open'
+        MESSAGE, !ERR_STRING, /INFORM
+       if lunit gt 0 then free_lun,lunit
+        lunit=-1
+     endelse
+  endif
+
+  ;;listen for remote commands
+  if lunit gt 0 then begin
+     if file_poll_input(lunit, timeout=0) then begin
+        socket, runit, accept=lunit, /get_lun, error=con_error
+        if con_error eq 0 then begin
+           print,'UPLINK: Remote connection established'
+        endif else begin
+           print,'UPLINK: Remote connection failed'
+           MESSAGE, !ERR_STRING, /INFORM
+           if runit gt 0 then free_lun,runit
+           runit=-1
+        endelse
+     endif
+  endif
+
+  if runit gt 0 then begin
+     if file_poll_input(runit, timeout=0) then begin
+        ;;read command from remote client
+        cmd=''
+        read,lunit,cmd
+        print,'UPLINK: Got remote command: '+cmd
+        ;;send command
+        if shm_var[settings.shm_uplink] then begin
+           ;;use uplink port
+           if upfd ge 0 then begin
+              uplink,upfd,cmd+string(10B)
+           endif
+        endif else begin
+           ;;use downlink port
+           if dnfd ge 0 then begin
+              if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
+           endif
+        endelse
+
+        ;;print command to screen
+        ts=gettimestamp('.')
+        cmdstr=ts+': '+cmd
+        widget_control,log_text,SET_VALUE=cmd,/APPEND
+
+        ;;log command
+        gsets=strcompress(string(shm_var[settings.shm_timestamp:*]),/REMOVE_ALL)
+        logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
+        if not file_test(logfile) then begin
+           ;;close logfile if it is open
+           if cmdlogfd gt 0 then free_lun,cmdlogfd
+           ;;open logfile
+           openw,cmdlogfd,logfile,/get_lun
+           print,'UPLINK: Widget opened: '+file_basename(logfile)
+        endif
+        printf,cmdlogfd,cmdstr
+     endif
+  endif 
+  
+  ;;trigger self
+  widget_control,ev.id,timer=0.5
+end
+
 
 pro gse_command_buttons_event, ev 
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
@@ -174,10 +248,11 @@ pro gse_command_buttons_event, ev
         if cmdlogfd gt 0 then free_lun,cmdlogfd
      endif
      
-  endif else print,'GSE Command ['+n2s(uval)+'] Not Recognized'
+  endif else print,'UPLINK: GSE Command ['+n2s(uval)+'] Not Recognized'
 
   ;;check for exit
   if NOT shm_var[settings.shm_run] then begin
+     print,'UPLINK: exiting'
      ;;unmap shared memory
      shmunmap,'shm'
      if(upfd gt 0) then free_lun,upfd
@@ -240,62 +315,6 @@ pro connstat_event, ev
   widget_control,ev.id,timer=0.5
 end
 
-pro remote_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
-  common remote_block,init
-  ;;setup listener port for remote control
-  lport = 10001
-  lunit = -1
-  runit = -1
-  if n_elements(init) eq 0 then begin
-     socket, lunit, lport, /listen, /get_lun,error=con_error
-     if con_error eq 0 then begin
-        print,'piccgse_uplink_console: Listening for remote connections on port '+n2s(lport) 
-     endif else begin
-        print,'piccgse_uplink_console: Listening socket failed to open'
-        if lunit gt 0 then free_lun,lunit
-     endelse
-     init=1
-  endif
-
-  ;;listen for remote commands
-  if lunit gt 0 then begin
-     if file_poll_input(lunit, timeout=0) then begin
-        SOCKET, RUNIT, ACCEPT=LUNIT, /GET_LUN, error=con_error
-        if con_error eq 0 then begin
-           print,'piccgse_uplink_console: Remote connection established'
-        endif else begin
-           print,'Remote connection failed'
-           if RUNIT gt 0 then free_lun,RUNIT
-           runit=-1
-        endelse
-     endif
-  endif
-
-  if runit gt 0 then begin
-     cmd=''
-     if file_poll_input(runit, timeout=0) then begin
-        ;;read command from remote client
-        read,lunit,cmd
-        ;;send command
-        if shm_var[settings.shm_uplink] then begin
-           ;;use uplink port
-           if upfd ge 0 then begin
-              uplink,upfd,cmd+string(10B)
-           endif
-        endif else begin
-           ;;use downlink port
-           if dnfd ge 0 then begin
-              if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
-           endif
-        endelse
-     endif
-  endif 
-  
-  ;;trigger self
-  widget_control,ev.id,timer=1
-end
-
 pro piccgse_uplink_console
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
@@ -311,7 +330,7 @@ pro piccgse_uplink_console
   ;;setup shared memory
   shmmap, 'shm', /byte, settings.shm_size
   shm_var = shmvar('shm')
-  print,'Shared memory mapped'
+  print,'UPLINK: Shared memory mapped'
 
   ;;init file descriptors
   upfd = -1
@@ -320,29 +339,33 @@ pro piccgse_uplink_console
   remotefd = -1
   lunit = -1
   runit = -1
-  
-  if shm_var[settings.shm_remote] then begin
-     ;;We are the remote, open socket to the server
-     lport = 10001
-     SOCKET, remotefd, set.tmserver_addr, lport, /GET_LUN, CONNECT_TIMEOUT=3, ERROR=con_status, READ_TIMEOUT=2
-     if con_status eq 0 then begin
-        print,'UPLINK: Opened socket to '+set.tmserver_addr+':'+n2s(lport) 
-     endif else begin
-        MESSAGE, !ERR_STRING, /INFORM
-     endelse 
 
+  ;;Check if we are remote or main interface
+  if shm_var[settings.shm_remote] then begin
+     ;;We are the remote, open socket to the server (remote_event)
+     socket, remotefd, set.tmserver_addr, settings.uplink_port, /get_lun, error=con_status, connect_timeout=3, write_timeout=2
+     if con_status eq 0 then begin
+        print,'UPLINK: Opened socket to '+set.tmserver_addr+':'+n2s(settings.uplink_port) 
+     endif else begin
+        print,'UPLINK: ERROR Remote socket failed to open'
+        MESSAGE, !ERR_STRING, /INFORM
+        if remotefd gt 0 then free_lun,remotefd
+        remotefd = -1
+     endelse 
   endif else begin
      ;;Open uplink console (write-only)
      openw,upfd,settings.uplink_dev,/get_lun,error=error
      if error ne 0 then begin
-        print,'ERROR (piccgse_uplink_console): Could not open '+settings.uplink_dev
+        print,'UPLINK: ERROR Could not open '+settings.uplink_dev
+        MESSAGE, !ERR_STRING, /INFORM
         upfd = -1
      endif else print,'UPLINK: Opened '+settings.uplink_dev+' for writing'
      
      ;;Open dnlink console (write-only)
      openw,dnfd,settings.dnlink_dev,/get_lun,error=error
      if error ne 0 then begin
-        print,'ERROR (piccgse_uplink_console): Could not open '+settings.dnlink_dev
+        print,'UPLINK: ERROR Could not open '+settings.dnlink_dev
+        MESSAGE, !ERR_STRING, /INFORM
         dnfd = -1
      endif else print,'UPLINK: Opened '+settings.dnlink_dev+' for writing'
      
@@ -612,7 +635,7 @@ pro piccgse_uplink_console
 
   ;;Remote commands
   remote = widget_base(col6,/row)
-  xmanager,'remote',remote,/no_block
+  xmanager,'remote_command',remote,/no_block
   
   ;;create widgets
   widget_control,base,/realize

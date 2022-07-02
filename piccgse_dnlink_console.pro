@@ -1,11 +1,17 @@
 pro console_event, ev
-  common dnlink_block,settings,dnfd,conlogfd,base,con_text,shm_var,nchar
+  common dnlink_block,settings,dnfd,conlogfd,lunit,runit,remotefd,base,con_text,shm_var,nchar
 
   ;;check for exit
   if NOT shm_var[settings.shm_run] then begin
-     print,'exit'
+     print,'DNLINK: exiting'
      ;;unmap shared memory
      shmunmap,'shm'
+     ;;free files
+     if dnfd gt 0 then free_lun,dnfd
+     if conlogfd gt 0 then free_lun,conlogfd
+     if lunit gt 0 then free_lun,lunit
+     if runit gt 0 then free_lun,runit
+     if remotefd gt 0 then free_lun,remotefd
      ;;close files
      close,/all
      ;;exit
@@ -13,12 +19,42 @@ pro console_event, ev
      return
   endif
 
+  ;;remote setup: we are listeing for remote connections to send them dnlink data
+  
+  ;;setup listener for remote connections
+  if lunit lt 0 then begin
+     socket, lunit, settings.dnlink_port, /listen, /get_lun, error=con_error
+     if con_error eq 0 then begin
+        print,'DNLINK: Listening for remote connections on port '+n2s(settings.dnlink_port) 
+     endif else begin
+        print,'DNLINK: Listening socket failed to open'
+        MESSAGE, !ERR_STRING, /INFORM
+        if lunit gt 0 then free_lun,lunit
+        lunit=-1
+     endelse
+  endif
+  
+  ;;listen for remote connections
+  if lunit gt 0 then begin
+     if file_poll_input(lunit, timeout=0) then begin
+        socket, runit, accept=lunit, /get_lun, error=con_error
+        if con_error eq 0 then begin
+           print,'DNLINK: Remote connection established'
+        endif else begin
+           print,'DNLINK: Remote connection failed'
+           MESSAGE, !ERR_STRING, /INFORM
+           if runit gt 0 then free_lun,runit
+           runit=-1
+        endelse
+     endif
+  endif
+
   ;;console event
   newline=''
   word = 0B
   bytesread=0L
   if dnfd ge 0 then begin
-     ;;read data until we reach a line feed
+     ;;read data until we reach a line feed or read a maximum number of characters
      while FILE_POLL_INPUT(dnfd,timeout=0.1) AND bytesread lt 200 do begin
         readu,dnfd,word
         bytesread++
@@ -27,25 +63,30 @@ pro console_event, ev
         if word eq 9B then newline+='  ' ;;Replace horizontal tab with double space
         if word eq 10B then break        ;;Linefeed
      endwhile
-     
-     ;;If we are here, the serial port is empty or we reached a linefeed
-     
-     if bytesread gt 0 then begin
-        ;;print console text to screen
-        widget_control,ev.id,set_value=strmid(newline,0,nchar),/append
-        ;;print console text to log file
-        gsets=strcompress(string(shm_var[settings.shm_timestamp:*]),/REMOVE_ALL)
-        logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.conlog.txt'
-        if not file_test(logfile) then begin
-           ;;close logfile if it is open
-           if n_elements(conlogfd) gt 0 then free_lun,conlogfd
-           ;;open logfile
-           openw,conlogfd,logfile,/get_lun
-           print,'Widget opened: '+file_basename(logfile)
-        endif
-        ts=gettimestamp('.')
-        printf,conlogfd,ts+': '+newline
+  endif
+  if runit gt 0 then begin
+     ;;we are remote, read data from main interface
+     if file_poll_input(runit,timeout=0.1) then begin
+        read,runit,newline
+        bytesread = strlen(newline)
      endif
+  endif
+  
+  if bytesread gt 0 then begin
+     ;;print console text to screen
+     widget_control,ev.id,set_value=strmid(newline,0,nchar),/append
+     ;;print console text to log file
+     gsets=strcompress(string(shm_var[settings.shm_timestamp:*]),/REMOVE_ALL)
+     logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.conlog.txt'
+     if not file_test(logfile) then begin
+        ;;close logfile if it is open
+        if n_elements(conlogfd) gt 0 then free_lun,conlogfd
+        ;;open logfile
+        openw,conlogfd,logfile,/get_lun
+        print,'DNLINK: Widget opened: '+file_basename(logfile)
+     endif
+     ts=gettimestamp('.')
+     printf,conlogfd,ts+': '+newline
   endif
     
   ;;re-trigger this loop immidiately
@@ -54,7 +95,7 @@ pro console_event, ev
 end
 
 pro piccgse_dnlink_console
-  common dnlink_block,settings,dnfd,conlogfd,base,con_text,shm_var,nchar
+  common dnlink_block,settings,dnfd,conlogfd,lunit,runit,remotefd,base,con_text,shm_var,nchar
 
   ;;load settings
   settings = load_settings()
@@ -62,14 +103,35 @@ pro piccgse_dnlink_console
   ;;setup shared memory
   shmmap, 'shm', /byte, settings.shm_size
   shm_var = shmvar('shm')
-  print,'Shared memory mapped'
+  print,'DNLINK: Shared memory mapped'
 
+  ;;get piccgse settings
+  restore,'.piccgse_set.idl'
+
+  ;;init file descriptors
   dnfd = -1
-  if NOT shm_var[settings.shm_remote] then begin
+  conlogfd = -1
+  lunit = -1
+  runit = -1
+  remotefd = -1
+
+  ;;Check if we are remote or main interface
+  if shm_var[settings.shm_remote] then begin
+     ;;We are the remote, open socket to the server (remote_event)
+     socket, remotefd, set.tmserver_addr, settings.dnlink_port, /get_lun, error=con_status, connect_timeout=3, write_timeout=2
+     if con_status eq 0 then begin
+        print,'DNLINK: Opened socket to '+set.tmserver_addr+':'+n2s(settings.dnlink_port) 
+     endif else begin
+        print,'DNLINK: ERROR Remote socket failed to open'
+        MESSAGE, !ERR_STRING, /INFORM
+        if remotefd gt 0 then free_lun,remotefd
+        remotefd = -1
+     endelse 
+  endif else begin
      ;;open serial connection
      openr,dnfd,settings.dnlink_dev,/get_lun,error=error
      if error ne 0 then begin
-        print,'ERROR (piccgse_dnlink_console): Could not open '+settings.dnlink_dev
+        print,'ERROR Could not open '+settings.dnlink_dev
         dnfd = -1
      endif else print,'DNLINK: Opened '+settings.dnlink_dev+' for reading'
      
@@ -78,7 +140,7 @@ pro piccgse_dnlink_console
         cmd = 'serial/serial_setup'
         spawn, cmd
      endif
-  endif
+  endelse
   
   ;;setup base widget
   wxs = 504
