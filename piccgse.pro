@@ -2,7 +2,7 @@
 ;; pro piccgse_loadConfig
 ;;  - procedure to load config file
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-pro piccgse_loadConfig, path  
+pro piccgse_loadConfig, path, TMADDR=TMADDR, TMPORT=TMPORT  
   common piccgse_block, settings, set, shm_var
 
 
@@ -159,8 +159,11 @@ pro piccgse_loadConfig, path
         endcase
      endif
   endfor
-  
 
+  ;;Keywords
+  if keyword_set(tmaddr) then set.tmserver_addr = tmaddr
+  if keyword_set(tmport) then set.tmserver_port = tmport
+  
   ;;Close the config file
   free_lun,unit
 
@@ -1324,14 +1327,8 @@ settings = load_settings()
   config_props = FILE_INFO(config_file)
   if config_props.exists EQ 0 then stop, 'ERROR: Config file '+config_file+' not found'
   cfg_mod_sec = config_props.mtime
-  piccgse_loadConfig, config_file
+  piccgse_loadConfig, config_file, tmaddr=tmaddr, tmport=tmport
  
-;*************************************************
-;* TMADDR & TMPORT KEYWORDS
-;*************************************************
-  if keyword_set(tmaddr) then set.tmserver_addr = tmaddr
-  if keyword_set(tmport) then set.tmserver_port = tmport
-  
 ;*************************************************
 ;* INIT CONNECTIONS
 ;*************************************************
@@ -1596,7 +1593,7 @@ settings = load_settings()
            PRINT, 'Loading modified configuration file'
            cfg_mod_sec = config_props.mtime
            old_set = set
-           piccgse_loadConfig, config_file
+           piccgse_loadConfig, config_file, tmaddr=tmaddr, tmport=tmport
            if(set.tmserver_type eq 'idlfile') then begin
               ;;get filenames
               idlfiles = file_search(set.tmserver_idlfile,count=nfiles)
