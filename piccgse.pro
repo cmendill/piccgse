@@ -237,7 +237,7 @@ pro piccgse_processData, hed, pkt, tag
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, tdb, tsort
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
   common processdata_block5, sci_temp, sci_set, sci_tec, sci_pow, sci_temp_init, sci_dark, sci_bias, contrast_array
-  common processdata_block6, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat, actuator_alp, actuator_hex
+  common processdata_block6, acq_xstar, acq_ystar, acq_xhole, acq_yhole, bmcflat, actuator_alp, actuator_hex,sci_fastmode
   
   ;;Initialize common block
   if n_elements(states) eq 0 then begin 
@@ -353,6 +353,9 @@ pro piccgse_processData, hed, pkt, tag
      sci_tec  = 0
      sci_pow  = 0d
      sci_temp_init = 1000
+
+     ;;SCI Fastmode
+     sci_fastmode=0
      
      ;;SCI Calibration images
      sci_dark = dblarr(SCI_ROI_XSIZE,SCI_ROI_YSIZE)
@@ -373,314 +376,317 @@ pro piccgse_processData, hed, pkt, tag
 
   ;;Swap column/row major for 2D arrays
   if NOT shm_var[settings.shm_remote] then struct_swap_majority,pkt
-     
-  ;;SHKPKT
-  if tag eq 'shkpkt' then begin
-     ;;Display image
-     if set.w[wshk].show then begin
-        ;;set window
-        wset,wshk
-        ;;set font
-        !P.FONT = 0
-        device,set_font=set.w[wshk].font
-        ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,wpix
-        ;;set color table
-        greyr
-        ;;setup plotting
-        plotsym,0,/fill
-        ;;plot image axes
-        zoom=80/SHKBIN
-        xoff=-5
-        yoff=-7
-        plot,[0],[0],xrange=[zoom+xoff,shkxs-zoom+xoff],yrange=[zoom+yoff,shkys-zoom+yoff],xstyle=5,ystyle=5,/nodata,position=[0,0,1,1]
-        maxval = double(max(pkt.cells.maxval))
-        val = double(pkt.cells.maxval)
-        greyrscale,val,255,bot=100
-        ;;loop over cells
-        for i=0,n_elements(pkt.cells)-1 do begin
-           ;;draw centroid box
-           blx = floor((pkt.cells[i].xtarget - pkt.cells[i].boxsize)/SHKBIN)
-           bly = floor((pkt.cells[i].ytarget - pkt.cells[i].boxsize)/SHKBIN)
-           trx = floor((pkt.cells[i].xtarget + pkt.cells[i].boxsize)/SHKBIN)
-           try = floor((pkt.cells[i].ytarget + pkt.cells[i].boxsize)/SHKBIN)
-           ;;bottom
-           oplot,[blx,trx],[bly,bly]
-           ;;top
-           oplot,[blx,trx],[try,try]
-           ;;left
-           oplot,[blx,blx],[bly,try]
-           ;;right
-           oplot,[trx,trx],[bly,try]
-           ;;plot centroid
-           if pkt.cells[i].spot_found then begin
-              xcentroid = (double(pkt.cells[i].xtarget) + mean(pkt.cells[i].xtarget_deviation[0:pkt.nsamples-1]))/SHKBIN
-              ycentroid = (double(pkt.cells[i].ytarget) + mean(pkt.cells[i].ytarget_deviation[0:pkt.nsamples-1]))/SHKBIN
-              if pkt.cells[i].maxval eq 255 then color = 1 else color = 255
-              color = val[i]
-              oplot,[xcentroid],[ycentroid],color=color,psym=8,symsize=0.5
-           endif
-        endfor
-        ;;take snapshot
-        snap = TVRD(true=1)
-        ;;delete pixmap window
-        wdelete,wpix
-        ;;switch back to real window
-        wset,wshk
-        ;;display image
-        tv,snap,true=1
-        loadct,0
-     endif
 
-     ;;Display text data
-     if set.w[wsda].show then begin
-        ;;set window
-        wset,wsda
-        ;;set font
-        !P.FONT = 0
-        device,set_font=set.w[wsda].font
-        ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,wpix
-        ;;set text origin
-        dy  = 16
-        sx = 5
-        sy = !D.Y_SIZE - dy
-        c=0
-        ;;print data
-        xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
-        xyouts,sx,sy-dy*c++,'# of Samples: '+n2s(pkt.nsamples),/device
-        xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(long(hed.frmtime*1d6))+' | '+n2s(long(hed.exptime*1d6))+' us',/device
-        dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
-        xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
-        xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
-        xyouts,sx,sy-dy*c++,'ALP Cell PID: '+string(pkt.gain_alp_cell,format='(3F7.3)'),/device
-        xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
-               string(pkt.gain_alp_zern[0,0],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
-               /device
-        xyouts,sx,sy-dy*c++,'HEX Zern PID: '+string(pkt.gain_hex_zern,format='(3F7.3)'),/device
-        xyouts,sx,sy-dy*c++,'MAX Max Pixel: '+n2s(long(max(pkt.cells.maxval)))+' counts',/device
-        xyouts,sx,sy-dy*c++,'AVG Max Pixel: '+n2s(long(mean(pkt.cells.maxval)))+' counts',/device
-        xyouts,sx,sy-dy*c++,'BKG Intensity: '+n2s(mean(pkt.cells.background),format='(F10.2)')+' counts/px',/device
-        ;;take snapshot
-        snap = TVRD(true=1)
-        ;;delete pixmap window
-        wdelete,wpix
-        ;;switch back to real window
-        wset,wsda
-        ;;display image
-        tv,snap,true=1
-        loadct,0
-     endif
-     
-     ;;Display Zernikes
-     if set.w[wshz].show then begin
-        ;;set window
-        wset,wshz
-        ;;set font
-        !P.FONT = 0
-        device,set_font=set.w[wshz].font
-        ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,wpix
-        ;;set color table
-        linecolor
-        ;;set text origin and spacing
-        dy = 16
-        sx = 5            
-        sy = !D.Y_SIZE - dy
-        c  = 0
-        ;;calc zernike values
-        if pkt.nsamples ge 2 then begin
-           zavg = mean(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)
-           zstd = stddev(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)
-        endif else begin
-           zavg = pkt.zernike_measured[*,0]
-           zstd = pkt.zernike_measured[*,0]*0
-        endelse
-        ztar = pkt.zernike_target
-        ;;set zernike colors
-        zclr = intarr(n_elements(ztar)) + white
-        zsel = where(pkt.zernike_control eq ACTUATOR_ALP,nzsel)
-        if nzsel gt 0 then zclr[zsel] = green
-        zsel = where(pkt.zernike_control eq ACTUATOR_HEX,nzsel)
-        if nzsel gt 0 then zclr[zsel] = blue
+  ;;Do not display SHK & LYT during SCI fastmode
+  if NOT sci_fastmode then begin
+     ;;SHKPKT
+     if tag eq 'shkpkt' then begin
+        ;;Display image
+        if set.w[wshk].show then begin
+           ;;set window
+           wset,wshk
+           ;;set font
+           !P.FONT = 0
+           device,set_font=set.w[wshk].font
+           ;;create pixmap window
+           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+           wset,wpix
+           ;;set color table
+           greyr
+           ;;setup plotting
+           plotsym,0,/fill
+           ;;plot image axes
+           zoom=80/SHKBIN
+           xoff=-5
+           yoff=-7
+           plot,[0],[0],xrange=[zoom+xoff,shkxs-zoom+xoff],yrange=[zoom+yoff,shkys-zoom+yoff],xstyle=5,ystyle=5,/nodata,position=[0,0,1,1]
+           maxval = double(max(pkt.cells.maxval))
+           val = double(pkt.cells.maxval)
+           greyrscale,val,255,bot=100
+           ;;loop over cells
+           for i=0,n_elements(pkt.cells)-1 do begin
+              ;;draw centroid box
+              blx = floor((pkt.cells[i].xtarget - pkt.cells[i].boxsize)/SHKBIN)
+              bly = floor((pkt.cells[i].ytarget - pkt.cells[i].boxsize)/SHKBIN)
+              trx = floor((pkt.cells[i].xtarget + pkt.cells[i].boxsize)/SHKBIN)
+              try = floor((pkt.cells[i].ytarget + pkt.cells[i].boxsize)/SHKBIN)
+              ;;bottom
+              oplot,[blx,trx],[bly,bly]
+              ;;top
+              oplot,[blx,trx],[try,try]
+              ;;left
+              oplot,[blx,blx],[bly,try]
+              ;;right
+              oplot,[trx,trx],[bly,try]
+              ;;plot centroid
+              if pkt.cells[i].spot_found then begin
+                 xcentroid = (double(pkt.cells[i].xtarget) + mean(pkt.cells[i].xtarget_deviation[0:pkt.nsamples-1]))/SHKBIN
+                 ycentroid = (double(pkt.cells[i].ytarget) + mean(pkt.cells[i].ytarget_deviation[0:pkt.nsamples-1]))/SHKBIN
+                 if pkt.cells[i].maxval eq 255 then color = 1 else color = 255
+                 color = val[i]
+                 oplot,[xcentroid],[ycentroid],color=color,psym=8,symsize=0.5
+              endif
+           endfor
+           ;;take snapshot
+           snap = TVRD(true=1)
+           ;;delete pixmap window
+           wdelete,wpix
+           ;;switch back to real window
+           wset,wshk
+           ;;display image
+           tv,snap,true=1
+           loadct,0
+        endif
+
+        ;;Display text data
+        if set.w[wsda].show then begin
+           ;;set window
+           wset,wsda
+           ;;set font
+           !P.FONT = 0
+           device,set_font=set.w[wsda].font
+           ;;create pixmap window
+           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+           wset,wpix
+           ;;set text origin
+           dy  = 16
+           sx = 5
+           sy = !D.Y_SIZE - dy
+           c=0
+           ;;print data
+           xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
+           xyouts,sx,sy-dy*c++,'# of Samples: '+n2s(pkt.nsamples),/device
+           xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(long(hed.frmtime*1d6))+' | '+n2s(long(hed.exptime*1d6))+' us',/device
+           dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
+           xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
+           xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
+           xyouts,sx,sy-dy*c++,'ALP Cell PID: '+string(pkt.gain_alp_cell,format='(3F7.3)'),/device
+           xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
+                  string(pkt.gain_alp_zern[0,0],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
+                  /device
+           xyouts,sx,sy-dy*c++,'HEX Zern PID: '+string(pkt.gain_hex_zern,format='(3F7.3)'),/device
+           xyouts,sx,sy-dy*c++,'MAX Max Pixel: '+n2s(long(max(pkt.cells.maxval)))+' counts',/device
+           xyouts,sx,sy-dy*c++,'AVG Max Pixel: '+n2s(long(mean(pkt.cells.maxval)))+' counts',/device
+           xyouts,sx,sy-dy*c++,'BKG Intensity: '+n2s(mean(pkt.cells.background),format='(F10.2)')+' counts/px',/device
+           ;;take snapshot
+           snap = TVRD(true=1)
+           ;;delete pixmap window
+           wdelete,wpix
+           ;;switch back to real window
+           wset,wsda
+           ;;display image
+           tv,snap,true=1
+           loadct,0
+        endif
         
-        ;;print header
-        xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device
-        ;;print zernikes
-        for i=0,n_elements(zavg)-1 do begin
-           if i lt 2 then xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.2,F+6.2,F+6.2)'),/device,color=zclr[i]
-           if i ge 2 then xyouts,sx,sy-dy*c++,string(i,zavg[i]*1000,ztar[i]*1000,zstd[i]*1000,format='(I2.2,F+6.1,F+6.1,F+6.1)'),/device,color=zclr[i]
-        endfor
-        ;;take snapshot
-        snap = TVRD(true=1)
-        ;;delete pixmap window
-        wdelete,wpix
-        ;;switch back to real window
-        wset,wshz
-        ;;display data
-        tv,snap,0,0,true=1
-        loadct,0
+        ;;Display Zernikes
+        if set.w[wshz].show then begin
+           ;;set window
+           wset,wshz
+           ;;set font
+           !P.FONT = 0
+           device,set_font=set.w[wshz].font
+           ;;create pixmap window
+           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+           wset,wpix
+           ;;set color table
+           linecolor
+           ;;set text origin and spacing
+           dy = 16
+           sx = 5            
+           sy = !D.Y_SIZE - dy
+           c  = 0
+           ;;calc zernike values
+           if pkt.nsamples ge 2 then begin
+              zavg = mean(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)
+              zstd = stddev(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)
+           endif else begin
+              zavg = pkt.zernike_measured[*,0]
+              zstd = pkt.zernike_measured[*,0]*0
+           endelse
+           ztar = pkt.zernike_target
+           ;;set zernike colors
+           zclr = intarr(n_elements(ztar)) + white
+           zsel = where(pkt.zernike_control eq ACTUATOR_ALP,nzsel)
+           if nzsel gt 0 then zclr[zsel] = green
+           zsel = where(pkt.zernike_control eq ACTUATOR_HEX,nzsel)
+           if nzsel gt 0 then zclr[zsel] = blue
+           
+           ;;print header
+           xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device
+           ;;print zernikes
+           for i=0,n_elements(zavg)-1 do begin
+              if i lt 2 then xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.2,F+6.2,F+6.2)'),/device,color=zclr[i]
+              if i ge 2 then xyouts,sx,sy-dy*c++,string(i,zavg[i]*1000,ztar[i]*1000,zstd[i]*1000,format='(I2.2,F+6.1,F+6.1,F+6.1)'),/device,color=zclr[i]
+           endfor
+           ;;take snapshot
+           snap = TVRD(true=1)
+           ;;delete pixmap window
+           wdelete,wpix
+           ;;switch back to real window
+           wset,wshz
+           ;;display data
+           tv,snap,0,0,true=1
+           loadct,0
+        endif
+        
+        ;;Display ALPAO Command
+        if hed.alp_commander eq SHKID OR hed.alp_commander eq WATID then begin
+           if set.w[walp].show then begin
+              ;;set window
+              wset,walp
+              ;;set font
+              !P.FONT = 0
+              device,set_font=set.w[walp].font
+              ;;fill out image
+              alpimg[alpsel] = pkt.alp_acmd
+              ;;set commander tag
+              ctag='SHK'
+              if hed.alp_commander eq WATID then ctag='WAT'
+              ;;display image
+              implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')',erase=(ctag ne alpctag)
+              alpctag = ctag
+              loadct,0
+           endif
+        endif
      endif
      
-     ;;Display ALPAO Command
-     if hed.alp_commander eq SHKID OR hed.alp_commander eq WATID then begin
-        if set.w[walp].show then begin
+     ;;LYTPKT
+     if tag eq 'lytpkt' then begin
+        ;;Display Image
+        if set.w[wlyt].show then begin
            ;;set window
-           wset,walp
+           wset,wlyt
            ;;set font
            !P.FONT = 0
-           device,set_font=set.w[walp].font
-           ;;fill out image
-           alpimg[alpsel] = pkt.alp_acmd
-           ;;set commander tag
-           ctag='SHK'
-           if hed.alp_commander eq WATID then ctag='WAT'
-           ;;display image
-           implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')',erase=(ctag ne alpctag)
-           alpctag = ctag
-           loadct,0
-        endif
-     endif
-  endif
-  
-  ;;LYTPKT
-  if tag eq 'lytpkt' then begin
-     ;;Display Image
-     if set.w[wlyt].show then begin
-        ;;set window
-        wset,wlyt
-        ;;set font
-        !P.FONT = 0
-        device,set_font=set.w[wlyt].font
-        simage = pkt.image.data
-        simage[lytxs/2,lytys/2] = max(simage) ;; max out center pixel
-        ;;mask image (make this switchable)
+           device,set_font=set.w[wlyt].font
+           simage = pkt.image.data
+           simage[lytxs/2,lytys/2] = max(simage) ;; max out center pixel
+           ;;mask image (make this switchable)
                                 ;simage[lytmasknotsel]=min(simage[lytmasksel])
-        ;;scale image
-        simage = rebin(simage,lytrebin,lytrebin,/sample)
-        greyrscale,simage,4092
-        ;;display image
-        greyr
-        tv,simage,(!D.X_SIZE-lytrebin)/2,(!D.Y_SIZE-lytrebin)/2
-        loadct,0
-     endif
-
-     ;;Display ALPAO Command
-     if hed.alp_commander eq LYTID then begin
-        if set.w[walp].show then begin
-           ;;set window
-           wset,walp
-           ;;set font
-           !P.FONT = 0
-           device,set_font=set.w[walp].font
-           ;;fill out image
-           alpimg[alpsel] = pkt.alp_acmd
-           ;;set commander tag
-           ctag='LYT'
+           ;;scale image
+           simage = rebin(simage,lytrebin,lytrebin,/sample)
+           greyrscale,simage,4092
            ;;display image
-           implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')',erase=(ctag ne alpctag)
-           alpctag=ctag
+           greyr
+           tv,simage,(!D.X_SIZE-lytrebin)/2,(!D.Y_SIZE-lytrebin)/2
            loadct,0
         endif
-     endif
 
-     ;;Display text data
-     if set.w[wlda].show then begin
-        ;;set window
-        wset,wlda
-        ;;set font
-        !P.FONT = 0
-        device,set_font=set.w[wlda].font
-        ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,wpix
-        ;;set text origin
-        dy  = 16
-        sx = 5
-        sy = !D.Y_SIZE - dy
-        c=0
-        ;;print data
-        xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
-        xyouts,sx,sy-dy*c++,'# of Samples: '+n2s(pkt.nsamples),/device
-        xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(long(hed.frmtime*1d6))+' | '+n2s(long(hed.exptime*1d6))+' us',/device
-        dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
-        xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
-        xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
-        xyouts,sx,sy-dy*c++,'Origin: '+string(pkt.xorigin,pkt.yorigin,format='(2I5)'),/device
-        xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
-               string(pkt.gain_alp_zern[0,0],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
-               /device
-        xyouts,sx,sy-dy*c++,'Tot Pixel: '+n2s(total(pkt.image.data),format='(I10)'),/device
-        xyouts,sx,sy-dy*c++,'Avg Pixel: '+n2s(mean(pkt.image.data),format='(I5)')+' Max Pixel: '+n2s(max(pkt.image.data),format='(I5)'),/device
-        xyouts,sx,sy-dy*c++,'Bkg Pixel: '+n2s(pkt.background,format='(I5)'),/device
-        xcentroid = pkt.xcentroid[0:pkt.nsamples-1]
-        ycentroid = pkt.ycentroid[0:pkt.nsamples-1]
-        r = sqrt(xcentroid^2 + ycentroid^2)
-        dummy = max(r,rmax)
-        xyouts,sx,sy-dy*c++,'Max Centroid: '+n2s(xcentroid[rmax],format='(F0.2)')+'  '+n2s(ycentroid[rmax],format='(F0.2)'),/device
-        if pkt.locked then locked='YES' else locked='NO'
-        xyouts,sx,sy-dy*c++,'Locked: '+locked,/device
-        ;;take snapshot
-        snap = TVRD(true=1)
-        ;;delete pixmap window
-        wdelete,wpix
-        ;;switch back to real window
-        wset,wlda
-        ;;display image
-        tv,snap,true=1
-        loadct,0
-     endif
+        ;;Display ALPAO Command
+        if hed.alp_commander eq LYTID then begin
+           if set.w[walp].show then begin
+              ;;set window
+              wset,walp
+              ;;set font
+              !P.FONT = 0
+              device,set_font=set.w[walp].font
+              ;;fill out image
+              alpimg[alpsel] = pkt.alp_acmd
+              ;;set commander tag
+              ctag='LYT'
+              ;;display image
+              implot,alpimg,blackout=alpnotsel,range=[-1,1],cbtitle=' ',cbformat='(F4.1)',ncolors=254,title='ALPAO DM Command ('+ctag+')',erase=(ctag ne alpctag)
+              alpctag=ctag
+              loadct,0
+           endif
+        endif
 
-     ;;Display Zernikes
-     if set.w[wlyz].show then begin
-        ;;set window
-        wset,wlyz
-        ;;set font
-        !P.FONT = 0
-        device,set_font=set.w[wlyz].font
-        ;;create pixmap window
-        window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
-        wset,wpix
-        ;;set color table
-        linecolor
-        ;;set text origin and spacing
-        dy = 16
-        sx = 5            
-        sy = !D.Y_SIZE - dy
-        c  = 0
-        ;;calc zernike values
-        if pkt.nsamples ge 2 then begin
-           zavg = mean(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)*1000
-           zstd = stddev(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)*1000
-        endif else begin
-           zavg = pkt.zernike_measured[*,0]*1000
-           zstd = pkt.zernike_measured[*,0]*0
-        endelse
-        ztar = pkt.zernike_target*1000
-        ;;set zernike colors
-        zclr = intarr(n_elements(ztar)) + white
-        zsel = where(pkt.zernike_control eq ACTUATOR_ALP,nzsel)
-        if nzsel gt 0 then zclr[zsel] = green
-        zsel = where(pkt.zernike_control eq ACTUATOR_HEX,nzsel)
-        if nzsel gt 0 then zclr[zsel] = blue
-        ;;print header
-        xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device
-        ;;print zernikes
-        for i=0,n_elements(zavg)-1 do begin
-           xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.1,F+6.1,F+6.1)'),/device,color=zclr[i]
-        endfor
-        ;;take snapshot
-        snap = TVRD(true=1)
-        ;;delete pixmap window
-        wdelete,wpix
-        ;;switch back to real window
-        wset,wlyz
-        ;;display data
-        tv,snap,0,0,true=1
-        loadct,0
+        ;;Display text data
+        if set.w[wlda].show then begin
+           ;;set window
+           wset,wlda
+           ;;set font
+           !P.FONT = 0
+           device,set_font=set.w[wlda].font
+           ;;create pixmap window
+           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+           wset,wpix
+           ;;set text origin
+           dy  = 16
+           sx = 5
+           sy = !D.Y_SIZE - dy
+           c=0
+           ;;print data
+           xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
+           xyouts,sx,sy-dy*c++,'# of Samples: '+n2s(pkt.nsamples),/device
+           xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(long(hed.frmtime*1d6))+' | '+n2s(long(hed.exptime*1d6))+' us',/device
+           dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
+           xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
+           xyouts,sx,sy-dy*c++,'CCD Temp: '+n2s(pkt.ccd_temp,format='(F10.1)')+' C',/device
+           xyouts,sx,sy-dy*c++,'Origin: '+string(pkt.xorigin,pkt.yorigin,format='(2I5)'),/device
+           xyouts,sx,sy-dy*c++,'ALP Zern PID: '+$
+                  string(pkt.gain_alp_zern[0,0],pkt.gain_alp_zern[0,1],pkt.gain_alp_zern[0,2],format='(3F7.3)'),$
+                  /device
+           xyouts,sx,sy-dy*c++,'Tot Pixel: '+n2s(total(pkt.image.data),format='(I10)'),/device
+           xyouts,sx,sy-dy*c++,'Avg Pixel: '+n2s(mean(pkt.image.data),format='(I5)')+' Max Pixel: '+n2s(max(pkt.image.data),format='(I5)'),/device
+           xyouts,sx,sy-dy*c++,'Bkg Pixel: '+n2s(pkt.background,format='(I5)'),/device
+           xcentroid = pkt.xcentroid[0:pkt.nsamples-1]
+           ycentroid = pkt.ycentroid[0:pkt.nsamples-1]
+           r = sqrt(xcentroid^2 + ycentroid^2)
+           dummy = max(r,rmax)
+           xyouts,sx,sy-dy*c++,'Max Centroid: '+n2s(xcentroid[rmax],format='(F0.2)')+'  '+n2s(ycentroid[rmax],format='(F0.2)'),/device
+           if pkt.locked then locked='YES' else locked='NO'
+           xyouts,sx,sy-dy*c++,'Locked: '+locked,/device
+           ;;take snapshot
+           snap = TVRD(true=1)
+           ;;delete pixmap window
+           wdelete,wpix
+           ;;switch back to real window
+           wset,wlda
+           ;;display image
+           tv,snap,true=1
+           loadct,0
+        endif
+
+        ;;Display Zernikes
+        if set.w[wlyz].show then begin
+           ;;set window
+           wset,wlyz
+           ;;set font
+           !P.FONT = 0
+           device,set_font=set.w[wlyz].font
+           ;;create pixmap window
+           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+           wset,wpix
+           ;;set color table
+           linecolor
+           ;;set text origin and spacing
+           dy = 16
+           sx = 5            
+           sy = !D.Y_SIZE - dy
+           c  = 0
+           ;;calc zernike values
+           if pkt.nsamples ge 2 then begin
+              zavg = mean(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)*1000
+              zstd = stddev(pkt.zernike_measured[*,0:pkt.nsamples-1],dimension=2)*1000
+           endif else begin
+              zavg = pkt.zernike_measured[*,0]*1000
+              zstd = pkt.zernike_measured[*,0]*0
+           endelse
+           ztar = pkt.zernike_target*1000
+           ;;set zernike colors
+           zclr = intarr(n_elements(ztar)) + white
+           zsel = where(pkt.zernike_control eq ACTUATOR_ALP,nzsel)
+           if nzsel gt 0 then zclr[zsel] = green
+           zsel = where(pkt.zernike_control eq ACTUATOR_HEX,nzsel)
+           if nzsel gt 0 then zclr[zsel] = blue
+           ;;print header
+           xyouts,sx,sy-dy*c++,string('Z','AVG','TAR','STD',format='(A2,A6,A6,A6)'),/device
+           ;;print zernikes
+           for i=0,n_elements(zavg)-1 do begin
+              xyouts,sx,sy-dy*c++,string(i,zavg[i],ztar[i],zstd[i],format='(I2.2,F+6.1,F+6.1,F+6.1)'),/device,color=zclr[i]
+           endfor
+           ;;take snapshot
+           snap = TVRD(true=1)
+           ;;delete pixmap window
+           wdelete,wpix
+           ;;switch back to real window
+           wset,wlyz
+           ;;display data
+           tv,snap,0,0,true=1
+           loadct,0
+        endif
      endif
   endif
   
@@ -922,6 +928,9 @@ pro piccgse_processData, hed, pkt, tag
         sci_tec  = pkt.tec_enable
         sci_pow  = pkt.tec_power
 
+        ;;save SCI fastmode to common block
+        sci_fastmode = pkt.fastmode
+
         ;;check if we need to reload sci calibration data
         if (SCI_TEMP_INC * round(sci_temp/SCI_TEMP_INC)) ne sci_temp_init then begin
            sci_temp_init = SCI_TEMP_INC * round(sci_temp/SCI_TEMP_INC)
@@ -982,8 +991,8 @@ pro piccgse_processData, hed, pkt, tag
               bkg    = sci_bias[blx:blx+SCIXS-1,bly:bly+SCIYS-1] + sci_dark[blx:blx+SCIXS-1,bly:bly+SCIYS-1] * hed.exptime
               bgsub  = image - bkg
 
-              ;;only update darkhole numbers when running EFC
-              if pkt.ihowfs eq 0 then begin
+              ;;only update darkhole numbers on DM flat command
+              if (pkt.ihowfs eq 0) AND (pkt.ispeckle eq 0) then begin
                  scidark[*,*,iband] = bgsub
                  if pkt.refmax[iband] gt 0 then contrast[iband] = mean(bgsub[scisel]) / hed.exptime / pkt.refmax[iband] else contrast[iband]=1
                  update_contrast = 1
