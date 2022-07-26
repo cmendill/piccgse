@@ -165,7 +165,7 @@ pro piccgse_loadConfig, path, TMADDR=TMADDR, TMPORT=TMPORT
   if keyword_set(tmport) then set.tmserver_port = tmport
   
   ;;Close the config file
-  free_lun,unit
+  free_lun,unit,/force
 
   ;;Save settings structure
   save,set,filename='.piccgse_set.idl'
@@ -187,7 +187,7 @@ pro piccgse_setupFiles,STARTUP_TIMESTAMP=STARTUP_TIMESTAMP
   pktlogfile = set.datapath+'piccgse.'+STARTUP_TIMESTAMP+'.pktlog.txt'
   
   ;;close open files
-  if set.pktlogunit gt 0 then free_lun,set.pktlogunit
+  if set.pktlogunit gt 0 then free_lun,set.pktlogunit,/force
   
   ;;open logs
   openw,pktlogunit,pktlogfile,/get_lun,error=con_status
@@ -1186,14 +1186,14 @@ function piccgse_tmConnect
   
   ;;Check if we are reading from a file
   if set.tmserver_type eq 'tmfile' then begin
-     print,'Opening tmfile: '+set.tmserver_tmfile
+     print,'PICCGSE: Opening tmfile: '+set.tmserver_tmfile
      openr,unit,set.tmserver_tmfile,/GET_LUN,ERROR=con_status
      if con_status eq 0 then begin
-        print, 'File opened.', /INFORM
+        print, 'PICCGSE: File opened.', /INFORM
         return, unit
      endif else begin
-        print, !ERR_STRING, /INFORM
-        if unit gt 0 then free_lun,unit
+        print, 'TMFILE: '+!ERR_STRING, /INFORM
+        if unit gt 0 then free_lun,unit,/force
         return,-1
      endelse
   endif
@@ -1208,22 +1208,22 @@ function piccgse_tmConnect
      if set.tmserver_addr eq 'tmserver'  then cmd_senddata = '22220001'XUL
      
      ;;Create Socket connection
-     print, 'Opening TM socket to '+set.tmserver_addr+' on port '+n2s(set.tmserver_port)
+     print, 'PICCGSE: Opening TM socket to '+set.tmserver_addr+' on port '+n2s(set.tmserver_port)
      socket, unit, set.tmserver_addr, set.tmserver_port, /GET_LUN, CONNECT_TIMEOUT=3, ERROR=con_status, READ_TIMEOUT=2
      if con_status eq 0 then begin
-        print, 'Socket created, requesting data'
+        print, 'PICCGSE TM socket created, requesting data'
         ;;Ask for images
         ON_IOERROR, WRITE_ERROR
         writeu,unit,cmd_senddata
         return,unit
      endif else begin
-        print,'TM socket failed to open'
-        MESSAGE, !ERR_STRING, /INFORM
-        if unit gt 0 then free_lun,unit
+        print,'PICCGSE: TM socket failed to open'
+        print,'SOCKET: '+!ERR_STRING
+        if unit gt 0 then free_lun,unit,/force
         return,-1
      endelse
      WRITE_ERROR:PRINT, 'WRITE_ERROR: '+!ERR_STRING  ;;jump here on writeu error
-     if unit gt 0 then free_lun,unit
+     if unit gt 0 then free_lun,unit,/force
      return,-1
   endif
 end
@@ -1235,15 +1235,15 @@ end
 function piccgse_remoteListen
   common piccgse_block, settings, set, shm_var
   unit=-1
-  print, 'Opening listening socket on port '+n2s(settings.remote_port)
+  print, 'PICCGSE: Opening remote listening socket on port '+n2s(settings.remote_port)
   socket, unit, settings.remote_port, /listen, /get_lun,error=con_error
   if con_error eq 0 then begin
-     print,'Listening for remote connections on port '+n2s(settings.remote_port)
+     print,'PICCGSE: Listening for remote connections on port '+n2s(settings.remote_port)
      return, unit
   endif else begin
-     print,'Listening socket failed to open'
-     MESSAGE, !ERR_STRING, /INFORM
-     if unit gt 0 then free_lun,unit
+     print,'PICCGSE: Remote listening socket failed to open'
+     print, 'remoteListen: '+!ERR_STRING
+     if unit gt 0 then free_lun,unit,/force
      return, -1
   endelse
 end
@@ -1383,7 +1383,7 @@ settings = load_settings()
      ;;get filenames
      idlfiles = file_search(set.tmserver_idlfile,count=nfiles)
      ifile = 0L
-     print,'Opening idlfile images'
+     print,'PICCGSE: Opening idlfile images'
      help,idlfiles
      set.savedata=0
   endif
@@ -1405,7 +1405,7 @@ settings = load_settings()
   shm_var[settings.shm_uplink] = NOT keyword_set(NOUPLINK)
   shm_var[settings.shm_remote] = keyword_set(REMOTE)
   shm_var[settings.shm_timestamp:settings.shm_timestamp+strlen(STARTUP_TIMESTAMP)-1]=byte(STARTUP_TIMESTAMP)
-  print,'Shared memory mapped'
+  print,'PICCGSE: Shared memory mapped'
   
 ;*************************************************
 ;* START CONSOLE WIDGETS
@@ -1428,7 +1428,7 @@ settings = load_settings()
   obridge_dn->execute,"cd,'"+working_dir+"'"
   ;;Launch console
   obridge_dn->execute,'piccgse_dnlink_console'
-  print,'Up/Down Console widgets started'
+  print,'PICCGSE: Up/Down Console widgets started'
 
 ;*************************************************
 ;* INSTALL ERROR HANDLER
@@ -1443,10 +1443,10 @@ settings = load_settings()
      
      ;;READU EOF errors
      if error_status eq -262 then begin
-        print,'Resetting TM connection'
-        if tmunit gt 0 then free_lun,tmunit
-        if lunit gt 0 then free_lun,lunit
-        if runit gt 0 then free_lun,runit
+        print,'PICCGSE: Resetting TM connection'
+        if tmunit gt 0 then free_lun,tmunit,/force
+        if lunit gt 0 then free_lun,lunit,/force
+        if runit gt 0 then free_lun,runit,/force
         tmunit = -1
         lunit  = -1
         runit  = -1
@@ -1461,6 +1461,9 @@ settings = load_settings()
      ;;Get time
      t_now = SYSTIME(1)
      
+     ;;Start remote listener
+     if lunit lt 0 then lunit = piccgse_remoteListen()
+
      ;;----------------------------------------------------------
      ;;Decide how we will read data (idlfile,tmfile,network)
      ;;----------------------------------------------------------
@@ -1468,16 +1471,43 @@ settings = load_settings()
      ;;READ DATA FROM TMSERVER_IDLFILE [Read back IDL savefiles]
      if set.tmserver_type eq 'idlfile' then begin
         if nfiles eq 0 then begin
-           print,'No IDL files found @: '+set.tmserver_idlfile
+           print,'PICCGSE: No IDL files found @: '+set.tmserver_idlfile
            wait,1
         endif else begin
            restore,idlfiles[ifile]
            ;;process data
            if NOT keyword_set(NOPLOT) then piccgse_processData,hed,pkt,tag
+           ;;relay packet
+           if runit ge 0 then begin
+              ;;Install error handler
+              ON_IOERROR, RESET_REMOTE
+              sync1 = uint(TLM_LPRE)
+              sync2 = uint(TLM_MPRE)
+              sync3 = uint(TLM_LPOST)
+              sync4 = uint(TLM_MPOST)
+              writeu,runit,sync1
+              writeu,runit,sync2
+              writeu,runit,hed
+              writeu,runit,pkt
+              writeu,runit,sync3
+              writeu,runit,sync4
+           endif
+           if 0 then begin
+              RESET_REMOTE:PRINT, 'REMOTE IO ERROR: '+!ERR_STRING ;;Jump here if an IO error occured
+              if lunit gt 0 then begin
+                 free_lun,lunit,/force
+              endif
+              if runit gt 0 then begin
+                 free_lun,runit,/force
+              endif
+              lunit=-1
+              runit=-1
+           endif
            ;;save time
            t_last_telemetry = t_now
            ;;increment file for next time
            ifile = (ifile+1) mod nfiles
+           wait,0.1
         endelse
      endif
 
@@ -1559,18 +1589,18 @@ settings = load_settings()
               ;;if no data, check for timeout
               ;;if timed out, reconnect
               if ((t_now-tm_last_data) GT 5) then begin
-                 print,'IMAGE SERVER TIMEOUT!'
-                 RESET_CONNECTION: PRINT, 'IO ERROR: '+!ERR_STRING ;;Jump here if an IO error occured
-                 print,'RESETTING CONNECTION'
-                 if tmunit gt 0 then free_lun,tmunit
-                 if lunit gt 0 then free_lun,lunit
-                 if runit gt 0 then free_lun,runit
+                 print,'PICCGSE: IMAGE SERVER TIMEOUT!'
+                 RESET_CONNECTION: PRINT, 'TM IO ERROR: '+!ERR_STRING ;;Jump here if an IO error occured
+                 print,'PICCGSE: RESETTING CONNECTION'
+                 if tmunit gt 0 then free_lun,tmunit,/force
+                 if lunit gt 0 then free_lun,lunit,/force
+                 if runit gt 0 then free_lun,runit,/force
                  tmunit=-1
                  lunit=-1
                  runit=-1
                  shm_var[settings.shm_link] = 0
                  shm_var[settings.shm_data] = 0
-                 print,'CONNECTION RESET'
+                 print,'PICCGSE: CONNECTION RESET'
                  print,''
                  wait,1
               endif
@@ -1578,8 +1608,6 @@ settings = load_settings()
         endif else begin
            ;;if not connected, reconnect
            tmunit = piccgse_tmConnect()
-           if lunit gt 0 then free_lun,lunit
-           lunit  = piccgse_remoteListen()
            if tmunit GT 0 then begin 
               tm_last_connected = systime(1)
               tm_last_data      = systime(1)
@@ -1601,7 +1629,7 @@ settings = load_settings()
         
         ;;If config file has been modified then load the new version
         if config_props.mtime NE cfg_mod_sec then begin
-           PRINT, 'Loading modified configuration file'
+           PRINT, 'PICCGSE: Loading modified configuration file'
            cfg_mod_sec = config_props.mtime
            old_set = set
            piccgse_loadConfig, config_file, tmaddr=tmaddr, tmport=tmport
@@ -1609,7 +1637,7 @@ settings = load_settings()
               ;;get filenames
               idlfiles = file_search(set.tmserver_idlfile,count=nfiles)
               
-              print,'Opening idlfile images'
+              print,'PICCGSE: Opening idlfile images'
               help,idlfiles
            endif
 
@@ -1628,14 +1656,14 @@ settings = load_settings()
         
         ;;exit
         if NOT shm_var[settings.shm_run] then begin
-           if tmunit gt 0 then free_lun,tmunit
-           if set.pktlogunit gt 0 then free_lun,set.pktlogunit
+           if tmunit gt 0 then free_lun,tmunit,/force
+           if set.pktlogunit gt 0 then free_lun,set.pktlogunit,/force
            obj_destroy,obridge_up
            obj_destroy,obridge_dn
            shmunmap,'shm'
-           print,'Shared memory unmapped'
+           print,'PICCGSE: Shared memory unmapped'
            while !D.WINDOW ne -1 do wdelete
-           print,'Exiting IDL'
+           print,'PICCGSE: Exiting IDL'
            ;;IDL requires two exit commands to fully exit
            exit
            exit
@@ -1644,7 +1672,7 @@ settings = load_settings()
         ;;reset
         if shm_var[settings.shm_reset] then begin
            shm_var[settings.shm_reset]=0
-           print,'Resetting paths...'
+           print,'PICCGSE: Resetting paths...'
            piccgse_setupFiles,STARTUP_TIMESTAMP=STARTUP_TIMESTAMP
            ;;set timestamp in shared memory
            shm_var[settings.shm_timestamp:settings.shm_timestamp+strlen(STARTUP_TIMESTAMP)-1]=byte(STARTUP_TIMESTAMP)
@@ -1660,15 +1688,15 @@ settings = load_settings()
               ;;establish a connection to send data to the client
               socket, runit, accept=lunit, /get_lun, error=con_error, connect_timeout=3, write_timeout=2, read_timeout=2
               if con_error eq 0 then begin
-                 print,'Remote connection established'
+                 print,'PICCGSE: Remote connection established'
                  if file_poll_input(runit, timeout=1) then begin
                     cmd = 0UL
                     readu,runit,cmd
-                    print,'Got remote command '+n2s(cmd,format='(Z8.8)')
+                    print,'PICCGSE: Got remote command '+n2s(cmd,format='(Z8.8)')
                  endif
               endif else begin
-                 print,'Remote connection failed'
-                 if runit gt 0 then free_lun,runit
+                 print,'PICCGSE: Remote connection failed'
+                 if runit gt 0 then free_lun,runit,/force
                  runit=-1
               endelse
            endif
@@ -1687,11 +1715,11 @@ settings = load_settings()
   endwhile
 
   ;;shutdown
-  if tmunit gt 0 then free_lun,tmunit
-  if set.pktlogunit gt 0 then free_lun,set.pktlogunit
+  if tmunit gt 0 then free_lun,tmunit,/force
+  if set.pktlogunit gt 0 then free_lun,set.pktlogunit,/force
   obj_destroy,obridge_up
   obj_destroy,obridge_dn
   shmunmap,'shm'
-  print,'Shared memory unmapped'
+  print,'PICCGSE: Shared memory unmapped'
   while !D.WINDOW ne -1 do wdelete
 end
