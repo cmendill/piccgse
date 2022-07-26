@@ -1679,7 +1679,7 @@ settings = load_settings()
            if runit gt 0 then free_lun,runit,/force
            if set.pktlogunit gt 0 then free_lun,set.pktlogunit,/force
            close,/all
-           wait,2
+           wait,1
            obj_destroy,obridge_up
            obj_destroy,obridge_dn
            shmunmap,'shm'
@@ -1742,7 +1742,7 @@ settings = load_settings()
   if runit gt 0 then free_lun,runit,/force
   if set.pktlogunit gt 0 then free_lun,set.pktlogunit,/force
   close,/all
-  wait,2
+  wait,1
   obj_destroy,obridge_up
   obj_destroy,obridge_dn
   shmunmap,'shm'
