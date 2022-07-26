@@ -374,9 +374,6 @@ pro piccgse_processData, hed, pkt, tag
   blue=3
   white=255
 
-  ;;Swap column/row major for 2D arrays
-  if NOT shm_var[settings.shm_remote] then struct_swap_majority,pkt
-
   ;;Do not display SHK & LYT during SCI fastmode
   if NOT sci_fastmode then begin
      ;;SHKPKT
@@ -1241,7 +1238,7 @@ function piccgse_remoteListen
   common piccgse_block, settings, set, shm_var
   unit=-1
   print, 'PICCGSE: Opening remote listening socket on port '+n2s(settings.remote_port)
-  socket, unit, settings.remote_port, /listen, /get_lun,error=con_error
+  socket, unit, settings.remote_port,/listen,/get_lun,error=con_error
   if con_error eq 0 then begin
      print,'PICCGSE: Listening for remote connections on port '+n2s(settings.remote_port)
      return, unit
@@ -1561,12 +1558,17 @@ settings = load_settings()
                           if sync4 eq TLM_MPOST then begin
                              ;;process packet
                              start_time = systime(1)
+                             ;;swap column/row major for 2D arrays
+                             if NOT shm_var[settings.shm_remote] then begin
+                                struct_swap_majority,hed
+                                struct_swap_majority,pkt
+                             endif
                              if NOT keyword_set(NOPLOT) then piccgse_processData,hed,pkt,tag
                              ;;save packet
                              if set.savedata then save,hed,pkt,tag,filename=set.datapath+'piccgse.'+gettimestamp('.')+'.'+tag+'.'+n2s(hed.frame_number,format='(I8.8)')+'.idl'
                              end_time = systime(1)
                              msg2 = gettimestamp('.')+': '+'packet.'+tag+'.'+sfn+'.'+n2s((end_time-start_time)*1000,format='(I)')+'ms'
-                             ;;relay packet
+                             ;;relay packet to remote
                              if runit ge 0 then begin
                                 writeu,runit,sync1
                                 writeu,runit,sync2

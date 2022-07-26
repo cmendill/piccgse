@@ -72,6 +72,7 @@ pro console_event, ev
 
   if 0 then begin
      RESET_CONNECTION:
+     print,'DNLINK: RESET_CONNECTION (console_event)'
      if lunit gt 0 then free_lun,lunit,/force
      if runit gt 0 then free_lun,runit,/force
      if remotefd gt 0 then free_lun,remotefd,/force

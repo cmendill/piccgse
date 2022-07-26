@@ -83,6 +83,7 @@ pro command_event, ev
 
   if 0 then begin
      RESET_CONNECTION:
+     print,'UPLINK: RESET_CONNECTION (command_event)'
      if lunit gt 0 then free_lun,lunit,/force
      if runit gt 0 then free_lun,runit,/force
      if remotefd gt 0 then free_lun,remotefd,/force
@@ -168,6 +169,7 @@ pro serial_command_buttons_event, ev
   
   if 0 then begin
      RESET_CONNECTION:
+     print,'UPLINK: RESET_CONNECTION (serial_command_buttons_event)'
      if lunit gt 0 then free_lun,lunit,/force
      if runit gt 0 then free_lun,runit,/force
      if remotefd gt 0 then free_lun,remotefd,/force
@@ -224,6 +226,7 @@ pro remote_command_event, ev
   
   if 0 then begin
      RESET_CONNECTION:
+     print,'UPLINK: RESET_CONNECTION (remote_command_event)'
      if lunit gt 0 then free_lun,lunit,/force
      if runit gt 0 then free_lun,runit,/force
      if remotefd gt 0 then free_lun,remotefd,/force
