@@ -1376,7 +1376,10 @@ settings = load_settings()
   t_last_cfg = SYSTIME(1)       
 
   ;;last time main loop finished
-  t_last_loop = SYSTIME(1) 
+  t_last_loop = SYSTIME(1)
+
+  ;;last time we listened for connections
+  t_last_listen = SYSTIME(1)
   
 ;*************************************************
 ;* SETUP DATA PLAYBACK
@@ -1464,8 +1467,11 @@ settings = load_settings()
      t_now = SYSTIME(1)
      
      ;;Start remote listener
-     if lunit lt 0 then lunit = piccgse_remoteListen()
-
+     if (lunit lt 0) AND (t_now - t_last_listen gt 1) then begin
+        lunit = piccgse_remoteListen()
+        t_last_listen = t_now
+     endif
+     
      ;;----------------------------------------------------------
      ;;Decide how we will read data (idlfile,tmfile,network)
      ;;----------------------------------------------------------
@@ -1669,7 +1675,11 @@ settings = load_settings()
         ;;exit
         if NOT shm_var[settings.shm_run] then begin
            if tmunit gt 0 then free_lun,tmunit,/force
+           if lunit gt 0 then free_lun,lunit,/force
+           if runit gt 0 then free_lun,runit,/force
            if set.pktlogunit gt 0 then free_lun,set.pktlogunit,/force
+           close,/all
+           wait,2
            obj_destroy,obridge_up
            obj_destroy,obridge_dn
            shmunmap,'shm'
@@ -1728,7 +1738,11 @@ settings = load_settings()
 
   ;;shutdown
   if tmunit gt 0 then free_lun,tmunit,/force
+  if lunit gt 0 then free_lun,lunit,/force
+  if runit gt 0 then free_lun,runit,/force
   if set.pktlogunit gt 0 then free_lun,set.pktlogunit,/force
+  close,/all
+  wait,2
   obj_destroy,obridge_up
   obj_destroy,obridge_dn
   shmunmap,'shm'
