@@ -1189,10 +1189,11 @@ function piccgse_tmConnect
      print,'PICCGSE: Opening tmfile: '+set.tmserver_tmfile
      openr,unit,set.tmserver_tmfile,/GET_LUN,ERROR=con_status
      if con_status eq 0 then begin
-        print, 'PICCGSE: File opened.', /INFORM
+        print,'PICCGSE: File opened.'
         return, unit
      endif else begin
-        print, 'TMFILE: '+!ERR_STRING, /INFORM
+        print,'PICCGSE: piccgse_tmConnect tmfile open failed'
+        print,'PICCGSE: '+!ERR_STRING
         if unit gt 0 then free_lun,unit,/force
         return,-1
      endelse
@@ -1218,12 +1219,16 @@ function piccgse_tmConnect
         return,unit
      endif else begin
         print,'PICCGSE: TM socket failed to open'
-        print,'SOCKET: '+!ERR_STRING
+        print,'PICCGSE: '+!ERR_STRING
         if unit gt 0 then free_lun,unit,/force
         return,-1
      endelse
-     WRITE_ERROR:PRINT, 'WRITE_ERROR: '+!ERR_STRING  ;;jump here on writeu error
-     if unit gt 0 then free_lun,unit,/force
+     if 0 then begin
+        WRITE_ERROR:
+        print,'PICCGSE: Data request write error'
+        print,'PICCGSE: '+!ERR_STRING
+        if unit gt 0 then free_lun,unit,/force
+     endif
      return,-1
   endif
 end
@@ -1242,7 +1247,7 @@ function piccgse_remoteListen
      return, unit
   endif else begin
      print,'PICCGSE: Remote listening socket failed to open'
-     print, 'remoteListen: '+!ERR_STRING
+     print,'PICCGSE: '+!ERR_STRING
      if unit gt 0 then free_lun,unit,/force
      return, -1
   endelse
@@ -1493,7 +1498,9 @@ settings = load_settings()
               writeu,runit,sync4
            endif
            if 0 then begin
-              RESET_REMOTE:PRINT, 'REMOTE IO ERROR: '+!ERR_STRING ;;Jump here if an IO error occured
+              RESET_REMOTE:
+              print,'PICCGSE: ERROR --> RESET_REMOTE'
+              print,'PICCGSE: '+!ERR_STRING 
               if lunit gt 0 then begin
                  free_lun,lunit,/force
               endif
@@ -1590,8 +1597,11 @@ settings = load_settings()
               ;;if timed out, reconnect
               if ((t_now-tm_last_data) GT 5) then begin
                  print,'PICCGSE: IMAGE SERVER TIMEOUT!'
-                 RESET_CONNECTION: PRINT, 'TM IO ERROR: '+!ERR_STRING ;;Jump here if an IO error occured
-                 print,'PICCGSE: RESETTING CONNECTION'
+                 if 0 then begin
+                    RESET_CONNECTION:
+                    print,'PICCGSE: ERROR --> RESET_CONNECTION'
+                    print,'PICCGSE: '+!ERR_STRING
+                 endif
                  if tmunit gt 0 then free_lun,tmunit,/force
                  if lunit gt 0 then free_lun,lunit,/force
                  if runit gt 0 then free_lun,runit,/force

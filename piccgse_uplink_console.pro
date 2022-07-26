@@ -73,7 +73,7 @@ pro command_event, ev
      logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
      if not file_test(logfile) then begin
         ;;close logfile if it is open
-        if cmdlogfd gt 0 then free_lun,cmdlogfd
+        if cmdlogfd gt 0 then free_lun,cmdlogfd,/force
         ;;open logfile
         openw,cmdlogfd,logfile,/get_lun
         print,'UPLINK: Widget opened: '+file_basename(logfile)
@@ -83,9 +83,9 @@ pro command_event, ev
 
   if 0 then begin
      RESET_CONNECTION:
-     if lunit gt 0 then free_lun,lunit
-     if runit gt 0 then free_lun,runit
-     if remotefd gt 0 then free_lun,remotefd
+     if lunit gt 0 then free_lun,lunit,/force
+     if runit gt 0 then free_lun,runit,/force
+     if remotefd gt 0 then free_lun,remotefd,/force
      lunit = -1
      runit = -1
      remotefd = -1
@@ -157,7 +157,7 @@ pro serial_command_buttons_event, ev
      logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
      if not file_test(logfile) then begin
         ;;close logfile if it is open
-        if cmdlogfd gt 0 then free_lun,cmdlogfd
+        if cmdlogfd gt 0 then free_lun,cmdlogfd,/force
         ;;open logfile
         openw,cmdlogfd,logfile,/get_lun
         print,'UPLINK: Widget opened: '+file_basename(logfile)
@@ -168,9 +168,9 @@ pro serial_command_buttons_event, ev
   
   if 0 then begin
      RESET_CONNECTION:
-     if lunit gt 0 then free_lun,lunit
-     if runit gt 0 then free_lun,runit
-     if remotefd gt 0 then free_lun,remotefd
+     if lunit gt 0 then free_lun,lunit,/force
+     if runit gt 0 then free_lun,runit,/force
+     if remotefd gt 0 then free_lun,remotefd,/force
      lunit = -1
      runit = -1
      remotefd = -1
@@ -213,7 +213,7 @@ pro remote_command_event, ev
         logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.cmdlog.txt'
         if not file_test(logfile) then begin
            ;;close logfile if it is open
-           if cmdlogfd gt 0 then free_lun,cmdlogfd
+           if cmdlogfd gt 0 then free_lun,cmdlogfd,/force
            ;;open logfile
            openw,cmdlogfd,logfile,/get_lun
            print,'UPLINK: Widget opened: '+file_basename(logfile)
@@ -224,9 +224,9 @@ pro remote_command_event, ev
   
   if 0 then begin
      RESET_CONNECTION:
-     if lunit gt 0 then free_lun,lunit
-     if runit gt 0 then free_lun,runit
-     if remotefd gt 0 then free_lun,remotefd
+     if lunit gt 0 then free_lun,lunit,/force
+     if runit gt 0 then free_lun,runit,/force
+     if remotefd gt 0 then free_lun,remotefd,/force
      lunit = -1
      runit = -1
      remotefd = -1
@@ -261,7 +261,7 @@ pro gse_command_buttons_event, ev
 
      ;;close logfile on reset command
      if (buttondb[sel].igse eq settings.shm_reset) AND (buttondb[sel].vgse eq 1) then begin
-        if cmdlogfd gt 0 then free_lun,cmdlogfd
+        if cmdlogfd gt 0 then free_lun,cmdlogfd,/force
      endif
      
   endif else print,'UPLINK: GSE Command ['+n2s(uval)+'] Not Recognized'
@@ -271,12 +271,12 @@ pro gse_command_buttons_event, ev
      print,'UPLINK: exiting'
      ;;unmap shared memory
      shmunmap,'shm'
-     if(upfd gt 0) then free_lun,upfd
-     if(dnfd gt 0) then free_lun,dnfd
-     if(cmdlogfd gt 0) then free_lun,cmdlogfd
-     if(remotefd gt 0) then free_lun,remotefd
-     if(lunit gt 0) then free_lun,lunit
-     if(runit gt 0) then free_lun,runit
+     if upfd gt 0 then free_lun,upfd,/force
+     if dnfd gt 0 then free_lun,dnfd,/force
+     if cmdlogfd gt 0 then free_lun,cmdlogfd,/force
+     if remotefd gt 0 then free_lun,remotefd,/force
+     if lunit gt 0 then free_lun,lunit,/force
+     if runit gt 0 then free_lun,runit,/force
      ;;close files
      close,/all
      ;;exit
@@ -346,8 +346,8 @@ pro socket_event, ev
            print,'UPLINK: Opened socket to '+set.tmserver_addr+':'+n2s(settings.uplink_port) 
         endif else begin
            print,'UPLINK: ERROR Remote socket failed to open'
-           MESSAGE, !ERR_STRING, /INFORM
-           if remotefd gt 0 then free_lun,remotefd
+           print,'UPLINK: '+!ERR_STRING
+           if remotefd gt 0 then free_lun,remotefd,/force
            remotefd = -1
         endelse
      endif
@@ -360,8 +360,8 @@ pro socket_event, ev
         print,'UPLINK: Listening for remote connections on port '+n2s(settings.uplink_port) 
      endif else begin
         print,'UPLINK: Listening socket failed to open'
-        MESSAGE, !ERR_STRING, /INFORM
-        if lunit gt 0 then free_lun,lunit
+        print,'UPLINK: '+!ERR_STRING
+        if lunit gt 0 then free_lun,lunit,/force
         lunit=-1
      endelse
   endif
@@ -374,8 +374,8 @@ pro socket_event, ev
            print,'UPLINK: Remote connection established'
         endif else begin
            print,'UPLINK: Remote connection failed'
-           MESSAGE, !ERR_STRING, /INFORM
-           if runit gt 0 then free_lun,runit
+           print,'UPLINK: '+!ERR_STRING
+           if runit gt 0 then free_lun,runit,/force
            runit=-1
         endelse
      endif
@@ -417,7 +417,7 @@ pro piccgse_uplink_console
      openw,upfd,settings.uplink_dev,/get_lun,error=error
      if error ne 0 then begin
         print,'UPLINK: ERROR Could not open '+settings.uplink_dev
-        MESSAGE, !ERR_STRING, /INFORM
+        print,'UPLINK: '+!ERR_STRING
         upfd = -1
      endif else print,'UPLINK: Opened '+settings.uplink_dev+' for writing'
      
@@ -425,7 +425,7 @@ pro piccgse_uplink_console
      openw,dnfd,settings.dnlink_dev,/get_lun,error=error
      if error ne 0 then begin
         print,'UPLINK: ERROR Could not open '+settings.dnlink_dev
-        MESSAGE, !ERR_STRING, /INFORM
+        print,'UPLINK: '+!ERR_STRING
         dnfd = -1
      endif else print,'UPLINK: Opened '+settings.dnlink_dev+' for writing'
      

@@ -10,11 +10,11 @@ pro console_event, ev
      ;;unmap shared memory
      shmunmap,'shm'
      ;;free files
-     if dnfd gt 0 then free_lun,dnfd
-     if conlogfd gt 0 then free_lun,conlogfd
-     if lunit gt 0 then free_lun,lunit
-     if runit gt 0 then free_lun,runit
-     if remotefd gt 0 then free_lun,remotefd
+     if dnfd gt 0 then free_lun,dnfd,/force
+     if conlogfd gt 0 then free_lun,conlogfd,/force
+     if lunit gt 0 then free_lun,lunit,/force
+     if runit gt 0 then free_lun,runit,/force
+     if remotefd gt 0 then free_lun,remotefd,/force
      ;;close files
      close,/all
      ;;exit
@@ -61,7 +61,7 @@ pro console_event, ev
      logfile='data/piccgse/piccgse.'+gsets+'/piccgse.'+gsets+'.conlog.txt'
      if not file_test(logfile) then begin
         ;;close logfile if it is open
-        if conlogfd gt 0 then free_lun,conlogfd
+        if conlogfd gt 0 then free_lun,conlogfd,/force
         ;;open logfile
         openw,conlogfd,logfile,/get_lun
         print,'DNLINK: Widget opened: '+file_basename(logfile)
@@ -72,9 +72,9 @@ pro console_event, ev
 
   if 0 then begin
      RESET_CONNECTION:
-     if lunit gt 0 then free_lun,lunit
-     if runit gt 0 then free_lun,runit
-     if remotefd gt 0 then free_lun,remotefd
+     if lunit gt 0 then free_lun,lunit,/force
+     if runit gt 0 then free_lun,runit,/force
+     if remotefd gt 0 then free_lun,remotefd,/force
      lunit = -1
      runit = -1
      remotefd = -1
@@ -100,8 +100,8 @@ pro socket_event, ev
            print,'DNLINK: Opened socket to '+set.tmserver_addr+':'+n2s(settings.dnlink_port) 
         endif else begin
            print,'DNLINK: ERROR Remote socket failed to open'
-           MESSAGE, !ERR_STRING, /INFORM
-           if remotefd gt 0 then free_lun,remotefd
+           print,'DNLINK: '+!ERR_STRING
+           if remotefd gt 0 then free_lun,remotefd,/force
            remotefd = -1
         endelse
      endif
@@ -114,8 +114,8 @@ pro socket_event, ev
         print,'DNLINK: Listening for remote connections on port '+n2s(settings.dnlink_port) 
      endif else begin
         print,'DNLINK: Listening socket failed to open'
-        MESSAGE, !ERR_STRING, /INFORM
-        if lunit gt 0 then free_lun,lunit
+        print,'DNLINK: '+!ERR_STRING
+        if lunit gt 0 then free_lun,lunit,/force
         lunit=-1
      endelse
   endif
@@ -128,8 +128,8 @@ pro socket_event, ev
            print,'DNLINK: Remote connection established'
         endif else begin
            print,'DNLINK: Remote connection failed'
-           MESSAGE, !ERR_STRING, /INFORM
-           if runit gt 0 then free_lun,runit
+           print,'DNLINK: '+!ERR_STRING
+           if runit gt 0 then free_lun,runit,/force
            runit=-1
         endelse
      endif
