@@ -1220,12 +1220,16 @@ function piccgse_tmConnect
         if unit gt 0 then free_lun,unit,/force
         return,-1
      endelse
-     if 0 then begin
-        WRITE_ERROR:
-        print,'PICCGSE: Data request write error'
-        print,'PICCGSE: '+!ERR_STRING
-        if unit gt 0 then free_lun,unit,/force
-     endif
+
+     ;;skip over error handler
+     goto, NO_WRITE_ERROR
+     
+     WRITE_ERROR:
+     print,'PICCGSE: Data request write error'
+     print,'PICCGSE: '+!ERR_STRING
+     if unit gt 0 then free_lun,unit,/force
+
+     NO_WRITE_ERROR:
      return,-1
   endif
 end
@@ -1488,7 +1492,7 @@ settings = load_settings()
            ;;relay packet
            if runit ge 0 then begin
               ;;Install error handler
-              ON_IOERROR, RESET_REMOTE
+              ON_IOERROR, REMOTE_SEND_ERROR
               sync1 = uint(TLM_LPRE)
               sync2 = uint(TLM_MPRE)
               sync3 = uint(TLM_LPOST)
@@ -1500,19 +1504,23 @@ settings = load_settings()
               writeu,runit,sync3
               writeu,runit,sync4
            endif
-           if 0 then begin
-              RESET_REMOTE:
-              print,'PICCGSE: ERROR --> RESET_REMOTE'
-              print,'PICCGSE: '+!ERR_STRING 
-              if lunit gt 0 then begin
-                 free_lun,lunit,/force
-              endif
-              if runit gt 0 then begin
-                 free_lun,runit,/force
-              endif
-              lunit=-1
-              runit=-1
+
+           ;;skip over error handler
+           goto, NO_REMOTE_SEND_ERROR
+
+           REMOTE_SEND_ERROR:
+           print,'PICCGSE: ERROR --> REMOTE_ERROR'
+           print,'PICCGSE: '+!ERR_STRING 
+           if lunit gt 0 then begin
+              free_lun,lunit,/force
            endif
+           if runit gt 0 then begin
+              free_lun,runit,/force
+           endif
+           lunit=-1
+           runit=-1
+
+           NO_REMOTE_SEND_ERROR:
            ;;save time
            t_last_telemetry = t_now
            ;;increment file for next time
@@ -1526,7 +1534,7 @@ settings = load_settings()
      if set.tmserver_type eq 'network' OR set.tmserver_type eq 'tmfile' then begin
         if tmunit gt 0 then begin
            ;;Install error handler
-           ON_IOERROR, RESET_CONNECTION
+           ON_IOERROR, TM_ERROR
            ;;Set link status
            shm_var[settings.shm_link] = 1
            ;;Wait for data
@@ -1605,11 +1613,15 @@ settings = load_settings()
               ;;if timed out, reconnect
               if ((t_now-tm_last_data) GT 5) then begin
                  print,'PICCGSE: IMAGE SERVER TIMEOUT!'
-                 if 0 then begin
-                    RESET_CONNECTION:
-                    print,'PICCGSE: ERROR --> RESET_CONNECTION'
-                    print,'PICCGSE: '+!ERR_STRING
-                 endif
+
+                 ;;skip over error handler
+                 goto, NO_TM_ERROR
+                 
+                 TM_ERROR:
+                 print,'PICCGSE: ERROR --> TM_ERROR'
+                 print,'PICCGSE: '+!ERR_STRING
+                 
+                 NO_TM_ERROR:
                  if tmunit gt 0 then free_lun,tmunit,/force
                  if lunit gt 0 then free_lun,lunit,/force
                  if runit gt 0 then free_lun,runit,/force
@@ -1679,7 +1691,10 @@ settings = load_settings()
            if runit gt 0 then free_lun,runit,/force
            if set.pktlogunit gt 0 then free_lun,set.pktlogunit,/force
            close,/all
-           wait,1
+           for i=0,9 do begin
+              if (shm_var[settings.shm_up_run] eq 0) AND (shm_var[settings.shm_dn_run] eq 0) then break
+              wait,0.1
+           endfor
            obj_destroy,obridge_up
            obj_destroy,obridge_dn
            shmunmap,'shm'
@@ -1742,7 +1757,10 @@ settings = load_settings()
   if runit gt 0 then free_lun,runit,/force
   if set.pktlogunit gt 0 then free_lun,set.pktlogunit,/force
   close,/all
-  wait,1
+  for i=0,9 do begin
+     if (shm_var[settings.shm_up_run] eq 0) AND (shm_var[settings.shm_dn_run] eq 0) then break
+     wait,0.1
+  endfor
   obj_destroy,obridge_up
   obj_destroy,obridge_dn
   shmunmap,'shm'

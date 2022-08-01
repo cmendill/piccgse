@@ -34,7 +34,7 @@ pro command_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   ;;Install error handler
-  ON_IOERROR, RESET_CONNECTION
+  ON_IOERROR, COMMAND_ERROR
 
   ;;command line event
   widget_control,ev.id,GET_VALUE=cmd_array
@@ -81,16 +81,19 @@ pro command_event, ev
      printf,cmdlogfd,cmdstr
   endfor
 
-  if 0 then begin
-     RESET_CONNECTION:
-     print,'UPLINK: RESET_CONNECTION (command_event)'
-     if lunit gt 0 then free_lun,lunit,/force
-     if runit gt 0 then free_lun,runit,/force
-     if remotefd gt 0 then free_lun,remotefd,/force
-     lunit = -1
-     runit = -1
-     remotefd = -1
-  endif
+  ;;skip over error handler
+  goto, NO_COMMAND_ERROR
+  
+  COMMAND_ERROR:
+  print,'UPLINK: COMMAND_ERROR'
+  if lunit gt 0 then free_lun,lunit,/force
+  if runit gt 0 then free_lun,runit,/force
+  if remotefd gt 0 then free_lun,remotefd,/force
+  lunit = -1
+  runit = -1
+  remotefd = -1
+
+  NO_COMMAND_ERROR:
   
 end
 
@@ -99,7 +102,7 @@ pro serial_command_buttons_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
  
   ;;Install error handler
-  ON_IOERROR, RESET_CONNECTION
+  ON_IOERROR, SERIAL_COMMAND_BUTTONS_ERROR
 
   ;;get command
   widget_control,ev.id,GET_UVALUE=uval
@@ -166,24 +169,28 @@ pro serial_command_buttons_event, ev
      printf,cmdlogfd,cmdstr
      
   endif
+
+  ;;skip over error handler
+  goto,NO_SERIAL_COMMAND_BUTTONS_ERROR
   
-  if 0 then begin
-     RESET_CONNECTION:
-     print,'UPLINK: RESET_CONNECTION (serial_command_buttons_event)'
-     if lunit gt 0 then free_lun,lunit,/force
-     if runit gt 0 then free_lun,runit,/force
-     if remotefd gt 0 then free_lun,remotefd,/force
-     lunit = -1
-     runit = -1
-     remotefd = -1
-  endif
+  SERIAL_COMMAND_BUTTONS_ERROR:
+  print,'UPLINK: SERIAL_COMMAND_BUTTONS_ERROR'
+  if lunit gt 0 then free_lun,lunit,/force
+  if runit gt 0 then free_lun,runit,/force
+  if remotefd gt 0 then free_lun,remotefd,/force
+  lunit = -1
+  runit = -1
+  remotefd = -1
+  
+  NO_SERIAL_COMMAND_BUTTONS_ERROR:
+  
 end
 
 pro remote_command_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
   ;;Install error handler
-  ON_IOERROR, RESET_CONNECTION
+  ON_IOERROR, REMOTE_COMMAND_ERROR
 
   if runit gt 0 then begin
      if file_poll_input(runit, timeout=0) then begin
@@ -223,18 +230,20 @@ pro remote_command_event, ev
         printf,cmdlogfd,cmdstr
      endif
   endif 
-  
-  if 0 then begin
-     RESET_CONNECTION:
-     print,'UPLINK: RESET_CONNECTION (remote_command_event)'
-     if lunit gt 0 then free_lun,lunit,/force
-     if runit gt 0 then free_lun,runit,/force
-     if remotefd gt 0 then free_lun,remotefd,/force
-     lunit = -1
-     runit = -1
-     remotefd = -1
-  endif
 
+  ;;skip over error handler
+  goto,NO_REMOTE_COMMAND_ERROR
+  
+  REMOTE_COMMAND_ERROR:
+  print,'UPLINK: REMOTE_COMMAND_ERROR'
+  if lunit gt 0 then free_lun,lunit,/force
+  if runit gt 0 then free_lun,runit,/force
+  if remotefd gt 0 then free_lun,remotefd,/force
+  lunit = -1
+  runit = -1
+  remotefd = -1
+
+  NO_REMOTE_COMMAND_ERROR:
   ;;trigger self
   widget_control,ev.id,timer=0.5
 end
@@ -272,8 +281,6 @@ pro gse_command_buttons_event, ev
   ;;check for exit
   if NOT shm_var[settings.shm_run] then begin
      print,'UPLINK: exiting'
-     ;;unmap shared memory
-     shmunmap,'shm'
      if upfd gt 0 then free_lun,upfd,/force
      if dnfd gt 0 then free_lun,dnfd,/force
      if cmdlogfd gt 0 then free_lun,cmdlogfd,/force
@@ -282,6 +289,10 @@ pro gse_command_buttons_event, ev
      if runit gt 0 then free_lun,runit,/force
      ;;close files
      close,/all
+     ;;check out
+     shm_var[settings.shm_up_run]=0
+     ;;unmap shared memory
+     shmunmap,'shm'
      ;;exit
      widget_control,base,/destroy
      return
@@ -405,6 +416,9 @@ pro piccgse_uplink_console
   shmmap, 'shm', /byte, settings.shm_size
   shm_var = shmvar('shm')
   print,'UPLINK: Shared memory mapped'
+
+  ;;check in
+  shm_var[settings.shm_up_run] = 1
 
   ;;init file descriptors
   upfd = -1

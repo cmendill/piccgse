@@ -2,13 +2,11 @@ pro console_event, ev
   common dnlink_block,settings,dnfd,conlogfd,lunit,runit,remotefd,base,con_text,shm_var,nchar
 
   ;;Install error handler
-  ON_IOERROR, RESET_CONNECTION
+  ON_IOERROR, CONSOLE_ERROR
 
   ;;check for exit
   if NOT shm_var[settings.shm_run] then begin
      print,'DNLINK: exiting'
-     ;;unmap shared memory
-     shmunmap,'shm'
      ;;free files
      if dnfd gt 0 then free_lun,dnfd,/force
      if conlogfd gt 0 then free_lun,conlogfd,/force
@@ -17,6 +15,10 @@ pro console_event, ev
      if remotefd gt 0 then free_lun,remotefd,/force
      ;;close files
      close,/all
+     ;;check out
+     shm_var[settings.shm_dn_run] = 0
+     ;;unmap shared memory
+     shmunmap,'shm'
      ;;exit
      widget_control,base,/destroy
      return
@@ -70,16 +72,19 @@ pro console_event, ev
      printf,conlogfd,ts+': '+newline
   endif
 
-  if 0 then begin
-     RESET_CONNECTION:
-     print,'DNLINK: RESET_CONNECTION (console_event)'
-     if lunit gt 0 then free_lun,lunit,/force
-     if runit gt 0 then free_lun,runit,/force
-     if remotefd gt 0 then free_lun,remotefd,/force
-     lunit = -1
-     runit = -1
-     remotefd = -1
-  endif
+  ;;skip over error handler
+  goto,NO_CONSOLE_ERROR
+  
+  CONSOLE_ERROR:
+  print,'DNLINK: CONSOLE_ERROR'
+  if lunit gt 0 then free_lun,lunit,/force
+  if runit gt 0 then free_lun,runit,/force
+  if remotefd gt 0 then free_lun,remotefd,/force
+  lunit = -1
+  runit = -1
+  remotefd = -1
+
+  NO_CONSOLE_ERROR:
     
   ;;re-trigger this loop immidiately
   widget_control,ev.id,timer=0
@@ -152,6 +157,9 @@ pro piccgse_dnlink_console
   shmmap, 'shm', /byte, settings.shm_size
   shm_var = shmvar('shm')
   print,'DNLINK: Shared memory mapped'
+
+  ;;check in
+  shm_var[settings.shm_dn_run] = 1
 
   ;;init file descriptors
   dnfd = -1
