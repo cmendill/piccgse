@@ -22,17 +22,23 @@ function load_buttondb
   
   ;;State commands
   standby = 'state stb'+cr+'alp load flat'+cr+'shk reset'+cr+'lyt reset'+cr+'sci reset'+cr+'lyt zernike disable all'+cr+'lyt zernike enable 0 1'
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'LOW POW' ,cmd:'state lpw',tooltip:'STATE_LOW_POWER',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'STANDBY' ,cmd: standby   ,tooltip:'STATE_STANDBY',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'ACQUIRE' ,cmd:'state acq',tooltip:'STATE_ACQUIRE_TARGET',igse:0,vgse:0}
-  ;b[i++]={id:i,show:1,type1:'state',type2:'',name:'SPIRAL'  ,cmd:'state sps',tooltip:'STATE_SPIRAL_SEARCH',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'M2 ALIGN',cmd:'state m2a',tooltip:'STATE_M2_ALIGN',igse:0,vgse:0}
-  ;b[i++]={id:i,show:1,type1:'state',type2:'',name:'SHK ZERN',cmd:'state szc',tooltip:'STATE_SHK_ZERN_LOWFC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'SHK CELL',cmd:'state scc',tooltip:'STATE_SHK_CELL_LOWFC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'LYT TILT',cmd:'state ltt',tooltip:'STATE_LYT_TT_LOWFC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'LYT ZERN',cmd:'state lzc',tooltip:'STATE_LYT_ZERN_LOWFC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'HOWFS'   ,cmd:'state how',tooltip:'STATE_HOWFC',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'state',type2:'',name:'EFC'     ,cmd:'state efc',tooltip:'STATE_EFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state1',type2:'',name:'LOW POW' ,cmd:'state lpw',tooltip:'STATE_LOW_POWER',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state1',type2:'',name:'STANDBY' ,cmd: standby   ,tooltip:'STATE_STANDBY',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state1',type2:'',name:'ACQUIRE' ,cmd:'state acq',tooltip:'STATE_ACQUIRE_TARGET',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state1',type2:'',name:'SPIRAL'  ,cmd:'state sps',tooltip:'STATE_SPIRAL_SEARCH',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state1',type2:'',name:'M2 ALIGN',cmd:'state m2a',tooltip:'STATE_M2_ALIGN',igse:0,vgse:0}
+  ;b[i++]={id:i,show:1,type1:'state1',type2:'',name:'SHK ZERN',cmd:'state szc',tooltip:'STATE_SHK_ZERN_LOWFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state1',type2:'',name:'SHK CELL',cmd:'state scc',tooltip:'STATE_SHK_CELL_LOWFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state1',type2:'',name:'LYT TILT',cmd:'state ltt',tooltip:'STATE_LYT_TT_LOWFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state1',type2:'',name:'LYT ZERN',cmd:'state lzc',tooltip:'STATE_LYT_ZERN_LOWFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state1',type2:'',name:'HYB ZERN',cmd:'state hzc',tooltip:'STATE_HYB_ZERN_LOWFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state1',type2:'',name:'HOWFS'   ,cmd:'state how',tooltip:'STATE_HOWFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state2',type2:'',name:'LYT EFC' ,cmd:'state efc',tooltip:'STATE_EFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state2',type2:'',name:'HYB EFC' ,cmd:'state hfc',tooltip:'STATE_HYB_EFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state2',type2:'',name:'SHK EFC' ,cmd:'state sfc',tooltip:'STATE_SHK_EFC',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state2',type2:'',name:'LYT SPK' ,cmd:'state spk',tooltip:'STATE_SPECKLE',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state2',type2:'',name:'HYB SPK' ,cmd:'state hsk',tooltip:'STATE_HYB_SPECKLE',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'state2',type2:'',name:'SHK SPK' ,cmd:'state ssk',tooltip:'STATE_SHK_SPECKLE',igse:0,vgse:0}
 
   ;;Hexapod commands
   b[i++]={id:i,show:1,type1:'hex',type2:'',name:'SAVE' ,cmd:'hex savepos',tooltip:'Save current hex position',igse:0,vgse:0}

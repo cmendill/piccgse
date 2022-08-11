@@ -2,6 +2,7 @@ function load_settings
 ;;PICCGSE Static Settings
 settings = {uplink_dev: '/dev/ttyUSB1',$
             dnlink_dev: '/dev/ttyUSB0',$
+            config_file: 'piccgse.conf',$
             scitype_image:    0,$
             scitype_real:     1,$
             scitype_imaginary:2,$

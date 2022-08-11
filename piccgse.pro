@@ -489,7 +489,7 @@ pro piccgse_processData, hed, pkt, tag
            ;;set color table
            linecolor
            ;;set text origin and spacing
-           dy = 16
+           dy = round(!D.Y_SIZE / double(LOWFS_N_ZERNIKE+2))+1
            sx = 5            
            sy = !D.Y_SIZE - dy
            c  = 0
@@ -649,7 +649,7 @@ pro piccgse_processData, hed, pkt, tag
            ;;set color table
            linecolor
            ;;set text origin and spacing
-           dy = 16
+           dy = round(!D.Y_SIZE / double(LOWFS_N_ZERNIKE+2))+1
            sx = 5            
            sy = !D.Y_SIZE - dy
            c  = 0
@@ -814,8 +814,8 @@ pro piccgse_processData, hed, pkt, tag
         wset,wpix
         linecolor
         ;;set text origin and spacing
-        dy = 16
-        dx = 130
+        dy = round(!D.Y_SIZE / double(LOWFS_N_ZERNIKE+2))+1
+        dx = !D.X_SIZE/6
         sx = 5            
         sy = !D.Y_SIZE - dy
         nl = 24
@@ -868,16 +868,16 @@ pro piccgse_processData, hed, pkt, tag
         xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),string('SCI',sci_temp,'/',sci_set,sci_pow,'%',format='(A5,F7.1,A,F-5.1,I3,A)'),/device,color=tec
         c++
         ;;print state
-        bxs=204
-        bys=24
-        bth=2
-        box=bytarr(bxs,bys)
-        box[0:bth-1,*]=255       ;;left
-        box[bxs-bth:-1,*]=255    ;;right
-        box[*,0:bth-1]=255       ;;bottom
-        box[*,bys-bth:-1]=255    ;;top
-        tv,box,!D.X_SIZE-bxs,0
-        xyouts,!D.X_SIZE-200,sy-dy*(nl-1),states[hed.state],/device,color=white
+        ;bxs=204
+        ;bys=24
+        ;bth=2
+        ;box=bytarr(bxs,bys)
+        ;box[0:bth-1,*]=255       ;;left
+        ;box[bxs-bth:-1,*]=255    ;;right
+        ;box[*,0:bth-1]=255       ;;bottom
+        ;box[*,bys-bth:-1]=255    ;;top
+        ;tv,box,!D.X_SIZE-bxs,0
+        ;xyouts,!D.X_SIZE-200,sy-dy*(nl-1),states[hed.state],/device,color=white
         ;;take snapshot
         snap = TVRD(true=1)
         ;;delete pixmap window
@@ -1338,11 +1338,10 @@ settings = load_settings()
 ;*************************************************
 ;* LOAD CONFIGURATION FILE
 ;*************************************************
-  config_file = 'piccgse.conf'
-  config_props = FILE_INFO(config_file)
-  if config_props.exists EQ 0 then stop, 'ERROR: Config file '+config_file+' not found'
+  config_props = FILE_INFO(settings.config_file)
+  if config_props.exists EQ 0 then stop, 'ERROR: Config file '+settings.config_file+' not found'
   cfg_mod_sec = config_props.mtime
-  piccgse_loadConfig, config_file, tmaddr=tmaddr, tmport=tmport
+  piccgse_loadConfig, settings.config_file, tmaddr=tmaddr, tmport=tmport
  
 ;*************************************************
 ;* INIT CONNECTIONS
@@ -1652,7 +1651,7 @@ settings = load_settings()
      if (t_now-t_last_cfg) GT 0.5 then begin
         
         ;;Get config file properties
-        config_props = FILE_INFO(config_file)
+        config_props = FILE_INFO(settings.config_file)
         
         ;;Update last time config file was checked
         t_last_cfg = SYSTIME(1)
@@ -1662,7 +1661,7 @@ settings = load_settings()
            PRINT, 'PICCGSE: Loading modified configuration file'
            cfg_mod_sec = config_props.mtime
            old_set = set
-           piccgse_loadConfig, config_file, tmaddr=tmaddr, tmport=tmport
+           piccgse_loadConfig, settings.config_file, tmaddr=tmaddr, tmport=tmport
            if(set.tmserver_type eq 'idlfile') then begin
               ;;get filenames
               idlfiles = file_search(set.tmserver_idlfile,count=nfiles)

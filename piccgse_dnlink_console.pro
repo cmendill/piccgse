@@ -1,3 +1,47 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; pro piccgse_loadConfig
+;;  - procedure to load config file
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+pro piccgse_loadConfig, path, win
+
+  ;;Open the config file
+  openr, unit, path, /get_lun
+  
+  ;;Read config file
+  line = ''
+  for i=0L,file_lines(path)-1 do begin
+     ;;Read line
+     readf, unit, line
+     ;;Check for comment
+     if strmid(line,0,1) eq '#' then continue
+     ;;Parse line
+     pieces = strsplit(strcompress(line), ' ',/extract)
+     if n_elements(pieces) ge 2 then begin
+        tag = pieces[0]
+        value = pieces[1]
+        for j=2, n_elements(pieces)-1 do begin
+           value+=' '+pieces[j]
+        endfor
+        
+        ;;Set values
+        case tag OF
+           ;;Console Window
+           'DNL_SHOW'        : win.show  = value
+           'DNL_NAME'        : win.name  = value
+           'DNL_XSIZE'       : win.xsize = value
+           'DNL_YSIZE'       : win.ysize = value
+           'DNL_XPOS'        : win.xpos  = value
+           'DNL_YPOS'        : win.ypos  = value
+           'DNL_FONT'        : win.font  = value
+           else: ;;do nothing
+        endcase
+     endif
+  endfor
+  
+  ;;Close the config file
+  free_lun,unit,/force
+end
+
 pro console_event, ev
   common dnlink_block,settings,dnfd,conlogfd,lunit,runit,remotefd,base,con_text,shm_var,nchar
 
@@ -184,19 +228,19 @@ pro piccgse_dnlink_console
      endif
   endif
   
+  ;;read window info from config file
+  win={show:0, name:'', xsize:0, ysize:0, xpos:0, ypos:0, font:''}
+  piccgse_loadConfig,settings.config_file,win
+
   ;;setup base widget
-  wxs = 504
-  wys = 291
-  wxp = 35  ;;dock ends at x=35
-  wyp = 2000
-  title = 'PICTURE Downlink Console'
-  base = widget_base(xsize=wxs,ysize=wys,xoffset=wxp,yoffset=wyp,/row,title=title)
+  base = widget_base(xsize=win.xsize,ysize=win.ysize,xoffset=win.xpos,yoffset=win.ypos,/row,title=win.name)
   
   ;;setup downlink console
-  nchar = 80
+  nchar = fix(win.xsize*80.0/504.0)
+  nline = fix(win.ysize*291.0/21.0)
   sub1 = widget_base(base,/column)
   ;con_label = widget_label(sub1,value='Downlink',/align_left)
-  con_text  = widget_text(sub1,xsize=nchar,ysize=21)
+  con_text  = widget_text(sub1,xsize=nchar,ysize=nline)
   xmanager,'console',sub1,/no_block
 
   ;;socket widget
