@@ -396,7 +396,7 @@ pro piccgse_processData, hed, pkt, tag
            zoom=80/SHKBIN
            xoff=-5
            yoff=-7
-           plot,[0],[0],xrange=[zoom+xoff,shkxs-zoom+xoff],yrange=[zoom+yoff,shkys-zoom+yoff],xstyle=5,ystyle=5,/nodata,position=[0,0,1,1]
+           plot,[0],[0],xrange=[zoom+xoff,shkxs-zoom+xoff],yrange=[zoom+yoff,shkys-zoom+yoff],xstyle=5,ystyle=5,/nodata,position=[0,0,1,1],/iso
            maxval = double(max(pkt.cells.maxval))
            val = double(pkt.cells.maxval)
            greyrscale,val,255,bot=100
