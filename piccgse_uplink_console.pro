@@ -592,28 +592,10 @@ pro piccgse_uplink_console
 
   ;;Column 5
   col5 = widget_base(base,/column,/align_top)
-  
-  ;;Camera buttons
-  cam_sub1 = widget_base(col5,/row,/align_center)            
-  cam_sub2 = widget_base(col5,column=1,/frame,/align_center) 
-  button_label = widget_label(cam_sub1,value='Cameras',/align_center,font=win.font)
-  ;;--make buttons
-  sel = where(buttondb.type1 eq 'camera' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
-  if nsel gt 0 then begin
-     buttons = buttondb[sel]
-     for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(cam_sub2, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,font=win.font)
-     endfor
-  endif
-  ;;install event handler
-  xmanager,'serial_command_buttons',cam_sub2,/no_block
-
-  ;;Column 6
-  col6 = widget_base(base,/column,/align_top)
 
   ;;Door buttons
-  door_sub1 = widget_base(col6,/row,/align_center)
-  door_sub2 = widget_base(col6,column=1,/align_center)
+  door_sub1 = widget_base(col5,/row,/align_center)
+  door_sub2 = widget_base(col5,column=1,/align_center)
   door_but1 = widget_base(door_sub2,row=1,/frame,/align_center) 
   door_but2 = widget_base(door_sub2,row=1,/frame,/align_center) 
   door_but3 = widget_base(door_sub2,row=1,/frame,/align_center) 
@@ -645,8 +627,8 @@ pro piccgse_uplink_console
   xmanager,'serial_command_buttons',door_sub2,/no_block
 
   ;;SCI Display Type
-  scitype_sub1 = widget_base(col6,/row,/align_center)            
-  scitype_sub2 = widget_base(col6,column=1,/align_center)            
+  scitype_sub1 = widget_base(col5,/row,/align_center)            
+  scitype_sub2 = widget_base(col5,column=1,/align_center)            
   scitype_but1 = widget_base(scitype_sub2,row=1,/align_center)
   button_label = widget_label(scitype_sub1,value='SCI Type',/align_center,font=win.font)
   sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq 'scitype' and buttondb.show eq 1,nsel)
@@ -659,8 +641,8 @@ pro piccgse_uplink_console
   xmanager,'gse_command_buttons',scitype_sub2,/no_block
 
   ;;BMC Display Type
-  bmctype_sub1 = widget_base(col6,/row,/align_center)            
-  bmctype_sub2 = widget_base(col6,column=1,/align_center)            
+  bmctype_sub1 = widget_base(col5,/row,/align_center)            
+  bmctype_sub2 = widget_base(col5,column=1,/align_center)            
   bmctype_but1 = widget_base(bmctype_sub2,row=1,/align_center)
   button_label = widget_label(bmctype_sub1,value='BMC Type',/align_center,font=win.font)
   sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq 'bmctype' and buttondb.show eq 1,nsel)
@@ -672,11 +654,11 @@ pro piccgse_uplink_console
   ;;--install event handler
   xmanager,'gse_command_buttons',bmctype_sub2,/no_block
  
-  ;;Column 7
-  col7 = widget_base(base,/column,/align_top)
+  ;;Column 6
+  col6 = widget_base(base,/column,/align_top)
 
   ;;LYT arrows
-  lyt_arrow_sub1 = widget_base(col7,/row)
+  lyt_arrow_sub1 = widget_base(col6,/row)
   button_label = widget_label(lyt_arrow_sub1,value='LYT:',/align_left,font=win.font)
   sel = where(buttondb.type1 eq 'lyt' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
@@ -689,7 +671,7 @@ pro piccgse_uplink_console
   xmanager,'serial_command_buttons',lyt_arrow_sub1,/no_block
 
   ;;SHK arrows
-  shk_arrow_sub1 = widget_base(col7,/row)
+  shk_arrow_sub1 = widget_base(col6,/row)
   button_label = widget_label(shk_arrow_sub1,value='SHK:',/align_left,font=win.font)
   sel = where(buttondb.type1 eq 'shk' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
@@ -702,7 +684,7 @@ pro piccgse_uplink_console
   xmanager,'serial_command_buttons',shk_arrow_sub1,/no_block
 
   ;;SCI arrows
-  sci_arrow_sub1 = widget_base(col7,/row)
+  sci_arrow_sub1 = widget_base(col6,/row)
   button_label = widget_label(sci_arrow_sub1,value='SCI:',/align_left,font=win.font)
   sel = where(buttondb.type1 eq 'sci' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
@@ -715,7 +697,7 @@ pro piccgse_uplink_console
   xmanager,'serial_command_buttons',sci_arrow_sub1,/no_block
 
   ;;HEX arrows
-  hex_arrow_sub1 = widget_base(col7,/row)
+  hex_arrow_sub1 = widget_base(col6,/row)
   button_label = widget_label(hex_arrow_sub1,value='HEX:',/align_left,font=win.font)
   sel = where(buttondb.type1 eq 'hex' and buttondb.type2 eq 'arrow' and buttondb.show eq 1,nsel)
   if nsel gt 0 then begin
@@ -728,7 +710,7 @@ pro piccgse_uplink_console
   xmanager,'serial_command_buttons',hex_arrow_sub1,/no_block
 
   ;;HEX Z
-  ;hex_z_sub1 = widget_base(col7,/row)
+  ;hex_z_sub1 = widget_base(col6,/row)
   ;button_label = widget_label(hex_z_sub1,value='HEX:',/align_left)
   ;sel = where(buttondb.type1 eq 'hex' and buttondb.type2 eq 'z' and buttondb.show eq 1,nsel)
   ;if nsel gt 0 then begin
@@ -741,7 +723,7 @@ pro piccgse_uplink_console
   ;xmanager,'serial_command_buttons',hex_z_sub1,/no_block
 
   ;;GSE buttons
-  gse_sub1 = widget_base(col7,/row)
+  gse_sub1 = widget_base(col6,/row)
   button_label = widget_label(gse_sub1,value='GSE:',/align_left,font=win.font)
   ;;--make buttons
   sel = where(buttondb.type1 eq 'gse' and buttondb.type2 eq '' and buttondb.show eq 1,nsel)
@@ -754,7 +736,7 @@ pro piccgse_uplink_console
   xmanager,'gse_command_buttons',gse_sub1,/no_block
   
   ;;GSE path display
-  gsepath = widget_base(col7,/row)
+  gsepath = widget_base(col6,/row)
   gsepath_text = widget_text(gsepath,xsize=22,ysize=1,font=win.font)
   ;;install event handler
   xmanager,'gsepath',gsepath_text,/no_block
@@ -762,7 +744,7 @@ pro piccgse_uplink_console
   ;;Status icons
   red_light   = read_bmp('bmp/red.bmp',/rgb)
   red_light   = transpose(red_light,[1,2,0])
-  connstat       = widget_base(col7,/row)
+  connstat       = widget_base(col6,/row)
   connstat_sub1  = widget_base(connstat,column=3,/frame)
   button_label = widget_label(connstat_sub1,value=' LINK ',/align_center,font=win.font)
   link_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light, UVALUE='link', TOOLTIP='TM Link Status',/align_center)
