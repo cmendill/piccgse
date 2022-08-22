@@ -4,3 +4,6 @@ acq.gif
 piccdisp.log
 serial_setup
 .piccgse_set.idl
+config/sci_dark*.idl
+config/sci_bias*.idl
+piccgse.conf
