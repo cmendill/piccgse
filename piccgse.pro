@@ -1500,16 +1500,11 @@ settings = load_settings()
            if runit ge 0 then begin
               ;;Install error handler
               ON_IOERROR, REMOTE_SEND_ERROR
-              sync1 = uint(TLM_LPRE)
-              sync2 = uint(TLM_MPRE)
-              sync3 = uint(TLM_LPOST)
-              sync4 = uint(TLM_MPOST)
-              writeu,runit,sync1
-              writeu,runit,sync2
-              writeu,runit,hed
-              writeu,runit,pkt
-              writeu,runit,sync3
-              writeu,runit,sync4
+              send = pkt
+              struct_add_field,send,'hed',hed,itag=0
+              struct_add_field,send,'presync',TLM_PRESYNC,itag=0
+              struct_add_field,send,'postsync',TLM_POSTSYNC
+              writeu,runit,send
            endif
 
            ;;skip over error handler
@@ -1591,13 +1586,12 @@ settings = load_settings()
                              msg2 = gettimestamp('.')+': '+'packet.'+tag+'.'+sfn+'.'+n2s((end_time-start_time)*1000,format='(I)')+'ms'
                              ;;relay packet to remote
                              if runit ge 0 then begin
-                                writeu,runit,sync1
-                                writeu,runit,sync2
-                                writeu,runit,hed
-                                writeu,runit,pkt
-                                writeu,runit,sync3
-                                writeu,runit,sync4
-                            endif
+                                send = pkt
+                                struct_add_field,send,'hed',hed,itag=0
+                                struct_add_field,send,'presync',TLM_PRESYNC,itag=0
+                                struct_add_field,send,'postsync',TLM_POSTSYNC
+                                writeu,runit,send
+                             endif
                           endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps2.' + $
                                             n2s(sync3,format='(Z4.4)')+'['+n2s(TLM_MPOST,format='(Z4.4)')+']'
                        endif else msg2 = gettimestamp('.')+': '+'dropped.'+tag+'.'+sfn+'.ps1.' + $
