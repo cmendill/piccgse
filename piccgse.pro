@@ -371,12 +371,13 @@ pro piccgse_processData, hed, pkt, tag
      acq_xhole = 0
      acq_yhole = 0
   endif
-
+  
   ;;Colors
   red=1
   green=2
   blue=3
   white=255
+
 
   ;;Do not display SHK & LYT during SCI fastmode
   if NOT sci_fastmode then begin
@@ -806,6 +807,9 @@ pro piccgse_processData, hed, pkt, tag
   
   ;;THMEVENT
   if tag eq 'thmevent' then begin
+     ;;Set state
+     shm_var[settings.shm_state] = hed.state
+
      ;;Display Thermal Data
      if set.w[wthm].show then begin
         ;;set window

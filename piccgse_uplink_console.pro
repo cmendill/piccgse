@@ -360,6 +360,32 @@ pro gsepath_event, ev
   widget_control,ev.id,timer=0.5
 end
 
+pro state_event, ev
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common state_block, states,state
+ 
+  if n_elements(states) eq 0 then begin 
+     ;;Flight software header file
+     header='../piccflight/src/controller.h'
+     
+     ;;Get states
+     states = read_c_enum(header,'states')
+  endif
+
+  temp=states[shm_var[settings.shm_state]]
+  if n_elements(state) eq 0 then begin
+     state = temp
+     widget_control,ev.id,SET_VALUE=state
+  endif
+  if not strcmp(state,temp) then begin
+     state = temp
+     widget_control,ev.id,SET_VALUE=state
+  endif
+
+  ;;trigger self
+  widget_control,ev.id,timer=0.5
+end
+
 pro connstat_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
@@ -657,6 +683,13 @@ pro piccgse_uplink_console
   ;;Column 6
   col6 = widget_base(base,/column,/align_top)
 
+  ;;State display
+  state = widget_base(col6,/row)
+  button_label = widget_label(state,value='State:',/align_left,font=win.font)
+  state_text = widget_button(state,value='                     ',/flat,font=win.font)
+  ;;install event handler
+  xmanager,'state',state_text,/no_block
+
   ;;LYT arrows
   lyt_arrow_sub1 = widget_base(col6,/row)
   button_label = widget_label(lyt_arrow_sub1,value='LYT:',/align_left,font=win.font)
@@ -768,6 +801,9 @@ pro piccgse_uplink_console
 
   ;;update gsepath
   widget_control,gsepath_text,timer=0
+
+  ;;update state
+  widget_control,state_text,timer=0
 
   ;;start remote
   widget_control,remote,timer=0
