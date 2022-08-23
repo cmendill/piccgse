@@ -703,8 +703,8 @@ pro piccgse_processData, hed, pkt, tag
   ;;WFSEVENT
   if tag eq 'wfsevent' then begin
      ;;Display Image
-     if set.w[wsci].show AND ((sci_fastmode AND set.w[wsci].fast) OR (NOT sci_fastmode)) then begin
-        if (shm_var[settings.shm_scitype] ne settings.scitype_image) AND (shm_var[settings.shm_scitype] ne settings.scitype_log) then begin
+     if set.w[wsci].show
+     if (shm_var[settings.shm_scitype] ne settings.scitype_image) AND (shm_var[settings.shm_scitype] ne settings.scitype_log) then begin
            ;;set window
            wset,wsci
            ;;set font
