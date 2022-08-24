@@ -243,17 +243,22 @@ pro remote_command_event, ev
         readu,runit,cmd
         cmd = string(cmd)
         print,'UPLINK: Got remote command: '+cmd
-        ;;send command
-        if shm_var[settings.shm_uplink] then begin
-           ;;use uplink port
-           if upfd ge 0 then begin
-              uplink,upfd,cmd+string(10B)
-           endif
+        ;;check for uplink toggle command
+        if cmd eq 'uplink toggle' then begin
+           if shm_var[settings.shm_uplink] then shm_var[settings.shm_uplink] = 0 else shm_var[settings.shm_uplink] = 1
         endif else begin
-           ;;use downlink port
-           if dnfd ge 0 then begin
-              if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
-           endif
+           ;;send command
+           if shm_var[settings.shm_uplink] then begin
+              ;;use uplink port
+              if upfd ge 0 then begin
+                 uplink,upfd,cmd+string(10B)
+              endif
+           endif else begin
+              ;;use downlink port
+              if dnfd ge 0 then begin
+                 if strlen(cmd) eq 0 then writeu,dnfd,10B else writeu,dnfd,[byte(cmd),10B]
+              endif
+           endelse
         endelse
 
         ;;print command to screen
@@ -397,10 +402,35 @@ pro connstat_event, ev
   
   ;;get command
   widget_control,ev.id,GET_UVALUE=uval
-  
+
+  ;;handle uplink toggle command
   if uval eq 'uplink' then begin
-     ;;Toggle uplink command
-     if shm_var[settings.shm_uplink] then shm_var[settings.shm_uplink] = 0 else shm_var[settings.shm_uplink] = 1
+     if shm_var[settings.shm_remote] then begin
+        ;;Togle uplink command remotely
+        msg = 'uplink toggle'
+        if remotefd gt 0 then writeu,remotefd,msg
+     endif else begin
+        ;;Toggle uplink command locally
+        if shm_var[settings.shm_uplink] then shm_var[settings.shm_uplink] = 0 else shm_var[settings.shm_uplink] = 1
+     end
+  endif
+
+  ;;get uplink status if we are remote
+  if shm_var[settings.shm_remote] then begin
+     if remotefd gt 0 then begin
+        if file_poll_input(remotefd, timeout=0) then begin
+           msg=''
+           readu,remotefd,msg
+           if msg eq 'uplink0' then shm_var[settings.shm_uplink] = 0
+           if msg eq 'uplink1' then shm_var[settings.shm_uplink] = 1
+        endif
+     endif
+  endif
+  
+  ;;send uplink status to remote
+  if runit gt 0 then begin
+     msg = 'uplink'+n2s(shm_var[settings.shm_uplink])
+     writeu,runit,msg
   endif
   
   ;;set lights
@@ -423,8 +453,8 @@ pro socket_event, ev
 
   ;;remote setup
   if shm_var[settings.shm_remote] then begin
+     ;;We are the remote, open socket to the server (remote_event)
      if remotefd lt 0 then begin
-        ;;We are the remote, open socket to the server (remote_event)
         socket, remotefd, set.tmserver_addr, settings.uplink_port, /get_lun, error=con_status, connect_timeout=3, write_timeout=2
         if con_status eq 0 then begin
            print,'UPLINK: Opened socket to '+set.tmserver_addr+':'+n2s(settings.uplink_port) 

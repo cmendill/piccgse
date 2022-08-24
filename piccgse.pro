@@ -703,8 +703,8 @@ pro piccgse_processData, hed, pkt, tag
   ;;WFSEVENT
   if tag eq 'wfsevent' then begin
      ;;Display Image
-     if set.w[wsci].show
-     if (shm_var[settings.shm_scitype] ne settings.scitype_image) AND (shm_var[settings.shm_scitype] ne settings.scitype_log) then begin
+     if set.w[wsci].show then begin
+     if (shm_var[settings.shm_scitype] ne settings.scitype_image) AND (shm_var[settings.shm_scitype] ne settings.scitype_log) AND (shm_var[settings.shm_scitype] ne settings.scitype_contrast) then begin
            ;;set window
            wset,wsci
            ;;set font
@@ -967,7 +967,7 @@ pro piccgse_processData, hed, pkt, tag
         endif
 
         ;;display scievent
-        if (shm_var[settings.shm_scitype] eq settings.scitype_image) OR (shm_var[settings.shm_scitype] eq settings.scitype_log) then begin
+        if (shm_var[settings.shm_scitype] eq settings.scitype_image) OR (shm_var[settings.shm_scitype] eq settings.scitype_log) OR (shm_var[settings.shm_scitype] eq settings.scitype_contrast) then begin
            ;;set window
            wset,wsci
            ;;set font

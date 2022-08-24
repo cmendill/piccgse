@@ -9,6 +9,7 @@ settings = {uplink_dev: '/dev/ttyUSB1',$
             scitype_amplitude:3,$
             scitype_phase:    4,$
             scitype_log:      5,$
+            scitype_contrast: 6,$
             bmctype_cmd:      0,$
             bmctype_dif:      1,$
             cmdlength:      256,$

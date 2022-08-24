@@ -21,7 +21,7 @@ function load_buttondb
   cr = string(10B)
   
   ;;State commands
-  standby = 'state stb'+cr+'alp load flat'+cr+'shk reset'+cr+'lyt reset'+cr+'sci reset'+cr+'lyt zernike disable all'+cr+'lyt zernike enable 0 1'
+  standby = 'state stb'+cr+'alp load flat'+cr+'bmc revert flat'+cr+'shk reset'+cr+'lyt reset'+cr+'sci reset'+cr+'lyt zernike disable all'+cr+'lyt zernike enable 0 1'
   b[i++]={id:i,show:1,type1:'state1',type2:'',name:'LOW POW' ,cmd:'state lpw',tooltip:'STATE_LOW_POWER',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state1',type2:'',name:'STANDBY' ,cmd: standby   ,tooltip:'STATE_STANDBY',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'state1',type2:'',name:'ACQUIRE' ,cmd:'state acq',tooltip:'STATE_ACQUIRE_TARGET',igse:0,vgse:0}
@@ -83,7 +83,8 @@ function load_buttondb
   ;;Other commands
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'LED ON',cmd:'led on 2.8',tooltip:'Turn LED on',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'LED OFF',cmd:'led off',tooltip:'Turn LED off',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'other',type2:'',name:'BMC FLAT',cmd:'bmc load flat',tooltip:'Reload BMC flat',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'other',type2:'',name:'BMC FLAT',cmd:'bmc revert flat',tooltip:'Reload BMC flat',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'other',type2:'',name:'BMC RECALL',cmd:'bmc recall flat',tooltip:'Recall last BMC flat',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP FLAT',cmd:'alp load flat',tooltip:'Reload ALP flat',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP +TILT',cmd:'shk inc target 0 1.3',tooltip:'Increment SHK Z0 target by +1.3 micron',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP -TILT',cmd:'shk inc target 0 -1.3',tooltip:'Increment SHK Z0 target by -1.3 micron',igse:0,vgse:0}
@@ -118,6 +119,7 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'gse',type2:'',name:'Reset',cmd:'',tooltip:'Reset GSE',igse:settings.shm_reset,vgse:1}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'Image',cmd:'',tooltip:'Display SCI Image',igse:settings.shm_scitype,vgse:settings.scitype_image}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'Log',cmd:'',tooltip:'Display Log SCI Image',igse:settings.shm_scitype,vgse:settings.scitype_log}
+  b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'Contrast',cmd:'',tooltip:'Display SCI Contrast',igse:settings.shm_scitype,vgse:settings.scitype_contrast}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'R-Part',cmd:'',tooltip:'Display SCI Real part',igse:settings.shm_scitype,vgse:settings.scitype_real}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'I-Part',cmd:'',tooltip:'Display SCI Imaginary part',igse:settings.shm_scitype,vgse:settings.scitype_imaginary}
   b[i++]={id:i,show:1,type1:'gse',type2:'scitype',name:'Amp',cmd:'',tooltip:'Display SCI Amplitude',igse:settings.shm_scitype,vgse:settings.scitype_amplitude}
