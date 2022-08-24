@@ -419,7 +419,7 @@ pro connstat_event, ev
   if shm_var[settings.shm_remote] then begin
      if remotefd gt 0 then begin
         if file_poll_input(remotefd, timeout=0) then begin
-           msg=''
+           msg='1234567'
            readu,remotefd,msg
            if msg eq 'uplink0' then shm_var[settings.shm_uplink] = 0
            if msg eq 'uplink1' then shm_var[settings.shm_uplink] = 1
@@ -429,7 +429,7 @@ pro connstat_event, ev
   
   ;;send uplink status to remote
   if runit gt 0 then begin
-     msg = 'uplink'+n2s(shm_var[settings.shm_uplink])
+     msg = 'uplink'+n2s(fix(shm_var[settings.shm_uplink]))
      writeu,runit,msg
   endif
   
@@ -440,7 +440,7 @@ pro connstat_event, ev
 
   ;;return if triggered by command
   if uval ne 'timer' then return
-  
+
   ;;trigger self
   widget_control,ev.id,timer=0.5
 end
