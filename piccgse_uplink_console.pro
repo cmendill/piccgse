@@ -394,6 +394,9 @@ end
 pro connstat_event, ev
   common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
 
+  ;;Install error handler
+  ON_IOERROR, CONNSTAT_ERROR
+
   ;;get light bitmaps
   red_light = read_bmp('bmp/red.bmp',/rgb)
   red_light = transpose(red_light,[1,2,0])
@@ -441,6 +444,20 @@ pro connstat_event, ev
   if shm_var[settings.shm_data]   then widget_control,data_connstat,set_value=green_light else widget_control,data_connstat,set_value=red_light
   if shm_var[settings.shm_uplink] then widget_control,uplk_connstat,set_value=green_light else widget_control,uplk_connstat,set_value=red_light
 
+  ;;skip over error handler
+  goto, NO_CONNSTAT_ERROR
+  
+  CONNSTAT_ERROR:
+  print,'UPLINK: CONNSTAT_ERROR'
+  if lunit gt 0 then free_lun,lunit,/force
+  if runit gt 0 then free_lun,runit,/force
+  if remotefd gt 0 then free_lun,remotefd,/force
+  lunit = -1
+  runit = -1
+  remotefd = -1
+
+  NO_CONNSTAT_ERROR:
+  
   ;;return if triggered by command
   if uval ne 'timer' then return
   
