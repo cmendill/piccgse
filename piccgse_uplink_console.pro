@@ -407,8 +407,10 @@ pro connstat_event, ev
   if uval eq 'uplink' then begin
      if shm_var[settings.shm_remote] then begin
         ;;Togle uplink command remotely
-        msg = 'uplink toggle'
-        if remotefd gt 0 then writeu,remotefd,msg
+        cmd  = 'uplink toggle'
+        rcmd = bytarr(settings.cmdlength)
+        rcmd[0:strlen(cmd)-1]=byte(cmd)
+        if remotefd gt 0 then writeu,remotefd,rcmd
      endif else begin
         ;;Toggle uplink command locally
         if shm_var[settings.shm_uplink] then shm_var[settings.shm_uplink] = 0 else shm_var[settings.shm_uplink] = 1
@@ -440,7 +442,7 @@ pro connstat_event, ev
 
   ;;return if triggered by command
   if uval ne 'timer' then return
-
+  
   ;;trigger self
   widget_control,ev.id,timer=0.5
 end
