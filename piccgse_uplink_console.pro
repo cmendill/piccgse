@@ -75,7 +75,7 @@ pro uplink, fd, cmd
 end
 
 pro command_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat,remo_connstat
 
   ;;Install error handler
   ON_IOERROR, COMMAND_ERROR
@@ -143,7 +143,7 @@ end
 
 
 pro serial_command_buttons_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat,remo_connstat
  
   ;;Install error handler
   ON_IOERROR, SERIAL_COMMAND_BUTTONS_ERROR
@@ -231,7 +231,7 @@ pro serial_command_buttons_event, ev
 end
 
 pro remote_command_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat,remo_connstat
 
   ;;Install error handler
   ON_IOERROR, REMOTE_COMMAND_ERROR
@@ -299,7 +299,7 @@ end
 
 
 pro gse_command_buttons_event, ev 
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat,remo_connstat
 
   event_type = TAG_NAMES(ev, /STRUCTURE_NAME) 
   
@@ -349,7 +349,7 @@ pro gse_command_buttons_event, ev
 end
 
 pro gsepath_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat,remo_connstat
   common gsepath_block, path
  
   temp='piccgse.'+strcompress(string(shm_var[settings.shm_timestamp:*]),/REMOVE_ALL)
@@ -366,7 +366,7 @@ pro gsepath_event, ev
 end
 
 pro state_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat,remo_connstat
   common state_block, states,state
  
   if n_elements(states) eq 0 then begin 
@@ -392,7 +392,7 @@ pro state_event, ev
 end
 
 pro connstat_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat,remo_connstat
 
   ;;Install error handler
   ON_IOERROR, CONNSTAT_ERROR
@@ -426,7 +426,6 @@ pro connstat_event, ev
         if file_poll_input(remotefd, timeout=0) then begin
            msg='1234567'
            readu,remotefd,msg
-           msg = string(msg)
            if msg eq 'uplink0' then shm_var[settings.shm_uplink] = 0
            if msg eq 'uplink1' then shm_var[settings.shm_uplink] = 1
         endif
@@ -443,6 +442,7 @@ pro connstat_event, ev
   if shm_var[settings.shm_link]   then widget_control,link_connstat,set_value=green_light else widget_control,link_connstat,set_value=red_light
   if shm_var[settings.shm_data]   then widget_control,data_connstat,set_value=green_light else widget_control,data_connstat,set_value=red_light
   if shm_var[settings.shm_uplink] then widget_control,uplk_connstat,set_value=green_light else widget_control,uplk_connstat,set_value=red_light
+  if runit gt 0 then widget_control,remo_connstat,set_value=green_light else widget_control,remo_connstat,set_value=red_light
 
   ;;skip over error handler
   goto, NO_CONNSTAT_ERROR
@@ -462,11 +462,11 @@ pro connstat_event, ev
   if uval ne 'timer' then return
   
   ;;trigger self
-  widget_control,ev.id,timer=0.5
+  widget_control,ev.id,timer=1
 end
 
 pro socket_event, ev
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat,remo_connstat
 
   ;;get piccgse settings
   restore,'.piccgse_set.idl'
@@ -521,7 +521,7 @@ pro socket_event, ev
 end
 
 pro piccgse_uplink_console
-  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat
+  common uplink_block,settings,upfd,dnfd,cmdlogfd,remotefd,lunit,runit,base,con_text,log_text,cmd_text,shm_var,buttondb,link_connstat,data_connstat,uplk_connstat,remo_connstat
 
   ;;load settings
   settings = load_settings()
@@ -828,11 +828,13 @@ pro piccgse_uplink_console
   red_light   = read_bmp('bmp/red.bmp',/rgb)
   red_light   = transpose(red_light,[1,2,0])
   connstat       = widget_base(col6,/row)
-  connstat_sub1  = widget_base(connstat,column=3,/frame)
+  connstat_sub1  = widget_base(connstat,column=4,/frame)
   button_label = widget_label(connstat_sub1,value=' LINK ',/align_center,font=win.font)
   link_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light, UVALUE='link', TOOLTIP='TM Link Status',/align_center)
   button_label = widget_label(connstat_sub1,value=' DATA ',/align_center,font=win.font)
   data_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light, UVALUE='data', TOOLTIP='TM Data Status',/align_center)
+  button_label = widget_label(connstat_sub1,value=' REMO ',/align_center,font=win.font)
+  remo_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light, UVALUE='remote', TOOLTIP='Remote Connection Status',/align_center)
   button_label = widget_label(connstat_sub1,value=' UPLK ',/align_center,font=win.font)
   uplk_connstat = WIDGET_BUTTON(connstat_sub1, VALUE=red_light, UVALUE='uplink', TOOLTIP='Toggle Uplink Command',/align_center)
   ;;install event handler

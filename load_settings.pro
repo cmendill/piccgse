@@ -29,7 +29,7 @@ settings = {uplink_dev: '/dev/ttyUSB1',$
             SHM_REMOTE:    11,$  ;;11     --> piccgse running in remote mode
             SHM_UP_RUN:    12,$  ;;12     --> UPLINK running
             SHM_DN_RUN:    13,$  ;;13     --> DNLINK running
-            SHM_STATE:     14,$  ;;13     --> Flight state index
+            SHM_STATE:     14,$  ;;14     --> Flight state index
             SHM_CMD:       27,$  ;;27     --> Command has been given
             SHM_TIMESTAMP: 28}   ;;28-127 --> File timestamp
 ;;Shared Memory
