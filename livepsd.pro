@@ -257,32 +257,45 @@ pro livepsd_event, ev
         if zshk1 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes1_freq[1],mes1_freq[-1]]
         if zshk1 le 1 then prms = ' ('+n2s(stdev(mes1)*zern2as*1000,format='(F0.1)')+' mas)' else prms=''
+        paxis = ''
+        if zshk1 eq 0 then paxis = ' (Yaw)'
+        if zshk1 eq 1 then paxis = ' (Pitch)'
         plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=shk1pos,$
              title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm ['+n2s(zreq_rms[zshk1],format='(F10.2)')+' nm]'+prms+' | Window: '+$
              n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
-             xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
+             xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk1)+']'+paxis+' PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd1_freq,cmd1_psd,color=3
         oplot,mes1_freq,mes1_int,linestyle=3
         
         if zshk2 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes2_freq[1],mes2_freq[-1]] 
         if zshk2 le 1 then prms = ' ('+n2s(stdev(mes2)*zern2as*1000,format='(F0.1)')+' mas)' else prms=''
+        paxis = ''
+        if zshk2 eq 0 then paxis = ' (Yaw)'
+        if zshk2 eq 1 then paxis = ' (Pitch)'
         plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=shk2pos,$
              title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm ['+n2s(zreq_rms[zshk2],format='(F10.2)')+' nm]'+prms+' | Window: '+$
              n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
-             xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
+             xtitle='Frequency [Hz]',ytitle='Z['+n2s(zshk2)+']'+paxis+' PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd2_freq,cmd2_psd,color=3
         oplot,mes2_freq,mes2_int,linestyle=3
      endif else begin
         ;;Time series plots
         if zshk1 le 1 then prms = ' ('+n2s(stdev(mes1)*zern2as*1000,format='(F0.1)')+' mas)' else prms=''
-        plot,time,mes1,/xs,/ys,position=shk1pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk1)+'] nm',charsize=charsize,yrange=[tar1[0]-shkyr,tar1[0]+shkyr],$
+        paxis = ''
+        if zshk1 eq 0 then paxis = ' (Yaw)'
+        if zshk1 eq 1 then paxis = ' (Pitch)'
+        plot,time,mes1,/xs,/ys,position=shk1pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk1)+']'+paxis+' nm',charsize=charsize,yrange=[tar1[0]-shkyr,tar1[0]+shkyr],$
              title='SHK Z['+n2s(zshk1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm ['+n2s(zreq_rms[zshk1],format='(F10.2)')+' nm]'+prms+' | Window: '+$
              n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd1,color=3
         oplot,time,tar1,color=1
+
         if zshk2 le 1 then prms = ' ('+n2s(stdev(mes2)*zern2as*1000,format='(F0.1)')+' mas)' else prms=''
-        plot,time,mes2,/xs,/ys,position=shk2pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk2)+'] nm',charsize=charsize,yrange=[tar2[0]-shkyr,tar2[0]+shkyr],$
+        paxis = ''
+        if zshk2 eq 0 then paxis = ' (Yaw)'
+        if zshk2 eq 1 then paxis = ' (Pitch)'
+        plot,time,mes2,/xs,/ys,position=shk2pos,xtitle='Time [s]',ytitle='Z['+n2s(zshk2)+']'+paxis+' nm',charsize=charsize,yrange=[tar2[0]-shkyr,tar2[0]+shkyr],$
              title='SHK Z['+n2s(zshk2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm ['+n2s(zreq_rms[zshk2],format='(F10.2)')+' nm]'+prms+' | Window: '+$
              n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd2,color=3
@@ -376,10 +389,13 @@ pro livepsd_event, ev
         if zlyt1 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes1_freq[1],mes1_freq[-1]] 
         if zlyt1 le 1 then prms = ' ('+n2s(stdev(mes1)*zern2as*1000,format='(F0.1)')+' mas)' else prms = ''
+        paxis = ''
+        if zlyt1 eq 0 then paxis = ' (Yaw)'
+        if zlyt1 eq 1 then paxis = ' (Pitch)'
         plot,mes1_freq,mes1_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=lyt1pos,$
              title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm ['+n2s(zreq_rms[zlyt1],format='(F10.2)')+' nm]'+prms+' | Window: '+$
              n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
-             xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt1)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
+             xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt1)+']'+paxis+' PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd1_freq,cmd1_psd,color=3
         oplot,mes1_freq,mes1_int,linestyle=3
         if zlyt1 le 1 then oplot,zreq_freq,zreq_psd,color=2
@@ -387,10 +403,13 @@ pro livepsd_event, ev
         if zlyt2 le 1 then psdyr = ttyr else psdyr = ozyr
         psdxr = [mes2_freq[1],mes2_freq[-1]] 
         if zlyt2 le 1 then prms = ' ('+n2s(stdev(mes2)*zern2as*1000,format='(F0.1)')+' mas)' else prms = ''
+        paxis = ''
+        if zlyt2 eq 0 then paxis = ' (Yaw)'
+        if zlyt2 eq 1 then paxis = ' (Pitch)'
         plot,mes2_freq,mes2_psd,xrange=psdxr,yrange=psdyr,/xs,/ys,xlog=xlog,/ylog,position=lyt2pos,$
              title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm ['+n2s(zreq_rms[zlyt2],format='(F10.2)')+' nm]'+prms+' | Window: '+$
              n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz',$
-             xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt2)+'] PSD [nm'+sym_sq+'/Hz]',charsize=charsize
+             xtitle='Frequency [Hz]',ytitle='Z['+n2s(zlyt2)+']'+paxis+' PSD [nm'+sym_sq+'/Hz]',charsize=charsize
         oplot,cmd2_freq,cmd2_psd,color=3
         oplot,mes2_freq,mes2_int,linestyle=3
         if zlyt2 le 1 then oplot,zreq_freq,zreq_psd,color=2
@@ -398,14 +417,20 @@ pro livepsd_event, ev
      endif else begin
         ;;Time series plots
         if zlyt1 le 1 then prms = ' ('+n2s(stdev(mes1)*zern2as*1000,format='(F0.1)')+' mas)' else prms = ''
-        plot,time,mes1,/xs,/ys,position=lyt1pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt1)+'] nm',charsize=charsize,yrange=[tar1[0]-lytyr,tar1[0]+lytyr],$
+        paxis = ''
+        if zlyt1 eq 0 then paxis = ' (Yaw)'
+        if zlyt1 eq 1 then paxis = ' (Pitch)'
+        plot,time,mes1,/xs,/ys,position=lyt1pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt1)+']'+paxis+' nm',charsize=charsize,yrange=[tar1[0]-lytyr,tar1[0]+lytyr],$
              title='LYT Z['+n2s(zlyt1)+'] | RMS: '+n2s(stdev(mes1),format='(F10.2)')+' nm ['+n2s(zreq_rms[zlyt1],format='(F10.2)')+' nm]'+prms+' | Window: '+$
              n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd1,color=3
         oplot,time,tar1,color=1
 
         if zlyt2 le 1 then prms = ' ('+n2s(stdev(mes2)*zern2as*1000,format='(F0.1)')+' mas)' else prms = ''
-        plot,time,mes2,/xs,/ys,position=lyt2pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt2)+'] nm',charsize=charsize,yrange=[tar2[0]-lytyr,tar2[0]+lytyr],$
+        paxis = ''
+        if zlyt2 eq 0 then paxis = ' (Yaw)'
+        if zlyt2 eq 1 then paxis = ' (Pitch)'
+        plot,time,mes2,/xs,/ys,position=lyt2pos,xtitle='Time [s]',ytitle='Z['+n2s(zlyt2)+']'+paxis+' nm',charsize=charsize,yrange=[tar2[0]-lytyr,tar2[0]+lytyr],$
              title='LYT Z['+n2s(zlyt2)+'] | RMS: '+n2s(stdev(mes2),format='(F10.2)')+' nm ['+n2s(zreq_rms[zlyt2],format='(F10.2)')+' nm]'+prms+' | Window: '+$
              n2s(total_time,format='(I)')+' sec | Rate: '+n2s(rate,format='(I)')+' Hz'
         oplot,time,cmd2,color=3
