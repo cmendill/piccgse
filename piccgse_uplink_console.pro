@@ -423,6 +423,7 @@ pro connstat_event, ev
         if file_poll_input(remotefd, timeout=0) then begin
            msg='1234567'
            readu,remotefd,msg
+           msg = string(msg)
            if msg eq 'uplink0' then shm_var[settings.shm_uplink] = 0
            if msg eq 'uplink1' then shm_var[settings.shm_uplink] = 1
         endif
