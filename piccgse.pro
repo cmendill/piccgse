@@ -637,8 +637,9 @@ pro piccgse_processData, hed, pkt, tag
         r = sqrt(xcentroid^2 + ycentroid^2)
         dummy = max(r,rmax)
         xyouts,sx,sy-dy*c++,'Max Centroid: '+n2s(xcentroid[rmax],format='(F0.2)')+'  '+n2s(ycentroid[rmax],format='(F0.2)'),/device
-        if pkt.locked then locked='YES' else locked='NO'
-        xyouts,sx,sy-dy*c++,'Locked: '+locked,/device
+        if pkt.status_locked then locked='YES' else locked='NO'
+        if pkt.status_valid  then valid='YES'  else valid='NO'
+        xyouts,sx,sy-dy*c++,'Valid: '+valid+'  |  Locked: '+locked,/device
         ;;take snapshot
         snap = TVRD(true=1)
         ;;delete pixmap window
