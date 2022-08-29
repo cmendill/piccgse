@@ -711,23 +711,80 @@ pro piccgse_processData, hed, pkt, tag
            ;;set font
            !P.FONT = 0
            device,set_font=set.w[wsci].font
-           for i=0,n_elements(pkt.field)-1 do begin
+           ;;create pixmap window
+           window,wpix,/pixmap,xsize=!D.X_SIZE,ysize=!D.Y_SIZE
+           wset,wpix
+           
+           
+           ;;set text origin
+           dy  = 16
+           sx = 5
+           sy = !D.Y_SIZE - dy
+           c=0
+           
+           ;;print data
+           xyouts,sx,sy-dy*c++,'Frame number: '+n2s(hed.frame_number),/device
+           xyouts,sx,sy-dy*c++,'Frm | Exp: '+n2s(hed.frmtime,format='(F0.3)')+' | '+n2s(hed.exptime,format='(F0.3)')+' sec',/device
+           dt = long((double(hed.end_sec) - double(hed.start_sec))*1d6 + (double(hed.end_nsec) - double(hed.start_nsec))/1d3)
+           xyouts,sx,sy-dy*c++,'Event Time: '+n2s(dt)+' us',/device
+
+           for iband=0,n_elements(pkt.field)-1 do begin
               simage  = dblarr(scixs,sciys)
-              if shm_var[settings.shm_scitype] eq settings.scitype_real      then simage[scisel] = pkt.field[i].r
-              if shm_var[settings.shm_scitype] eq settings.scitype_imaginary then simage[scisel] = pkt.field[i].i
-              if shm_var[settings.shm_scitype] eq settings.scitype_amplitude then simage[scisel] = sqrt(pkt.field[i].r^2 + pkt.field[i].i^2)
-              if shm_var[settings.shm_scitype] eq settings.scitype_phase     then simage[scisel] = atan(pkt.field[i].i,pkt.field[i].r,/phase)
+              if shm_var[settings.shm_scitype] eq settings.scitype_real      then begin
+                 simage[scisel] = pkt.field[iband].r
+                 simage[scisel] /= max(abs(simage[scisel]))
+                 title='WFS: Real Part'
+                 cbtitle='FLD'
+              endif
+              if shm_var[settings.shm_scitype] eq settings.scitype_imaginary then begin
+                 simage[scisel] = pkt.field[iband].i
+                 title='WFS: Imaginary Part'
+                 simage[scisel] /= max(abs(simage[scisel]))
+                 cbtitle='FLD'
+              endif
+              if shm_var[settings.shm_scitype] eq settings.scitype_amplitude then begin
+                 simage[scisel] = sqrt(pkt.field[iband].r^2 + pkt.field[iband].i^2)
+                 title='WFS: Amplitude'
+                 simage[scisel] /= max(abs(simage[scisel]))
+                 cbtitle='AMP'
+             endif
+              if shm_var[settings.shm_scitype] eq settings.scitype_phase     then begin
+                 simage[scisel] = atan(pkt.field[iband].i,pkt.field[iband].r,/phase)
+                 title='WFS: Phase'
+                 cbtitle='RAD'
+              endif
+              cbrange = minmax(simage[scisel])
               simage = rebin(simage,scirebin,scirebin,/sample)
               ;;scale image
               greygrscale,simage,1e9
+              ;;add box
+              simage[*,0]  = 252
+              simage[*,-1] = 252
+              simage[0,*]  = 252
+              simage[-1,*] = 252
               ;;add IWA ring
               simage[sciring] = 253
               simage[scidz] = 253
               ;;display
               greygr
               xsize = !D.X_SIZE/n_elements(pkt.field)
-              tv,simage,i*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
+              xpos  = iband*xsize+(xsize-scirebin)/2
+              ypos  = (!D.Y_SIZE-scirebin)/2
+              tv,simage,xpos,ypos
+              position=[xpos+scirebin+5,ypos,xpos+scirebin+5+10,ypos+scirebin] / double([!D.X_SIZE,!D.Y_SIZE,!D.X_SIZE,!D.Y_SIZE])
+              xyouts,xpos+scirebin/2,ypos+scirebin+2,title,/device,alignment=0.5
+              cbmcolorbar,range=cbrange,/vertical,/right,title=cbtitle,position=position,ncolors=253,format='(F0.2)',divisions=5
            endfor
+           
+           ;;take snapshot
+           snap = TVRD(true=1)
+           ;;delete pixmap window
+           wdelete,wpix
+           ;;switch back to real window
+           wset,wsci
+           ;;display image
+           tv,snap,true=1
+           
            loadct,0
         endif
      endif
@@ -1016,17 +1073,38 @@ pro piccgse_processData, hed, pkt, tag
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] Cent: ',min(bgsub[censel]),max(bgsub[censel]),mean(bgsub[censel]),format='(A,I8,I8,I8)'),/device
               xyouts,sx,sy-dy*c++,string('Min|Max|Avg['+n2s(iband)+'] DrkH: ',min(bgsub[scisel]),max(bgsub[scisel]),mean(bgsub[scisel]),mean((scidark[*,*,iband])[scisel]),$
                                          format='(A,I8,I8,I8,I8)'),/device
-              simage = rebin(image,scirebin,scirebin,/sample)
+
+              ;;prepare image for display
+              simage = rebin(double(image),scirebin,scirebin,/sample)
+              sbgsub = rebin(bgsub,scirebin,scirebin,/sample)
               sat = where(simage ge 65535,nsat)
+
+              if(shm_var[settings.shm_scitype] eq settings.scitype_image) then begin
+                 ;;scale image
+                 greygrscale,simage,65535
+                 cbrange=minmax(image)
+                 cbtitle='ADU'
+                 cbformat='(I)'
+              endif
               
               if(shm_var[settings.shm_scitype] eq settings.scitype_log) then begin
                  simage = alog10(simage/max(simage)) > (-5)
+                 cbrange = minmax(simage)
                  greygrscale,simage,65535
-                 if nsat gt 0 then simage[sat] = 254
-              endif else begin
-                 ;;scale image
-                 greygrscale,simage,65535
-              endelse
+                 cbtitle='LOG'
+                 cbformat='(F0.1)'
+              endif
+
+              if(shm_var[settings.shm_scitype] eq settings.scitype_contrast) then begin
+                 if pkt.refmax[iband] gt 0 then simage = alog10(sbgsub / hed.exptime / pkt.refmax[iband]) else simage[*]=1
+                 ;simage = round(2*simage)/2d
+                 greygrscale,simage,65535,min=-8,max=-3
+                 cbrange = [-8,-3]
+                 cbtitle='CON'
+                 cbformat='(F0.1)'
+              endif
+              
+              if nsat gt 0 then simage[sat] = 254
 
               ;;add box
               simage[*,0]  = 252
@@ -1040,9 +1118,14 @@ pro piccgse_processData, hed, pkt, tag
               ;;display
               greygr
               xsize = !D.X_SIZE/n_elements(pkt.bands.band)
-              tv,simage,iband*xsize+(xsize-scirebin)/2,(!D.Y_SIZE-scirebin)/2
+              xpos  = iband*xsize+(xsize-scirebin)/2
+              ypos  = (!D.Y_SIZE-scirebin)/2
+              tv,simage,xpos,ypos
+              position=[xpos+scirebin+5,ypos,xpos+scirebin+5+10,ypos+scirebin] / double([!D.X_SIZE,!D.Y_SIZE,!D.X_SIZE,!D.Y_SIZE])
+              xyouts,xpos+scirebin/2,ypos+scirebin+2,'iHOWFS: '+n2s(fix(pkt.ihowfs))+'  iSPECKLE: '+n2s(fix(pkt.ispeckle)),/device,alignment=0.5
+              cbmcolorbar,range=cbrange,/vertical,/right,title=cbtitle,position=position,ncolors=253,format=cbformat,divisions=5
            endfor
-
+           
            ;;plot live contrast
            if update_contrast then if n_elements(contrast_array) eq 0 then contrast_array = contrast else contrast_array = [[contrast_array],[contrast]]
            if n_elements(contrast_array) gt 0 then begin
@@ -1072,6 +1155,7 @@ pro piccgse_processData, hed, pkt, tag
            
            loadct,0
         endif
+        
      endif
      
      ;;Display ALPAO Command
