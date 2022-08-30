@@ -313,7 +313,7 @@ pro piccgse_processData, hed, pkt, tag
 
      ;;SCI Image Pixel Selection
      sci_dhrot=0
-     restore,'config/howfs_scimask_rot'+sci_dhrot+'.idl' ;;built by picctest/export_howfc.pro
+     restore,'config/howfs_scimask_rot'+n2s(sci_dhrot)+'.idl' ;;built by picctest/export_howfc.pro
      scisel = where(scimask,complement=scinotsel)
      
      ;;Init scidark
@@ -982,7 +982,7 @@ pro piccgse_processData, hed, pkt, tag
            print,'SCI darkhole rotation changed to '+n2s(sci_dhrot)
            
            ;;SCI Image Pixel Selection
-           restore,'config/howfs_scimask_rot'+sci_dhrot+'.idl' ;;built by picctest/export_howfc.pro
+           restore,'config/howfs_scimask_rot'+n2s(sci_dhrot)+'.idl' ;;built by picctest/export_howfc.pro
            scisel = where(scimask,complement=scinotsel)
            
            ;;SCI IWA ring
@@ -1129,7 +1129,7 @@ pro piccgse_processData, hed, pkt, tag
               ypos  = (!D.Y_SIZE-scirebin)/2
               tv,simage,xpos,ypos
               position=[xpos+scirebin+5,ypos,xpos+scirebin+5+10,ypos+scirebin] / double([!D.X_SIZE,!D.Y_SIZE,!D.X_SIZE,!D.Y_SIZE])
-              xyouts,xpos+scirebin/2,ypos+scirebin+2,'iHOWFS: '+n2s(fix(pkt.ihowfs))+'  iSPECKLE: '+n2s(fix(pkt.ispeckle)),/device,alignment=0.5
+              xyouts,xpos+scirebin/2,ypos+scirebin+2,'Rot: '+n2s(fix(pkt.dhrot))+'  iHOWFS: '+n2s(fix(pkt.ihowfs))+'  iSPECKLE: '+n2s(fix(pkt.ispeckle)),/device,alignment=0.5
               cbmcolorbar,range=cbrange,/vertical,/right,title=cbtitle,position=position,ncolors=253,format=cbformat,divisions=5
            endfor
            
