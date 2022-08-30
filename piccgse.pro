@@ -1239,8 +1239,8 @@ pro piccgse_processData, hed, pkt, tag
         str_onoff = ['OFF','ON']
         str_overtemp = ['NORM','OVER']
         ;;testpoints
-        str_testpoint_set = strmid(strcompress(string(pkt.bmc.tcmd,format='(11I4)')),1)
-        str_testpoint_val = strmid(strcompress(string(pkt.bmc_status.testpoint_v,format='(11I4)')),1)
+        str_testpoint_set = strmid(strcompress(string(round(pkt.bmc.tcmd),format='(11I4)')),1)
+        str_testpoint_val = strmid(strcompress(string(round(pkt.bmc_status.testpoint_v),format='(11I4)')),1)
         ;;print data
         xyouts,sx,sy-dy*c++,' Power: '+str_power[pkt.bmc_status.power],/device
         xyouts,sx,sy-dy*c++,' Range: '+str_range[pkt.bmc_status.range],/device
