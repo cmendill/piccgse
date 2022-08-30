@@ -249,7 +249,7 @@ end
 pro piccgse_processData, hed, pkt, tag
   common piccgse_block, settings, set, shm_var
   common processdata_block1, states, alpcalmodes, hexcalmodes, tgtcalmodes, bmccalmodes, shkbin, shkxs, shkys, lytxs, lytys, shkid, watid, lytid, sciid
-  common processdata_block2, scirebin,lytrebin,scixs,sciys,scisel,scinotsel,sci_nbands,censel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,scidz,lytmasksel,lytmasknotsel
+  common processdata_block2, scirebin,lytrebin,scixs,sciys,sci_dhrot,scisel,scinotsel,sci_nbands,censel,scidark,sci_temp_inc,lytxs_rebin,lytys_rebin,sciring,scidz,lytmasksel,lytmasknotsel
   common processdata_block3, lowfs_n_zernike, lowfs_n_pid, alpimg, alpsel, alpnotsel, alpctag, bmcimg, bmcsel, bmcnotsel, tdb, tsort
   common processdata_block4, wshk, wlyt, wacq, wsci, walp, wbmc, wshz, wlyz, wthm, wsda, wlda, wbmd, wpix
   common processdata_block5, sci_temp, sci_set, sci_tec, sci_pow, sci_temp_init, sci_dark, sci_bias, contrast_array
@@ -312,7 +312,8 @@ pro piccgse_processData, hed, pkt, tag
      bmcimg = float(bmcmask*0)
 
      ;;SCI Image Pixel Selection
-     restore,'config/howfs_scimask.idl' ;;built by picctest/export_howfc.pro
+     sci_dhrot=0
+     restore,'config/howfs_scimask_rot'+sci_dhrot+'.idl' ;;built by picctest/export_howfc.pro
      scisel = where(scimask,complement=scinotsel)
      
      ;;Init scidark
@@ -973,26 +974,32 @@ pro piccgse_processData, hed, pkt, tag
   if tag eq 'scievent' then begin
      ;;Display Image
      if set.w[wsci].show then begin
-        ;;TEMPORARY----------------------------------------
-        ;;SCI Image Pixel Selection
-        restore,'config/howfs_scimask.idl' ;;built by picctest/export_howfc.pro
-        scisel = where(scimask,complement=scinotsel)
-        
-        ;;SCI IWA ring
-        xyimage,scixs,sciys,xim,yim,rim,/quadrant,/index
-        censel = where(rim le 7)
-        sciring = where(fix(rim) eq 7)
-        image = intarr(scixs,sciys)
-        image[sciring] = 1
-        image = rebin(image,scirebin,scirebin,/sample)
-        sciring = where(round(image) eq 1)
 
-        ;;SCI Dark Zone
-        scidz = scimask
-        outline,scidz
-        scidz = rebin(scidz,scirebin,scirebin,/sample)
-        scidz = where(round(scidz) eq 1)
-        ;;--------------------------------------------------
+        ;;Check if darkhole rotation has changed
+        if sci_dhrot ne pkt.dhrot then begin
+           ;;Set dhrot
+           sci_dhrot = pkt.dhrot
+           print,'SCI darkhole rotation changed to '+n2s(sci_dhrot)
+           
+           ;;SCI Image Pixel Selection
+           restore,'config/howfs_scimask_rot'+sci_dhrot+'.idl' ;;built by picctest/export_howfc.pro
+           scisel = where(scimask,complement=scinotsel)
+           
+           ;;SCI IWA ring
+           xyimage,scixs,sciys,xim,yim,rim,/quadrant,/index
+           censel = where(rim le 7)
+           sciring = where(fix(rim) eq 7)
+           image = intarr(scixs,sciys)
+           image[sciring] = 1
+           image = rebin(image,scirebin,scirebin,/sample)
+           sciring = where(round(image) eq 1)
+
+           ;;SCI Dark Zone
+           scidz = scimask
+           outline,scidz
+           scidz = rebin(scidz,scirebin,scirebin,/sample)
+           scidz = where(round(scidz) eq 1)
+        endif
         
         ;;save SCI temps to common block
         sci_temp = pkt.ccd_temp
