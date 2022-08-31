@@ -978,7 +978,7 @@ pro piccgse_processData, hed, pkt, tag
         ;;Check if darkhole rotation has changed
         if sci_dhrot ne pkt.dhrot then begin
            ;;Set dhrot
-           sci_dhrot = pkt.dhrot
+           sci_dhrot = fix(pkt.dhrot)
            print,'SCI darkhole rotation changed to '+n2s(sci_dhrot)
            
            ;;SCI Image Pixel Selection
