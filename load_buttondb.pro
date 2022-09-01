@@ -84,7 +84,7 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'LED ON',cmd:'led on 2.8',tooltip:'Turn LED on',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'LED OFF',cmd:'led off',tooltip:'Turn LED off',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'BMC FLAT',cmd:'bmc revert flat',tooltip:'Reload BMC flat',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'other',type2:'',name:'BMC RECALL',cmd:'bmc recall flat',tooltip:'Recall last BMC flat',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'other',type2:'',name:'BMC RECALL',cmd:'bmc recall flat 0',tooltip:'Recall last BMC flat',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP FLAT',cmd:'alp load flat',tooltip:'Reload ALP flat',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP +TILT',cmd:'shk inc target 0 1.3',tooltip:'Increment SHK Z0 target by +1.3 micron',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'other',type2:'',name:'ALP -TILT',cmd:'shk inc target 0 -1.3',tooltip:'Increment SHK Z0 target by -1.3 micron',igse:0,vgse:0}
