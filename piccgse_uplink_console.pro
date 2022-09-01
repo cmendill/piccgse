@@ -760,7 +760,7 @@ pro piccgse_uplink_console
   if nsel gt 0 then begin
      buttons = buttondb[sel]
      for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(shk_arrow_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
+        bid = WIDGET_BUTTON(shk_arrow_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP,font=win.font)
      endfor
   endif
   ;;install event handler
@@ -773,7 +773,7 @@ pro piccgse_uplink_console
   if nsel gt 0 then begin
      buttons = buttondb[sel]
      for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(sci_arrow_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
+        bid = WIDGET_BUTTON(sci_arrow_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP,font=win.font)
      endfor
   endif
   ;;install event handler
@@ -786,7 +786,7 @@ pro piccgse_uplink_console
   if nsel gt 0 then begin
      buttons = buttondb[sel]
      for i=0,n_elements(buttons)-1 do begin
-        bid = WIDGET_BUTTON(hex_arrow_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP)
+        bid = WIDGET_BUTTON(hex_arrow_sub1, VALUE=buttons[i].name, UVALUE=buttons[i].id, TOOLTIP=buttons[i].tooltip,/BITMAP,font=win.font)
      endfor
   endif
   ;;install event handler

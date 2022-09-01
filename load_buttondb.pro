@@ -62,15 +62,13 @@ function load_buttondb
   b[i++]={id:i,show:1,type1:'door',type2:'d3',name:'C3' ,cmd:'close door 3',tooltip:'Close instrument door',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'door',type2:'d3',name:'S3' ,cmd:'stop door 3',tooltip:'Stop instrument door',igse:0,vgse:0}
  
-  ;;HEX tilt commands
+  ;;HEX arrow commands
   b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/left.bmp',cmd:'hex move -v',tooltip:'Move spot left on ACQ',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/right.bmp',cmd:'hex move +v',tooltip:'Move spot right on ACQ',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/up.bmp',cmd:'hex move -u',tooltip:'Move spot up on ACQ',igse:0,vgse:0}
   b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'bmp/down.bmp',cmd:'hex move +u',tooltip:'Move spot down on ACQ',igse:0,vgse:0}
-
-  ;;HEX Z commands
-  b[i++]={id:i,show:1,type1:'hex',type2:'z',name:'+Z',cmd:'hex move +z',tooltip:'Move HEX +Z',igse:0,vgse:0}
-  b[i++]={id:i,show:1,type1:'hex',type2:'z',name:'-Z',cmd:'hex move -z',tooltip:'Move HEX -Z',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'+Z',cmd:'hex move +z',tooltip:'Move HEX +Z',igse:0,vgse:0}
+  b[i++]={id:i,show:1,type1:'hex',type2:'arrow',name:'-Z',cmd:'hex move -z',tooltip:'Move HEX -Z',igse:0,vgse:0}
 
   ;;Camera commands
   b[i++]={id:i,show:1,type1:'camera',type2:'',name:'SHK +',cmd:'shk frmtime +',tooltip:'Increase SHK frame time',igse:0,vgse:0}
