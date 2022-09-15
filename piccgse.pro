@@ -914,11 +914,11 @@ pro piccgse_processData, hed, pkt, tag
            ovr='AUTO'
            if pkt.htr[i].enable then sta='ENA'
            if pkt.htr[i].override then ovr='OVER'
-           str=string(string(pkt.htr[i].name)+':',$
+           str=string(string(pkt.htr[i].name)+'_'+n2s(i,format='(I2.2)')+':',$
                       sta,ovr,$
                       pkt.htr[i].power,' ',$
                       pkt.htr[i].temp,' ',$
-                      pkt.htr[i].setpoint,format='(A-7,A-4,A-5,I-4,A,F-+6.1,A,F-+6.1)')
+                      pkt.htr[i].setpoint,format='(A-10,A-4,A-5,I-4,A,F-+6.1,A,F-+6.1)')
            xyouts,sx+dx*(c / nl),sy-dy*(c mod nl),str,/device,color=white
            c++
         endfor
