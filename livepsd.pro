@@ -145,7 +145,7 @@ pro livepsd_event, ev
   lyt1pos = [0.5,0.5,1.0,1.0]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
   lyt2pos = [0.5,0.0,1.0,0.5]+[xbuf,ybuf,-xbuf,-ybuf]+[xoff,yoff,xoff,yoff]
   shkyr = 50
-  lytyr = 50
+  lytyr = 21
   
   ;;Get folder
   folders = file_search('data/piccgse/piccgse*',count=nfolders)
@@ -374,8 +374,8 @@ pro livepsd_event, ev
      rate       = round(1/period)
 
      ;;Offset commands to match measured
-     cmd1 -= mean(cmd1) - mean(mes1)
-     cmd2 -= mean(cmd2) - mean(mes2)
+     ;cmd1 -= mean(cmd1) - mean(mes1)
+     ;cmd2 -= mean(cmd2) - mean(mes2)
 
      ;;PSD Plots
      if type eq 0 then begin

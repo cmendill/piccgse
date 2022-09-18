@@ -67,23 +67,23 @@ while 1 do begin
          if iplot eq 0 then begin
             title='Heaters'
             sel    = where(tdb.htr,nsel)
-            yrange = [0,50]
+            yrange = [0,60]
          endif
          if iplot eq 1 then begin
             title='Telescope'
             sel = where((tdb.location eq 'Telescope Truss' OR tdb.location eq 'Primary Mirror' OR $
                          tdb.location eq 'Secondary Mirror' OR tdb.location eq 'Hexapod') AND (tdb.htr eq 0),nsel)
-            yrange = [-50,50]
+            yrange = [-60,60]
          endif
          if iplot eq 2then begin
             title='Instrument'
             sel = where((tdb.location eq 'Instrument Interior' OR tdb.location eq 'Instrument Exterior') AND (tdb.htr eq 0),nsel)
-            yrange = [-50,50]
+            yrange = [-60,60]
          endif
          if iplot eq 3 then begin
             title='Electronics'
             sel = where((tdb.location eq 'Electronics') AND (tdb.htr eq 0),nsel)
-            yrange = [-50,50]
+            yrange = [-20,60]
          endif
          
          items  = tdb[sel].abbr+': '+n2s(data[sel,-1],format='(F10.1)')
