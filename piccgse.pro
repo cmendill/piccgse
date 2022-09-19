@@ -1008,8 +1008,8 @@ pro piccgse_processData, hed, pkt, tag
         sci_pow  = pkt.tec_power
 
         ;;save SCI fastmode to common block
-        sci_fastmode = pkt.fastmode
-
+        sci_fastmode = pkt.fastmode AND (hed.exptime lt 0.5)
+        
         ;;check if we need to reload sci calibration data
         if (SCI_TEMP_INC * round(sci_temp/SCI_TEMP_INC)) ne sci_temp_init then begin
            sci_temp_init = SCI_TEMP_INC * round(sci_temp/SCI_TEMP_INC)
