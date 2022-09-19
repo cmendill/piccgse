@@ -2,7 +2,7 @@
 ;; pro piccgse_loadConfig
 ;;  - procedure to load config file
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-pro piccgse_loadConfig, path, TMTYPE=TMTYPE, TMADDR=TMADDR, TMPORT=TMPORT, TMFILE=TMFILE, IDLFILE=IDLFILE
+pro piccgse_loadConfig, path, NODISPLAY=NODISPLAY, TMTYPE=TMTYPE, TMADDR=TMADDR, TMPORT=TMPORT, TMFILE=TMFILE, IDLFILE=IDLFILE
   common piccgse_block, settings, set, shm_var
 
 
@@ -173,12 +173,12 @@ pro piccgse_loadConfig, path, TMTYPE=TMTYPE, TMADDR=TMADDR, TMPORT=TMPORT, TMFIL
   endfor
 
   ;;Keywords
-  if keyword_set(tmtype)  then set.tmserver_type = tmtype
-  if keyword_set(tmaddr)  then set.tmserver_addr = tmaddr
-  if keyword_set(tmport)  then set.tmserver_port = tmport
-  if keyword_set(tmfile)  then set.tmserver_tmfile = tmfile
-  if keyword_set(idlfile) then set.tmserver_idlfile = idlfile
-  
+  if keyword_set(tmtype)    then set.tmserver_type = tmtype
+  if keyword_set(tmaddr)    then set.tmserver_addr = tmaddr
+  if keyword_set(tmport)    then set.tmserver_port = tmport
+  if keyword_set(tmfile)    then set.tmserver_tmfile = tmfile
+  if keyword_set(idlfile)   then set.tmserver_idlfile = idlfile
+  if keyword_set(nodisplay) then set.w.show = 0
   
   ;;Close the config file
   free_lun,unit,/force
@@ -1373,7 +1373,7 @@ end
 ;;   NOUPLINK
 ;;      Use bidirectional downlink for commands instead of uplink
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-pro piccgse, NOSAVE=NOSAVE, NOUPLINK=NOUPLINK, NOPLOT=NOPLOT, REMOTE=REMOTE, TMTYPE=TMTYPE, TMADDR=TMADDR, TMPORT=TMPORT, TMFILE=TMFILE, IDLFILE=IDLFILE
+pro piccgse, NOSAVE=NOSAVE, NODISPLAY=NODISPLAY, NOUPLINK=NOUPLINK, NOPLOT=NOPLOT, REMOTE=REMOTE, TMTYPE=TMTYPE, TMADDR=TMADDR, TMPORT=TMPORT, TMFILE=TMFILE, IDLFILE=IDLFILE
   common piccgse_block, settings, set, shm_var
 
 ;*************************************************
@@ -1449,7 +1449,7 @@ settings = load_settings()
   config_props = FILE_INFO(settings.config_file)
   if config_props.exists EQ 0 then stop, 'ERROR: Config file '+settings.config_file+' not found'
   cfg_mod_sec = config_props.mtime
-  piccgse_loadConfig, settings.config_file, TMTYPE=TMTYPE, TMADDR=TMADDR, TMPORT=TMPORT, TMFILE=TMFILE, IDLFILE=IDLFILE
+  piccgse_loadConfig, settings.config_file, NODISPLAY=NODISPLAY, TMTYPE=TMTYPE, TMADDR=TMADDR, TMPORT=TMPORT, TMFILE=TMFILE, IDLFILE=IDLFILE
  
 ;*************************************************
 ;* INIT CONNECTIONS
@@ -1763,7 +1763,7 @@ settings = load_settings()
            PRINT, 'PICCGSE: Loading modified configuration file'
            cfg_mod_sec = config_props.mtime
            old_set = set
-           piccgse_loadConfig, settings.config_file, TMTYPE=TMTYPE, TMADDR=TMADDR, TMPORT=TMPORT, TMFILE=TMFILE, IDLFILE=IDLFILE
+           piccgse_loadConfig, settings.config_file, NODISPLAY=NODISPLAY, TMTYPE=TMTYPE, TMADDR=TMADDR, TMPORT=TMPORT, TMFILE=TMFILE, IDLFILE=IDLFILE
            if(set.tmserver_type eq 'idlfile') then begin
               ;;get filenames
               idlfiles = file_search(set.tmserver_idlfile,count=nfiles)
