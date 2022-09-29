@@ -169,7 +169,7 @@ pro serial_command_buttons_event, ev
         dx = fix(ishft(fix(shm_var[settings.shm_acq_dx]),8) + shm_var[settings.shm_acq_dx+1])
         dy = fix(ishft(fix(shm_var[settings.shm_acq_dy]),8) + shm_var[settings.shm_acq_dy+1])
         ;;--convert dx,dy to du,dv
-        scale = 0.0003d
+        scale = 0.0003d *2
         dv = -dx * scale ;;+X = +V
         du =  dy * scale ;;+Y = -U
         cr = string(10B)
